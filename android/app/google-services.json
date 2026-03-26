@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "408984364299",
+    "project_id": "cashflowiq-e10ac",
+    "storage_bucket": "cashflowiq-e10ac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:408984364299:android:1721ea978d0999ddaf6e0e",
+        "android_client_info": {
+          "package_name": "com.example.cashflowiq"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "408984364299-edcu3uo5jf99tr5bbdt5t27mcplvuavg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cashflowiq",
+            "certificate_hash": "34e114f49047c264438d35525cbc7f1de54b4de5"
+          }
+        },
+        {
+          "client_id": "408984364299-sksu6atpg5nhfto66qb7lrfe5g04mfp0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMSHc4lOs6ts_LQSMz9pc9r0CI4r23Ae8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "408984364299-sksu6atpg5nhfto66qb7lrfe5g04mfp0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "408984364299-t8p388nfroqdm0ldo9ba0r14j92bsa7v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.cashflowiq"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
