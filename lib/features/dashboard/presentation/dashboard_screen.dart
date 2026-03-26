@@ -11,10 +11,7 @@ class DashboardScreen extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [_Header(), const SizedBox(height: 20), _BalanceCard(), const SizedBox(height: 20), _InsightsCard()],
-          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [_Header(), SizedBox(height: 20), _BalanceCard(), SizedBox(height: 20), _InsightsCard()]),
         ),
       ),
     );
@@ -22,20 +19,24 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
+  const _Header();
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        Text("CashFlowIQ", style: AppTextStyles.caption),
-        SizedBox(height: 4),
-        Text("Tu dinero, en control", style: AppTextStyles.heading),
+      children: [
+        Text("CashFlowIQ", style: AppTextStyles.caption(context)),
+        const SizedBox(height: 4),
+        Text("Tu dinero, en control", style: AppTextStyles.h300(context)),
       ],
     );
   }
 }
 
 class _BalanceCard extends StatelessWidget {
+  const _BalanceCard();
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -44,12 +45,17 @@ class _BalanceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Balance actual", style: AppTextStyles.caption),
+            Text("Balance actual", style: AppTextStyles.caption(context)),
             const SizedBox(height: 8),
-            const Text("S/ 4,250.00", style: AppTextStyles.heading),
+            Text("S/ 4,250.00", style: AppTextStyles.h100(context)),
             const SizedBox(height: 12),
-
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [Text("+ Ingresos: S/ 6,000"), Text("- Gastos: S/ 1,750")]),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("+ Ingresos: S/ 6,000", style: AppTextStyles.body2(context)),
+                Text("- Gastos: S/ 1,750", style: AppTextStyles.body2(context)),
+              ],
+            ),
           ],
         ),
       ),
@@ -58,16 +64,18 @@ class _BalanceCard extends StatelessWidget {
 }
 
 class _InsightsCard extends StatelessWidget {
+  const _InsightsCard();
+
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
-          children: const [
-            Icon(Icons.trending_up, color: AppColors.success),
-            SizedBox(width: 12),
-            Expanded(child: Text("Estás gastando 32% más en comida este mes", style: AppTextStyles.body)),
+          children: [
+            const Icon(Icons.trending_up, color: AppColors.success),
+            const SizedBox(width: 12),
+            Expanded(child: Text("Estás gastando 32% más en comida este mes", style: AppTextStyles.subtitle2(context))),
           ],
         ),
       ),
