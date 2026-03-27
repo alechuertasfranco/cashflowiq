@@ -50,7 +50,7 @@ class AuthService {
 
     final token = await user.getIdToken(true); // 👈 fuerza refresh (importante)
 
-    final response = await http.post(Uri.parse("http://10.0.2.2:8000/auth/sync-user"), headers: {"Authorization": "Bearer $token", "Content-Type": "application/json"});
+    final response = await http.post(Uri.parse("http://127.0.0.1:8000/auth/sync-user"), headers: {"Authorization": "Bearer $token", "Content-Type": "application/json"});
 
     if (response.statusCode != 200) {
       throw Exception("Error syncing user: ${response.body}");
