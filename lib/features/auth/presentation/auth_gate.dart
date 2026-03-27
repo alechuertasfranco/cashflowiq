@@ -1,7 +1,7 @@
+import 'package:cashflowiq/features/main/presentation/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../dashboard/presentation/dashboard_screen.dart';
 import 'login_screen.dart';
 
 class AuthGate extends StatelessWidget {
@@ -17,7 +17,7 @@ class AuthGate extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
-          return const DashboardScreen();
+          return const MainScreen();
         }
 
         return const LoginScreen();
