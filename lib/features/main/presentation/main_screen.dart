@@ -1,8 +1,7 @@
-import 'package:cashflowiq/features/main/presentation/profile_screen.dart';
+import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/profile_screen.dart';
 import 'package:flutter/material.dart';
-
-import '../../dashboard/presentation/dashboard_screen.dart';
-import '../../../core/theme/app_colors.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
