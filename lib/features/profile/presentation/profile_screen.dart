@@ -1,6 +1,7 @@
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/features/bank_accounts/presentation/bank_accounts_screen.dart';
+import 'package:cashflowiq/features/bank_entities/presentation/bank_entities_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -39,7 +40,10 @@ class ProfileScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 24,
                         backgroundColor: AppColors.primary,
-                        child: Text(user?.email != null ? user!.email![0].toUpperCase() : "U", style: AppTextStyles.h400(context).copyWith(color: Colors.white)),
+                        child: Text(
+                          user?.email != null ? user!.email![0].toUpperCase() : "U",
+                          style: AppTextStyles.h400(context).copyWith(color: Colors.white),
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(child: Text(user?.email ?? "Usuario", style: AppTextStyles.subtitle1(context))),
@@ -61,10 +65,20 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     ListTile(
+                      leading: const Icon(Icons.domain, color: AppColors.textSecondary),
+                      title: Text("Entidades bancarias", style: AppTextStyles.body1(context)),
+                      subtitle: Text("Organiza tus cuentas por banco", style: AppTextStyles.caption(context)),
+                      onTap: () =>
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const BankEntitiesScreen())),
+                    ),
+                    const Divider(height: 1),
+
+                    ListTile(
                       leading: const Icon(Icons.account_balance, color: AppColors.textSecondary),
                       title: Text("Cuentas bancarias", style: AppTextStyles.body1(context)),
                       subtitle: Text("Gestiona tu dinero disponible", style: AppTextStyles.caption(context)),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BankAccountsScreen())),
+                      onTap: () =>
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const BankAccountsScreen())),
                     ),
                     const Divider(height: 1),
 

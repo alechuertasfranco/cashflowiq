@@ -3,7 +3,10 @@
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/features/bank_accounts/data/bank_account_service.dart';
+import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
+import 'package:cashflowiq/features/bank_entities/presentation/bank_entities_screen.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
+import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 import 'package:flutter/material.dart';
 
@@ -19,12 +22,17 @@ class FormAccountScreen extends StatefulWidget {
 class _FormAccountScreenState extends State<FormAccountScreen> {
   final _formKey = GlobalKey<FormState>();
   final _service = BankAccountService();
+  final _entityService = BankEntityService();
 
   final _nameController = TextEditingController();
   final _initialAmountController = TextEditingController();
 
   Currency _selectedCurrency = Currency.pen;
   bool _isSaving = false;
+
+  BankEntity? _selectedBankEntity;
+  List<BankEntity> _entities = [];
+  bool _isLoadingEntities = true;
 
   bool get _isEdit => widget.account != null;
 
@@ -38,6 +46,41 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
       _initialAmountController.text = acc.balance.amount.toString();
       _selectedCurrency = acc.balance.currency;
     }
+
+    _loadEntities();
+  }
+
+  Future<void> _loadEntities() async {
+    setState(() => _isLoadingEntities = true);
+
+    try {
+      final entities = await _entityService.getEntities();
+
+      if (!mounted) return;
+
+      BankEntity? selected;
+
+      if (_isEdit) {
+        final accEntityId = widget.account!.bankEntity.id;
+
+        selected = entities.firstWhere(
+          (e) => e.id == accEntityId,
+          orElse: () => entities.isNotEmpty ? entities.first : throw Exception(),
+        );
+      }
+
+      setState(() {
+        _entities = entities;
+        _selectedBankEntity = selected;
+        _isLoadingEntities = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isLoadingEntities = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error cargando entidades bancarias")));
+    }
   }
 
   Future<void> _submit() async {
@@ -45,12 +88,18 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
 
     setState(() => _isSaving = true);
 
+    if (_selectedBankEntity == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Selecciona una entidad bancaria")));
+      return;
+    }
+
     try {
       final account = BankAccount(
         id: widget.account?.id ?? '',
         name: _nameController.text.trim(),
         initialAmount: double.parse(_initialAmountController.text),
         currency: _selectedCurrency,
+        bankEntity: _selectedBankEntity!,
       );
       if (_isEdit) {
         await _service.updateAccount(account);
@@ -156,6 +205,61 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+
+                /// 🏦 Entidad bancaria
+                Text("Entidad bancaria", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
+                const SizedBox(height: 8),
+
+                _isLoadingEntities
+                    ? const Center(child: CircularProgressIndicator())
+                    : Column(
+                        children: [
+                          DropdownButtonFormField<BankEntity>(
+                            initialValue: _selectedBankEntity,
+                            dropdownColor: AppColors.surface,
+                            items: _entities.map((entity) {
+                              return DropdownMenuItem(
+                                value: entity,
+                                child: Text(entity.name, style: AppTextStyles.body1(context)),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() => _selectedBankEntity = value);
+                            },
+                            decoration: InputDecoration(
+                              hintText: "Selecciona un banco",
+                              filled: true,
+                              fillColor: AppColors.surface,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          /// ➕ Crear nueva entidad
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () async {
+                                final created = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const BankEntitiesScreen()),
+                                );
+
+                                if (created == true) _loadEntities();
+                              },
+                              child: Text(
+                                "Crear nueva entidad",
+                                style: AppTextStyles.caption(context, color: AppColors.primary),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
 
                 const Spacer(),
 

@@ -11,6 +11,8 @@ class AppColors {
 
   static const success = Color(0xFF22C55E);
   static const successStrong = Color(0xFF16A34A);
+  static const error = Color(0xFFEF4444);
+  static const errorStrong = Color(0xFFDC2626);
 
   static const background = Color(0xFFF1F5F9);
   static const surface = Colors.white;

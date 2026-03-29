@@ -2,8 +2,10 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/bank_accounts/data/bank_account_service.dart';
 import 'package:cashflowiq/features/bank_accounts/presentation/form_account_screen.dart';
+import 'package:cashflowiq/features/bank_accounts/widgets/card.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 import 'package:cashflowiq/shared/models/money.dart';
@@ -97,23 +99,33 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// 🔹 Balance total
-                    Text("Balance total", style: AppTextStyles.caption(context)),
-                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// 🔹 Balance total
+                          Text("Balance total", style: AppTextStyles.caption(context)),
+                          const SizedBox(height: 4),
 
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: balancesByCurrency.entries.map((entry) {
-                        final money = entry.value;
-
-                        return Text("${money.currency.flag} ${money.format()}", style: AppTextStyles.balance(context));
-                      }).toList(),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: balancesByCurrency.entries.map((entry) {
+                              final money = entry.value;
+                              return Text(
+                                "${money.currency.flag} ${money.format()}",
+                                style: AppTextStyles.balance(context),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 24),
@@ -144,29 +156,22 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                     else
                       Expanded(
                         child: RefreshIndicator(
-                          onRefresh: _loadAccounts, // 👈 UX fintech importante
+                          onRefresh: _loadAccounts,
                           child: ListView.separated(
                             itemCount: _accounts.length,
-                            separatorBuilder: (_, _) => const Divider(color: AppColors.border),
+                            separatorBuilder: (_, _) => const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final account = _accounts[index];
 
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                                leading: const CircleAvatar(
-                                  backgroundColor: AppColors.background,
-                                  child: Icon(Icons.account_balance, color: AppColors.secondary),
-                                ),
-                                title: Text(account.name, style: AppTextStyles.subtitle2(context)),
-
-                                subtitle: Text(
-                                  "${account.currency.flag} ${account.currency.code}",
-                                  style: AppTextStyles.caption(context),
-                                ),
-
-                                trailing: Text(account.balance.format(), style: AppTextStyles.h400(context)),
-
-                                onTap: () => _goToEditAccount(account),
+                              return SwipeToDelete(
+                                onDelete: () async {
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  await _service.deleteAccount(account.id);
+                                  await _loadAccounts();
+                                  if (!mounted) return;
+                                  messenger.showSnackBar(const SnackBar(content: Text("Cuenta eliminada")));
+                                },
+                                child: BankAccountCard(account: account, onTap: () => _goToEditAccount(account)),
                               );
                             },
                           ),
