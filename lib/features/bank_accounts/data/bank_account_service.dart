@@ -2,14 +2,12 @@
 
 import 'package:cashflowiq/core/network/api_client.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
-import 'package:flutter/widgets.dart';
 
 class BankAccountService {
   // 📥 GET ACCOUNTS
   Future<List<BankAccount>> getAccounts() async {
     try {
       final List data = await ApiClient.getJson("/bank-accounts");
-      debugPrint("Fetched accounts: $data");
       final accounts = data.map((json) {
         return BankAccount.fromJson(json);
       }).toList();

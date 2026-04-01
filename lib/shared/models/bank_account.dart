@@ -9,7 +9,6 @@ class BankAccount {
   final String name;
   final double initialAmount;
   final Currency currency;
-
   final BankEntity bankEntity;
 
   BankAccount({
@@ -23,7 +22,7 @@ class BankAccount {
   /// 💰 Fuente única de verdad del balance
   Money get balance => Money(amount: initialAmount, currency: currency);
 
-  /// 🧠 IDENTIDAD DE DOMINIO (CLAVE)
+  /// 🧠 IDENTIDAD DE DOMINIO
   @override
   bool operator ==(Object other) =>
       identical(this, other) || other is BankAccount && runtimeType == other.runtimeType && id == other.id;
@@ -31,27 +30,24 @@ class BankAccount {
   @override
   int get hashCode => id.hashCode;
 
-  /// 📦 SERIALIZACIÓN
+  /// 📦 SERIALIZACIÓN (FROM API)
   factory BankAccount.fromJson(Map<String, dynamic> json) {
+    final rawAmount = json['initial_amount'];
+
     return BankAccount(
       id: json['id'].toString(),
-      name: json['name'],
-      initialAmount: (json['initial_amount'] as num).toDouble(),
-      currency: Currency.fromJson(json['currency']),
+      name: json['name'] ?? '',
+      initialAmount: rawAmount is num ? rawAmount.toDouble() : double.tryParse(rawAmount.toString()) ?? 0.0,
+      currency: Currency.fromMap(json['currency']),
       bankEntity: BankEntity.fromJson(json['bank_entity']),
     );
   }
 
+  /// 📤 SERIALIZACIÓN (TO API)
   Map<String, dynamic> toJson() {
-    return {
-      "name": name,
-      "initial_amount": initialAmount,
-      "currency": currency.toJson(),
-      "bank_entity_id": bankEntity.id,
-    };
+    return {"name": name, "initial_amount": initialAmount, "currency_id": currency.id, "bank_entity_id": bankEntity.id};
   }
 
-  /// ✨ OPCIONAL PERO PRO
   BankAccount copyWith({String? name, double? initialAmount, Currency? currency, BankEntity? bankEntity}) {
     return BankAccount(
       id: id,

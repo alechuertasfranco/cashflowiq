@@ -1,40 +1,50 @@
 // lib/shared/models/currency.dart
 
 class Currency {
+  final String id; // Unique identifier
   final String code; // ISO: USD, PEN, EUR
   final String symbol; // $, S/, €
   final String name; // Dólar, Sol, Euro
-  final String flag; // 🇵🇪 🇺🇸 🇪🇺
+  final String? flag; // 🇵🇪 🇺🇸 🇪🇺
   final int decimals; // 2 normalmente
   final double? exchangeRateToBase;
 
   const Currency({
+    required this.id,
     required this.code,
     required this.symbol,
     required this.name,
-    required this.flag,
+    this.flag,
     this.decimals = 2,
     this.exchangeRateToBase,
   });
 
-  // 🌎 Definiciones base
-  static const pen = Currency(code: "PEN", symbol: "S/", name: "Sol peruano", flag: "🇵🇪");
-  static const usd = Currency(code: "USD", symbol: "\$", name: "Dólar estadounidense", flag: "🇺🇸");
-  static const eur = Currency(code: "EUR", symbol: "€", name: "Euro", flag: "🇪🇺");
+  // ✅ Desde API
+  factory Currency.fromMap(Map<String, dynamic> json) {
+    double? toDoubleSafe(dynamic value) {
+      if (value == null) return null;
+      if (value is num) return value.toDouble();
+      return double.tryParse(value.toString());
+    }
 
-  // 📦 Lista tipo enum
-  static const List<Currency> values = [pen, usd, eur];
+    int toIntSafe(dynamic value, {int fallback = 2}) {
+      if (value == null) return fallback;
+      if (value is num) return value.toInt();
+      return int.tryParse(value.toString()) ?? fallback;
+    }
 
-  // 🔍 Buscar por código (backend → app)
-  static Currency fromCode(String code) {
-    return values.firstWhere((c) => c.code == code, orElse: () => pen);
+    return Currency(
+      id: json["id"].toString(),
+      code: json["code"] ?? '',
+      symbol: json["symbol"] ?? '',
+      name: json["name"] ?? '',
+      flag: json["flag"],
+      decimals: toIntSafe(json["decimals"]),
+      exchangeRateToBase: toDoubleSafe(json["exchange_rate_to_base"]),
+    );
   }
 
-  // 🔄 JSON (para Money)
-  factory Currency.fromJson(String code) {
-    return fromCode(code);
-  }
-
+  // ✅ Para enviar al backend (solo code)
   String toJson() => code;
 
   // ⚖️ Necesario para Map<Currency, Money>

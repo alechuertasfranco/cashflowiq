@@ -35,14 +35,16 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
 
     try {
       final accounts = await _service.getAccounts();
+      if (!mounted) return;
       setState(() {
         _accounts = accounts;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error cargando cuentas")));
+      setState(() => _isLoading = false);
+      debugPrint("Error cargando cuentas: $e");
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error cargando cuentas")));
     }
   }
 
@@ -61,7 +63,6 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
   Future<void> _goToCreateAccount() async {
     final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const FormAccountScreen()));
 
-    // 🔁 Refrescar si hubo cambios
     if (result == true) {
       _loadAccounts();
     }
@@ -74,7 +75,6 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
       MaterialPageRoute(builder: (_) => FormAccountScreen(account: account)),
     );
 
-    // 🔁 Refrescar si hubo cambios
     if (result == true) {
       _loadAccounts();
     }
@@ -95,7 +95,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: _goToCreateAccount,
-        child: const Icon(Icons.add, color: Color(0xFFFFFFFF)),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
         child: Padding(
@@ -105,32 +105,36 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    /// 🔹 BALANCES
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          /// 🔹 Balance total
                           Text("Balance total", style: AppTextStyles.caption(context)),
                           const SizedBox(height: 4),
 
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: balancesByCurrency.entries.map((entry) {
-                              final money = entry.value;
-                              return Text(
-                                "${money.currency.flag} ${money.format()}",
-                                style: AppTextStyles.balance(context),
-                              );
-                            }).toList(),
-                          ),
+                          if (balancesByCurrency.isEmpty)
+                            Text("0", style: AppTextStyles.balance(context))
+                          else
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: balancesByCurrency.entries.map((entry) {
+                                final money = entry.value;
+
+                                return Text(
+                                  "${money.currency.flag ?? ''} ${money.format()}",
+                                  style: AppTextStyles.balance(context),
+                                );
+                              }).toList(),
+                            ),
                         ],
                       ),
                     ),
 
                     const SizedBox(height: 24),
 
-                    /// 🔹 Estado vacío
+                    /// 🔹 EMPTY STATE
                     if (_accounts.isEmpty)
                       Expanded(
                         child: Center(
@@ -152,7 +156,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                           ),
                         ),
                       )
-                    /// 🔹 Lista
+                    /// 🔹 LISTA
                     else
                       Expanded(
                         child: RefreshIndicator(
@@ -166,9 +170,12 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                               return SwipeToDelete(
                                 onDelete: () async {
                                   final messenger = ScaffoldMessenger.of(context);
+
                                   await _service.deleteAccount(account.id);
                                   await _loadAccounts();
+
                                   if (!mounted) return;
+
                                   messenger.showSnackBar(const SnackBar(content: Text("Cuenta eliminada")));
                                 },
                                 child: BankAccountCard(account: account, onTap: () => _goToEditAccount(account)),

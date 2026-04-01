@@ -2,12 +2,13 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
 import 'package:cashflowiq/features/bank_accounts/data/bank_account_service.dart';
+import 'package:cashflowiq/features/bank_accounts/presentation/controllers/form_account_controller.dart';
 import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
 import 'package:cashflowiq/features/bank_entities/presentation/bank_entities_screen.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
-import 'package:cashflowiq/shared/models/bank_entity.dart';
-import 'package:cashflowiq/shared/models/currency.dart';
+import 'package:cashflowiq/shared/services/currency_service.dart';
 import 'package:flutter/material.dart';
 
 class FormAccountScreen extends StatefulWidget {
@@ -21,100 +22,78 @@ class FormAccountScreen extends StatefulWidget {
 
 class _FormAccountScreenState extends State<FormAccountScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _service = BankAccountService();
-  final _entityService = BankEntityService();
 
   final _nameController = TextEditingController();
-  final _initialAmountController = TextEditingController();
+  final _amountController = TextEditingController();
 
-  Currency _selectedCurrency = Currency.pen;
-  bool _isSaving = false;
-
-  BankEntity? _selectedBankEntity;
-  List<BankEntity> _entities = [];
-  bool _isLoadingEntities = true;
+  late final FormAccountController controller;
 
   bool get _isEdit => widget.account != null;
 
   @override
   void initState() {
     super.initState();
+    debugPrint("Initializing FormAccountScreen with account: ${widget.account?.toJson()}");
+
+    controller = FormAccountController(BankAccountService(), BankEntityService(), CurrencyService());
+    controller.addListener(_listener);
+    controller.init(widget.account);
 
     if (_isEdit) {
       final acc = widget.account!;
       _nameController.text = acc.name;
-      _initialAmountController.text = acc.balance.amount.toString();
-      _selectedCurrency = acc.balance.currency;
+      _amountController.text = acc.balance.amount.toString();
     }
-
-    _loadEntities();
   }
 
-  Future<void> _loadEntities() async {
-    setState(() => _isLoadingEntities = true);
+  void _listener() {
+    if (!mounted) return;
 
-    try {
-      final entities = await _entityService.getEntities();
-
-      if (!mounted) return;
-
-      BankEntity? selected;
-
-      if (_isEdit) {
-        final accEntityId = widget.account!.bankEntity.id;
-
-        selected = entities.firstWhere(
-          (e) => e.id == accEntityId,
-          orElse: () => entities.isNotEmpty ? entities.first : throw Exception(),
-        );
-      }
-
-      setState(() {
-        _entities = entities;
-        _selectedBankEntity = selected;
-        _isLoadingEntities = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() => _isLoadingEntities = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error cargando entidades bancarias")));
+    // 👉 Cuando termina de guardar → cerrar pantalla
+    if (!controller.isSaving) {
+      // evita pop prematuro, solo cuando ya se guardó
+      // podrías mejorar esto con un estado "success"
     }
+
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    controller.removeListener(_listener);
+    controller.dispose();
+    super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSaving = true);
+    if (controller.selectedCurrency == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Selecciona una moneda")));
+      return;
+    }
 
-    if (_selectedBankEntity == null) {
+    if (controller.selectedEntity == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Selecciona una entidad bancaria")));
       return;
     }
 
     try {
-      final account = BankAccount(
-        id: widget.account?.id ?? '',
+      await controller.submit(
         name: _nameController.text.trim(),
-        initialAmount: double.parse(_initialAmountController.text),
-        currency: _selectedCurrency,
-        bankEntity: _selectedBankEntity!,
+        amount: _amountController.text,
+
+        original: widget.account,
       );
-      if (_isEdit) {
-        await _service.updateAccount(account);
-      } else {
-        await _service.createAccount(account);
-      }
+
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      setState(() => _isSaving = false);
+      debugPrint("Error guardando cuenta: $e");
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error guardando cuenta")));
     }
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,189 +105,163 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
         iconTheme: const IconThemeData(color: AppColors.primary),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// 🏦 Nombre
-                Text("Nombre de la cuenta", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
+        child: controller.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// 🏦 Nombre
+                      Text(
+                        "Nombre de la cuenta",
+                        style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 8),
 
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    hintText: "Ej: BCP Ahorros",
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                  validator: (value) => value == null || value.isEmpty ? "Ingresa un nombre" : null,
-                ),
-
-                const SizedBox(height: 16),
-
-                /// 💰 Balance
-                Text("Balance inicial", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
-
-                TextFormField(
-                  controller: _initialAmountController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: "0.00",
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return "Ingresa un monto";
-                    if (double.tryParse(value) == null) return "Monto inválido";
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                /// 🌍 Moneda
-                Text("Moneda", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
-
-                DropdownButtonFormField<Currency>(
-                  initialValue: _selectedCurrency,
-                  dropdownColor: AppColors.surface,
-                  items: Currency.values.map((currency) {
-                    return DropdownMenuItem(
-                      value: currency,
-                      child: Text("${currency.flag} ${currency.code}", style: AppTextStyles.body1(context)),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _selectedCurrency = value);
-                    }
-                  },
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                /// 🏦 Entidad bancaria
-                Text("Entidad bancaria", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
-
-                _isLoadingEntities
-                    ? const Center(child: CircularProgressIndicator())
-                    : Column(
-                        children: [
-                          DropdownButtonFormField<BankEntity>(
-                            initialValue: _selectedBankEntity,
-                            dropdownColor: AppColors.surface,
-                            items: _entities.map((entity) {
-                              return DropdownMenuItem(
-                                value: entity,
-                                child: Text(entity.name, style: AppTextStyles.body1(context)),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() => _selectedBankEntity = value);
-                            },
-                            decoration: InputDecoration(
-                              hintText: "Selecciona un banco",
-                              filled: true,
-                              fillColor: AppColors.surface,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.border),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          /// ➕ Crear nueva entidad
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () async {
-                                final created = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const BankEntitiesScreen()),
-                                );
-
-                                if (created == true) _loadEntities();
-                              },
-                              child: Text(
-                                "Crear nueva entidad",
-                                style: AppTextStyles.caption(context, color: AppColors.primary),
-                              ),
-                            ),
-                          ),
-                        ],
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: _inputDecoration("Ej: BCP Ahorros"),
+                        validator: (value) => value == null || value.isEmpty ? "Ingresa un nombre" : null,
                       ),
 
-                const Spacer(),
+                      const SizedBox(height: 16),
 
-                /// 🚀 CTA PRINCIPAL
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: _isSaving ? null : _submit,
-                    child: _isSaving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : Text(
-                            _isEdit ? "Actualizar cuenta" : "Crear cuenta",
-                            style: AppTextStyles.subtitle2(
+                      /// 💰 Monto
+                      Text("Balance inicial", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
+                      const SizedBox(height: 8),
+
+                      TextFormField(
+                        controller: _amountController,
+                        keyboardType: TextInputType.number,
+                        decoration: _inputDecoration("0.00"),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Ingresa un monto";
+                          }
+                          if (double.tryParse(value) == null) {
+                            return "Monto inválido";
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      /// 🌍 Moneda
+                      Text("Moneda", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
+                      const SizedBox(height: 8),
+
+                      CurrencyDropdown(
+                        currencies: controller.currencies,
+                        value: controller.selectedCurrency,
+                        onChanged: controller.setCurrency,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      /// 🏦 Entidad bancaria
+                      Text("Entidad bancaria", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
+                      const SizedBox(height: 8),
+
+                      DropdownButtonFormField(
+                        initialValue: controller.selectedEntity,
+                        items: controller.entities.map((e) {
+                          return DropdownMenuItem(
+                            value: e,
+                            child: Text(e.name, style: AppTextStyles.body1(context)),
+                          );
+                        }).toList(),
+                        onChanged: controller.setEntity,
+                        decoration: _inputDecoration("Selecciona un banco"),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () async {
+                            final created = await Navigator.push(
                               context,
-                              color: Colors.white, // 👈 correcto sobre primary
-                            ),
+                              MaterialPageRoute(builder: (_) => const BankEntitiesScreen()),
+                            );
+
+                            if (created == true) {
+                              await controller.init(widget.account);
+                            }
+                          },
+                          child: Text(
+                            "Crear nueva entidad",
+                            style: AppTextStyles.caption(context, color: AppColors.primary),
                           ),
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      /// 🚀 CTA
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: controller.isSaving ? null : _submit,
+                          child: controller.isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Text(
+                                  _isEdit ? "Actualizar cuenta" : "Crear cuenta",
+                                  style: AppTextStyles.subtitle2(context, color: Colors.white),
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: Text("Cancelar", style: AppTextStyles.subtitle2(context, color: AppColors.primary)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
+      ),
+    );
+  }
 
-                const SizedBox(height: 10),
-
-                /// ✨ CTA SECUNDARIO (opcional UX pro)
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    child: Text("Cancelar", style: AppTextStyles.subtitle2(context, color: AppColors.primary)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: AppColors.surface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary),
       ),
     );
   }
