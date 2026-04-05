@@ -2,7 +2,6 @@
 
 import 'package:cashflowiq/core/network/api_client.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
@@ -35,7 +34,6 @@ class AuthService {
 
   // 🔁 SYNC USER
   Future<void> _syncUserWithBackend() async {
-    debugPrint('_syncUserWithBackend');
     await ApiClient.post("/auth/sync-user");
   }
 

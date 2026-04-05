@@ -1,25 +1,26 @@
-// lib\features\bank_accounts\presentation\controllers\form_account_controller.dart
+// lib/features/credit_cards/presentation/controllers/form_credit_card_controller.dart
 
-import 'package:cashflowiq/features/bank_accounts/data/bank_account_service.dart';
+import 'package:cashflowiq/features/credit_cards/data/credit_card_service.dart';
 import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
-import 'package:cashflowiq/shared/models/bank_account.dart';
+import 'package:cashflowiq/shared/models/credit_card.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 import 'package:cashflowiq/shared/services/currency_service.dart';
 import 'package:flutter/foundation.dart';
 
-class FormAccountController extends ChangeNotifier {
-  final BankAccountService _service;
+class FormCreditCardController extends ChangeNotifier {
+  final CreditCardService _service;
   final BankEntityService _entityService;
   final CurrencyService _currencyService;
 
-  FormAccountController(this._service, this._entityService, this._currencyService);
+  FormCreditCardController(this._service, this._entityService, this._currencyService);
 
   List<Currency> currencies = [];
   List<BankEntity> entities = [];
 
   Currency? selectedCurrency;
   BankEntity? selectedEntity;
+  CreditCardBrand? selectedBrand;
 
   bool isLoading = true;
   bool isSaving = false;
@@ -34,7 +35,12 @@ class FormAccountController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> init(BankAccount? account) async {
+  void setBrand(CreditCardBrand? brand) {
+    selectedBrand = brand;
+    notifyListeners();
+  }
+
+  Future<void> init(CreditCard? card) async {
     isLoading = true;
     notifyListeners();
 
@@ -43,31 +49,43 @@ class FormAccountController extends ChangeNotifier {
     currencies = results[0] as List<Currency>;
     entities = results[1] as List<BankEntity>;
 
-    if (account != null) {
-      selectedCurrency = account.balance.currency;
-      selectedEntity = entities.firstWhere((e) => e.id == account.bankEntity.id);
+    if (card != null) {
+      selectedCurrency = card.currency;
+      selectedEntity = entities.firstWhere((e) => e.id == card.bankEntity.id);
+      selectedBrand = card.brand;
     }
 
     isLoading = false;
     notifyListeners();
   }
 
-  Future<void> submit({required String name, required String amount, BankAccount? original}) async {
+  Future<void> submit({
+    required String name,
+    required String creditLimit,
+    required int closingDay,
+    required int dueDay,
+    String? interestRate,
+    CreditCard? original,
+  }) async {
     isSaving = true;
     notifyListeners();
 
-    final account = BankAccount(
+    final card = CreditCard(
       id: original?.id ?? '',
       name: name,
-      initialAmount: double.parse(amount),
+      creditLimit: double.parse(creditLimit),
+      brand: selectedBrand!,
+      closingDay: closingDay,
+      dueDay: dueDay,
+      interestRate: interestRate != null && interestRate.isNotEmpty ? double.parse(interestRate) : null,
       currency: selectedCurrency!,
       bankEntity: selectedEntity!,
     );
 
     if (original != null) {
-      await _service.updateAccount(account);
+      await _service.updateCreditCard(card);
     } else {
-      await _service.createAccount(account);
+      await _service.createCreditCard(card);
     }
 
     isSaving = false;

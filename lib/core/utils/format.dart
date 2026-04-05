@@ -9,3 +9,17 @@ Color parseHexColor(String? hex) {
   buffer.write(hex.replaceFirst('#', ''));
   return Color(int.parse(buffer.toString(), radix: 16));
 }
+
+double parseToDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  throw Exception("Invalid double: $value");
+}
+
+int parseToInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  throw Exception("Invalid int: $value");
+}

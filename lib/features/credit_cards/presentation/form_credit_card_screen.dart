@@ -1,48 +1,54 @@
-// lib/features/bank_accounts/presentation/form_account_screen.dart
+// lib/features/credit_cards/presentation/form_credit_card_screen.dart
 
+import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
-import 'package:cashflowiq/features/bank_accounts/data/bank_account_service.dart';
-import 'package:cashflowiq/features/bank_accounts/presentation/controllers/form_account_controller.dart';
+import 'package:cashflowiq/features/credit_cards/presentation/controllers/form_credit_card_controller.dart';
+import 'package:cashflowiq/features/credit_cards/data/credit_card_service.dart';
 import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
 import 'package:cashflowiq/features/bank_entities/presentation/bank_entities_screen.dart';
-import 'package:cashflowiq/shared/models/bank_account.dart';
+import 'package:cashflowiq/shared/models/credit_card.dart';
 import 'package:cashflowiq/shared/services/currency_service.dart';
-import 'package:flutter/material.dart';
 
-class FormAccountScreen extends StatefulWidget {
-  final BankAccount? account;
+class FormCreditCardScreen extends StatefulWidget {
+  final CreditCard? card;
 
-  const FormAccountScreen({super.key, this.account});
+  const FormCreditCardScreen({super.key, this.card});
 
   @override
-  State<FormAccountScreen> createState() => _FormAccountScreenState();
+  State<FormCreditCardScreen> createState() => _FormCreditCardScreenState();
 }
 
-class _FormAccountScreenState extends State<FormAccountScreen> {
+class _FormCreditCardScreenState extends State<FormCreditCardScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
-  final _amountController = TextEditingController();
+  final _limitController = TextEditingController();
+  final _closingController = TextEditingController();
+  final _dueController = TextEditingController();
+  final _interestController = TextEditingController();
 
-  late final FormAccountController controller;
+  late final FormCreditCardController controller;
 
-  bool get _isEdit => widget.account != null;
+  bool get _isEdit => widget.card != null;
 
   @override
   void initState() {
     super.initState();
 
-    controller = FormAccountController(BankAccountService(), BankEntityService(), CurrencyService());
+    controller = FormCreditCardController(CreditCardService(), BankEntityService(), CurrencyService());
     controller.addListener(() => setState(() {}));
-    controller.init(widget.account);
+    controller.init(widget.card);
 
     if (_isEdit) {
-      final acc = widget.account!;
-      _nameController.text = acc.name;
-      _amountController.text = acc.balance.amount.toString();
+      final c = widget.card!;
+      _nameController.text = c.name;
+      _limitController.text = c.creditLimit.toString();
+      _closingController.text = c.closingDay.toString();
+      _dueController.text = c.dueDay.toString();
+      _interestController.text = c.interestRate?.toString() ?? '';
     }
   }
 
@@ -56,24 +62,26 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (controller.selectedCurrency == null || controller.selectedEntity == null) {
+    if (controller.selectedCurrency == null || controller.selectedEntity == null || controller.selectedBrand == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Completa todos los campos")));
       return;
     }
 
     try {
       await controller.submit(
-        name: _nameController.text.trim(),
-        amount: _amountController.text,
-
-        original: widget.account,
+        name: _nameController.text,
+        creditLimit: _limitController.text,
+        closingDay: int.parse(_closingController.text),
+        dueDay: int.parse(_dueController.text),
+        interestRate: _interestController.text,
+        original: widget.card,
       );
 
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint("Error guardando cuenta: $e");
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error guardando cuenta")));
+      debugPrint("Error guardando tarjeta: $e");
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error guardando tarjeta")));
     }
   }
 
@@ -82,7 +90,7 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(_isEdit ? "Editar cuenta" : "Nueva cuenta", style: AppTextStyles.h400(context)),
+        title: Text(_isEdit ? "Editar tarjeta" : "Nueva tarjeta", style: AppTextStyles.h400(context)),
         backgroundColor: AppColors.background,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
@@ -101,32 +109,40 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label("Nombre de la cuenta"),
+                              _label("Nombre de la tarjeta"),
                               const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _nameController,
-                                decoration: inputDecoration("Ej: BCP Ahorros"),
-                                validator: (value) => value == null || value.isEmpty ? "Ingresa un nombre" : null,
-                              ),
-                              const SizedBox(height: 12),
+                              _input("Ej: Visa Platinum", _nameController),
 
-                              _label("Balance inicial"),
+                              _label("Línea de crédito"),
                               const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _amountController,
-                                keyboardType: TextInputType.number,
-                                decoration: inputDecoration("0.00"),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return "Ingresa un monto";
-                                  }
-                                  if (double.tryParse(value) == null) {
-                                    return "Monto inválido";
-                                  }
-                                  return null;
-                                },
+                              _input("Ej: 5000.00", _limitController, isNumber: true),
+
+                              _label("Fechas de cierre y pago"),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(child: _input("Día de cierre", _closingController, isNumber: true)),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: _input("Día de pago", _dueController, isNumber: true)),
+                                ],
                               ),
-                              const SizedBox(height: 12),
+
+                              _label("Tasa de interés (%)"),
+                              const SizedBox(height: 8),
+                              _input("Ej: 18.5", _interestController, isNumber: true, required: false),
+
+                              _label("Red de pago"),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<CreditCardBrand>(
+                                initialValue: controller.selectedBrand,
+                                items: CreditCardBrand.values.map((b) {
+                                  return DropdownMenuItem(value: b, child: Text(b.name.toUpperCase()));
+                                }).toList(),
+                                onChanged: controller.setBrand,
+                                decoration: inputDecoration("Selecciona una red de pago"),
+                              ),
+
+                              const SizedBox(height: 8),
 
                               _label("Moneda"),
                               const SizedBox(height: 8),
@@ -135,7 +151,8 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                                 value: controller.selectedCurrency,
                                 onChanged: controller.setCurrency,
                               ),
-                              const SizedBox(height: 12),
+
+                              const SizedBox(height: 8),
 
                               _label("Entidad bancaria"),
                               const SizedBox(height: 8),
@@ -160,7 +177,7 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                                     );
 
                                     if (created == true) {
-                                      await controller.init(widget.account);
+                                      await controller.init(widget.card);
                                     }
                                   },
                                   child: Text(
@@ -205,7 +222,7 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                   )
                                 : Text(
-                                    _isEdit ? "Actualizar cuenta" : "Crear cuenta",
+                                    _isEdit ? "Actualizar tarjeta" : "Crear tarjeta",
                                     style: AppTextStyles.subtitle2(context, color: Colors.white),
                                   ),
                           ),
@@ -232,4 +249,21 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
   }
 
   Widget _label(String text) => Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
+
+  Widget _input(String label, TextEditingController controller, {bool isNumber = false, bool required = true}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: inputDecoration(label),
+        validator: (v) {
+          if (!required) return null;
+          if (v == null || v.isEmpty) return "Requerido";
+          if (isNumber && double.tryParse(v) == null) return "Número inválido";
+          return null;
+        },
+      ),
+    );
+  }
 }
