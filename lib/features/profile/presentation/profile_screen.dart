@@ -3,6 +3,7 @@ import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/features/bank_accounts/presentation/bank_accounts_screen.dart';
 import 'package:cashflowiq/features/bank_entities/presentation/bank_entities_screen.dart';
 import 'package:cashflowiq/features/credit_cards/presentation/credit_cards_screen.dart';
+import 'package:cashflowiq/features/investment_fund/presentation/investment_funds_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -96,9 +97,8 @@ class ProfileScreen extends StatelessWidget {
                       leading: const Icon(Icons.trending_up, color: AppColors.textSecondary),
                       title: Text("Fondos de inversión", style: AppTextStyles.body1(context)),
                       subtitle: Text("Haz crecer tu dinero", style: AppTextStyles.caption(context)),
-                      onTap: () {
-                        // TODO: Navegar a pantalla de inversiones
-                      },
+                      onTap: () =>
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const InvestmentFundsScreen())),
                     ),
                   ],
                 ),
