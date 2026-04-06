@@ -4,6 +4,7 @@ import 'package:cashflowiq/core/utils/format.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/money.dart';
+import 'package:flutter/animation.dart';
 
 enum InvestmentFundType {
   mutualFund,
@@ -56,6 +57,21 @@ enum InvestmentFundType {
         return "ETF";
       case InvestmentFundType.other:
         return "Otro";
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case InvestmentFundType.mutualFund:
+        return Color(0xFFC7E6FF); // Azul
+      case InvestmentFundType.afp:
+        return Color(0xFFCBFFCD); // Verde
+      case InvestmentFundType.insurance:
+        return Color(0xFFFFD493); // Naranja
+      case InvestmentFundType.etf:
+        return Color(0xFFFADCFF); // Púrpura
+      case InvestmentFundType.other:
+        return Color(0xFFE0E0E0); // Gris
     }
   }
 }

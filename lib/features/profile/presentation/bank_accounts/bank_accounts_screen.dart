@@ -3,9 +3,9 @@
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
-import 'package:cashflowiq/features/bank_accounts/data/bank_account_service.dart';
-import 'package:cashflowiq/features/bank_accounts/presentation/form_account_screen.dart';
-import 'package:cashflowiq/features/bank_accounts/widgets/card.dart';
+import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
+import 'package:cashflowiq/features/profile/presentation/bank_accounts/form_account_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/bank_accounts/widgets/card.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 import 'package:cashflowiq/shared/models/money.dart';

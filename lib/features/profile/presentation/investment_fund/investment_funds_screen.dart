@@ -1,108 +1,117 @@
-// lib/features/credit_cards/presentation/credit_cards_screen.dart
+// lib/features/investment_fund/presentation/investment_funds_screen.dart
 
+import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
-import 'package:cashflowiq/features/credit_cards/data/credit_card_service.dart';
-import 'package:cashflowiq/features/credit_cards/presentation/form_credit_card_screen.dart';
-import 'package:cashflowiq/features/credit_cards/widgets/card.dart';
-import 'package:cashflowiq/shared/models/credit_card.dart';
+
+import 'package:cashflowiq/features/profile/data/investment_fund_service.dart';
+import 'package:cashflowiq/features/profile/presentation/investment_fund/form_investment_fund_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/investment_fund/widgets/card.dart';
+
+import 'package:cashflowiq/shared/models/investment_fund.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 import 'package:cashflowiq/shared/models/money.dart';
-import 'package:flutter/material.dart';
 
-class CreditCardsScreen extends StatefulWidget {
-  const CreditCardsScreen({super.key});
+class InvestmentFundsScreen extends StatefulWidget {
+  const InvestmentFundsScreen({super.key});
 
   @override
-  State<CreditCardsScreen> createState() => _CreditCardsScreenState();
+  State<InvestmentFundsScreen> createState() => _InvestmentFundsScreenState();
 }
 
-class _CreditCardsScreenState extends State<CreditCardsScreen> {
-  final CreditCardService _service = CreditCardService();
+class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
+  final InvestmentFundService _service = InvestmentFundService();
 
-  List<CreditCard> _cards = [];
+  List<InvestmentFund> _funds = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadCards();
+    _loadFunds();
   }
 
-  Future<void> _loadCards() async {
+  Future<void> _loadFunds() async {
     setState(() => _isLoading = true);
 
     try {
-      final cards = await _service.getCreditCards();
+      final funds = await _service.getFunds();
+
       if (!mounted) return;
 
       setState(() {
-        _cards = cards;
+        _funds = funds;
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint("Error loading credit cards: $e");
+      debugPrint("Error loading funds: $e");
+
       if (!mounted) return;
+
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error cargando tarjetas")));
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error cargando inversiones")));
     }
   }
 
-  /// 💳 Agrupar línea de crédito por moneda
-  Map<Currency, Money> _getCreditLimitsByCurrency() {
+  /// 💰 TOTAL INVERTIDO (por moneda)
+  Map<Currency, Money> _getInvestedByCurrency() {
     final Map<Currency, Money> totals = {};
 
-    for (final card in _cards) {
-      final limit = card.creditLimitMoney;
+    for (final fund in _funds) {
+      final invested = fund.investedMoney;
 
-      totals.update(card.currency, (value) => value.add(limit), ifAbsent: () => limit);
+      totals.update(fund.currency, (value) => value.add(invested), ifAbsent: () => invested);
     }
 
     return totals;
   }
 
-  /// ➕ Crear tarjeta
-  Future<void> _goToCreateCard() async {
-    final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const FormCreditCardScreen()));
+  /// ➕ Crear
+  Future<void> _goToCreate() async {
+    final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const FormInvestmentFundScreen()));
 
-    if (result == true) _loadCards();
+    if (result == true) _loadFunds();
   }
 
-  /// ✏️ Editar tarjeta
-  Future<void> _goToEditCard(CreditCard card) async {
-    final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => FormCreditCardScreen(card: card)));
+  /// ✏️ Editar
+  Future<void> _goToEdit(InvestmentFund fund) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => FormInvestmentFundScreen(fund: fund)),
+    );
 
-    if (result == true) _loadCards();
+    if (result == true) _loadFunds();
   }
 
-  /// ❌ DELETE
-  Future<void> _deleteCard(CreditCard card) async {
+  /// ❌ Delete
+  Future<void> _delete(InvestmentFund fund) async {
     final messenger = ScaffoldMessenger.of(context);
 
-    await _service.deleteCreditCard(card.id);
-    await _loadCards();
+    await _service.deleteFund(fund.id);
+    await _loadFunds();
 
     if (!mounted) return;
 
-    messenger.showSnackBar(const SnackBar(content: Text("Tarjeta eliminada")));
+    messenger.showSnackBar(const SnackBar(content: Text("Inversión eliminada")));
   }
 
   @override
   Widget build(BuildContext context) {
-    final limitsByCurrency = _getCreditLimitsByCurrency();
+    final totals = _getInvestedByCurrency();
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text("Tarjetas de crédito", style: AppTextStyles.h400(context)),
+        title: Text("Inversiones", style: AppTextStyles.h400(context)),
         backgroundColor: AppColors.background,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.complementary,
-        onPressed: _goToCreateCard,
+        onPressed: _goToCreate,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
@@ -113,22 +122,22 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_cards.isNotEmpty)
-                      /// 🔹 LÍNEA TOTAL
+                    /// 💰 TOTAL INVERTIDO
+                    if (_funds.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Línea total", style: AppTextStyles.caption(context)),
+                            Text("Total invertido", style: AppTextStyles.caption(context)),
                             const SizedBox(height: 4),
 
-                            if (limitsByCurrency.isEmpty)
+                            if (totals.isEmpty)
                               Text("0", style: AppTextStyles.balance(context))
                             else
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: limitsByCurrency.entries.map((entry) {
+                                children: totals.entries.map((entry) {
                                   final money = entry.value;
 
                                   return Text(
@@ -143,42 +152,41 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
 
                     const SizedBox(height: 24),
 
-                    /// 🔹 EMPTY STATE
-                    if (_cards.isEmpty)
+                    /// EMPTY
+                    if (_funds.isEmpty)
                       Expanded(
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.credit_card_outlined, size: 48, color: AppColors.textSecondary),
+                              const Icon(Icons.trending_up, size: 48, color: AppColors.textSecondary),
                               const SizedBox(height: 16),
-                              Text("No tienes tarjetas", style: AppTextStyles.subtitle1(context)),
+                              Text("No tienes inversiones", style: AppTextStyles.subtitle1(context)),
                               const SizedBox(height: 8),
                               Text(
-                                "Agrega una tarjeta para gestionar tu deuda inteligentemente",
+                                "Empieza a construir tu patrimonio registrando inversiones",
                                 style: AppTextStyles.caption(context),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 16),
-                              ElevatedButton(onPressed: _goToCreateCard, child: const Text("Agregar tarjeta")),
+                              ElevatedButton(onPressed: _goToCreate, child: const Text("Agregar inversión")),
                             ],
                           ),
                         ),
                       )
-                    /// 🔹 LISTA
                     else
                       Expanded(
                         child: RefreshIndicator(
-                          onRefresh: _loadCards,
+                          onRefresh: _loadFunds,
                           child: ListView.separated(
-                            itemCount: _cards.length,
+                            itemCount: _funds.length,
                             separatorBuilder: (_, _) => const SizedBox(height: 12),
                             itemBuilder: (context, index) {
-                              final card = _cards[index];
+                              final fund = _funds[index];
 
                               return SwipeToDelete(
-                                onDelete: () => _deleteCard(card),
-                                child: CreditCardCard(card: card, onTap: () => _goToEditCard(card)),
+                                onDelete: () => _delete(fund),
+                                child: InvestmentFundCard(fund: fund, onTap: () => _goToEdit(fund)),
                               );
                             },
                           ),

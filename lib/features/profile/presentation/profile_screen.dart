@@ -1,9 +1,9 @@
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/features/bank_accounts/presentation/bank_accounts_screen.dart';
-import 'package:cashflowiq/features/bank_entities/presentation/bank_entities_screen.dart';
-import 'package:cashflowiq/features/credit_cards/presentation/credit_cards_screen.dart';
-import 'package:cashflowiq/features/investment_fund/presentation/investment_funds_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/bank_accounts/bank_accounts_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/bank_entities/bank_entities_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/credit_cards/credit_cards_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/investment_fund/investment_funds_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 

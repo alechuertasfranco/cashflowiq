@@ -1,6 +1,6 @@
 // lib\shared\repositories\bank_entity_repository.dart
 
-import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
+import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 
 class BankEntityRepository {

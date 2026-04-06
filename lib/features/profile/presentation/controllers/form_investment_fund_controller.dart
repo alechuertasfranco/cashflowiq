@@ -1,8 +1,8 @@
 // lib/features/investment_fund/presentation/controllers/form_investment_fund_controller.dart
 
 import 'package:flutter/foundation.dart';
-import 'package:cashflowiq/features/investment_fund/data/investment_fund_service.dart';
-import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
+import 'package:cashflowiq/features/profile/data/investment_fund_service.dart';
+import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
 import 'package:cashflowiq/shared/models/investment_fund.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/currency.dart';

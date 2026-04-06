@@ -1,6 +1,10 @@
+// lib/features/main/presentation/main_screen.dart
+
 import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/features/main/presentation/widgets/custom_bottom_bar.dart';
 import 'package:cashflowiq/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/profile_screen.dart';
+import 'package:cashflowiq/features/transactions/presentation/transaction_type_screen.dart';
 import 'package:flutter/material.dart';
 
 class MainScreen extends StatefulWidget {
@@ -12,29 +16,43 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  late final PageController _pageController;
 
-  final List<Widget> _screens = const [DashboardScreen(), _TransactionsScreen(), _AddScreen(), _ReportsScreen(), ProfileScreen()];
+  final List<Widget> _screens = const [
+    DashboardScreen(),
+    _TransactionsScreen(),
+    TransactionTypeScreen(),
+    _ReportsScreen(),
+    ProfileScreen(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  void _onTabTapped(int index) {
+    setState(() => _currentIndex = index);
+
+    _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.swap_horiz), label: 'Movimientos'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: 'Agregar'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Reportes'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-        ],
+      backgroundColor: AppColors.background,
+
+      body: SafeArea(
+        child: PageView(
+          controller: _pageController,
+          physics: const BouncingScrollPhysics(),
+          onPageChanged: (index) => setState(() => _currentIndex = index),
+          children: _screens,
+        ),
       ),
+
+      bottomNavigationBar: CustomBottomBar(currentIndex: _currentIndex, onTap: _onTabTapped),
     );
   }
 }
@@ -45,15 +63,6 @@ class _TransactionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(child: Text("Movimientos"));
-  }
-}
-
-class _AddScreen extends StatelessWidget {
-  const _AddScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Agregar transacción"));
   }
 }
 

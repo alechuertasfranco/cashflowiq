@@ -3,7 +3,7 @@
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/color_selector.dart';
-import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
+import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:flutter/material.dart';
 

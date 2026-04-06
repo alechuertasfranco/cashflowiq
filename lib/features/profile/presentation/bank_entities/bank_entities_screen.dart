@@ -2,8 +2,8 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
-import 'package:cashflowiq/features/bank_entities/presentation/form_entities_screen.dart';
+import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
+import 'package:cashflowiq/features/profile/presentation/bank_entities/form_entities_screen.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:flutter/material.dart';
 

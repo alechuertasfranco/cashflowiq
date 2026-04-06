@@ -44,57 +44,12 @@ class InvestmentFundCard extends StatelessWidget {
             /// 💰 CAPITAL INVERTIDO (DECISIÓN)
             Text(money.format(), style: AppTextStyles.balance(context)),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
-            /// 🧠 CONTEXTO
-            Row(
-              children: [
-                Expanded(
-                  child: _InfoItem(label: "Entidad", value: fund.bankEntity.name),
-                ),
-                Expanded(
-                  child: _InfoItem(label: "Tipo", value: _typeToLabel(fund.fundType)),
-                ),
-              ],
-            ),
+            Text(fund.bankEntity.name, style: AppTextStyles.body2(context)),
           ],
         ),
       ),
-    );
-  }
-
-  String _typeToLabel(InvestmentFundType type) {
-    switch (type) {
-      case InvestmentFundType.mutualFund:
-        return "Fondos mutuos";
-      case InvestmentFundType.afp:
-        return "Fondo de pensiones";
-      case InvestmentFundType.insurance:
-        return "Seguro con devolución";
-      case InvestmentFundType.etf:
-        return "ETF";
-      case InvestmentFundType.other:
-        return "Otro";
-    }
-  }
-}
-
-/// 🔹 CONTEXTO
-class _InfoItem extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AppTextStyles.caption(context)),
-        const SizedBox(height: 2),
-        Text(value, style: AppTextStyles.body2(context)),
-      ],
     );
   }
 }
@@ -109,8 +64,8 @@ class _TypeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: AppColors.secondary, borderRadius: BorderRadius.circular(8)),
-      child: Text(type.name, style: AppTextStyles.caption(context)),
+      decoration: BoxDecoration(color: type.color, borderRadius: BorderRadius.circular(8)),
+      child: Text(type.toLabel(), style: AppTextStyles.caption(context)),
     );
   }
 }

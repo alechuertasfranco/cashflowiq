@@ -1,7 +1,7 @@
 // lib/features/credit_cards/presentation/controllers/form_credit_card_controller.dart
 
-import 'package:cashflowiq/features/credit_cards/data/credit_card_service.dart';
-import 'package:cashflowiq/features/bank_entities/data/bank_entity_service.dart';
+import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
+import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
 import 'package:cashflowiq/shared/models/credit_card.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
