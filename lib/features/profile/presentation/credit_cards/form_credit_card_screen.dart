@@ -139,7 +139,7 @@ class _FormCreditCardScreenState extends State<FormCreditCardScreen> {
                                   return DropdownMenuItem(value: b, child: Text(b.name.toUpperCase()));
                                 }).toList(),
                                 onChanged: controller.setBrand,
-                                decoration: inputDecoration("Selecciona una red de pago"),
+                                decoration: inputDecoration(context, "Selecciona una red de pago"),
                               ),
 
                               const SizedBox(height: 12),
@@ -165,7 +165,7 @@ class _FormCreditCardScreenState extends State<FormCreditCardScreen> {
                                   );
                                 }).toList(),
                                 onChanged: controller.setEntity,
-                                decoration: inputDecoration("Selecciona una entidad bancaria"),
+                                decoration: inputDecoration(context, "Selecciona una entidad bancaria"),
                               ),
                               Align(
                                 alignment: Alignment.centerRight,
@@ -257,7 +257,7 @@ class _FormCreditCardScreenState extends State<FormCreditCardScreen> {
       child: TextFormField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        decoration: inputDecoration(label),
+        decoration: inputDecoration(context, label),
         validator: (v) {
           if (!required) return null;
           if (v == null || v.isEmpty) return "Requerido";

@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_entities/form_entities_screen.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
@@ -84,22 +85,13 @@ class _BankEntitiesScreenState extends State<BankEntitiesScreen> {
               ? const Center(child: CircularProgressIndicator())
               : _entities.isEmpty
               /// 🔹 Estado vacío
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.account_balance_outlined, size: 48, color: AppColors.textSecondary),
-                      const SizedBox(height: 16),
-                      Text("No tienes entidades bancarias", style: AppTextStyles.subtitle1(context)),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Agrega bancos para estructurar tu dinero",
-                        style: AppTextStyles.caption(context),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(onPressed: _goToCreateEntity, child: const Text("Crear entidad")),
-                    ],
+              ? Expanded(
+                  child: InsightEmptyState(
+                    icon: Icons.account_balance_outlined,
+                    title: "No tienes entidades bancarias",
+                    description: "Agrega una entidad para empezar a entender tu dinero",
+                    actionText: "Crear entidad",
+                    onAction: _goToCreateEntity,
                   ),
                 )
               /// 🔹 Lista

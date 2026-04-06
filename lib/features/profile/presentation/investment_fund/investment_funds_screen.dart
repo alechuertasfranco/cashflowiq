@@ -1,5 +1,6 @@
 // lib/features/investment_fund/presentation/investment_funds_screen.dart
 
+import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
@@ -119,79 +120,62 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
           padding: const EdgeInsets.all(12),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
+              : _funds.isEmpty
+              ? Expanded(
+                  child: InsightEmptyState(
+                    icon: Icons.trending_up,
+                    title: "No tienes inversiones",
+                    description: "Empieza a construir tu patrimonio registrando inversiones",
+                    actionText: "Agregar inversión",
+                    onAction: _goToCreate,
+                  ),
+                )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// 💰 TOTAL INVERTIDO
-                    if (_funds.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Total invertido", style: AppTextStyles.caption(context)),
-                            const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Total invertido", style: AppTextStyles.caption(context)),
+                          const SizedBox(height: 4),
 
-                            if (totals.isEmpty)
-                              Text("0", style: AppTextStyles.balance(context))
-                            else
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: totals.entries.map((entry) {
-                                  final money = entry.value;
+                          if (totals.isEmpty)
+                            Text("0", style: AppTextStyles.balance(context))
+                          else
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: totals.entries.map((entry) {
+                                final money = entry.value;
 
-                                  return Text(
-                                    "${money.currency.flag ?? ''} ${money.format()}",
-                                    style: AppTextStyles.balance(context),
-                                  );
-                                }).toList(),
-                              ),
-                          ],
-                        ),
+                                return Text(
+                                  "${money.currency.flag ?? ''} ${money.format()}",
+                                  style: AppTextStyles.balance(context),
+                                );
+                              }).toList(),
+                            ),
+                        ],
                       ),
-
+                    ),
                     const SizedBox(height: 24),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _loadFunds,
+                        child: ListView.separated(
+                          itemCount: _funds.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final fund = _funds[index];
 
-                    /// EMPTY
-                    if (_funds.isEmpty)
-                      Expanded(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.trending_up, size: 48, color: AppColors.textSecondary),
-                              const SizedBox(height: 16),
-                              Text("No tienes inversiones", style: AppTextStyles.subtitle1(context)),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Empieza a construir tu patrimonio registrando inversiones",
-                                style: AppTextStyles.caption(context),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(onPressed: _goToCreate, child: const Text("Agregar inversión")),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: _loadFunds,
-                          child: ListView.separated(
-                            itemCount: _funds.length,
-                            separatorBuilder: (_, _) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final fund = _funds[index];
-
-                              return SwipeToDelete(
-                                onDelete: () => _delete(fund),
-                                child: InvestmentFundCard(fund: fund, onTap: () => _goToEdit(fund)),
-                              );
-                            },
-                          ),
+                            return SwipeToDelete(
+                              onDelete: () => _delete(fund),
+                              child: InvestmentFundCard(fund: fund, onTap: () => _goToEdit(fund)),
+                            );
+                          },
                         ),
                       ),
+                    ),
                   ],
                 ),
         ),

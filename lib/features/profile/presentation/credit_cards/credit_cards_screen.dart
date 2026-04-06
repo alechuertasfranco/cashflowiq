@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
 import 'package:cashflowiq/features/profile/presentation/credit_cards/form_credit_card_screen.dart';
@@ -110,80 +111,62 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
           padding: const EdgeInsets.all(12),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
+              : _cards.isEmpty
+              ? Expanded(
+                  child: InsightEmptyState(
+                    icon: Icons.credit_card_outlined,
+                    title: "No tienes tarjetas",
+                    description: "Agrega una tarjeta para gestionar tu deuda inteligentemente",
+                    actionText: "Agregar tarjeta",
+                    onAction: _goToCreateCard,
+                  ),
+                )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_cards.isNotEmpty)
-                      /// 🔹 LÍNEA TOTAL
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Línea total", style: AppTextStyles.caption(context)),
-                            const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Línea total", style: AppTextStyles.caption(context)),
+                          const SizedBox(height: 4),
 
-                            if (limitsByCurrency.isEmpty)
-                              Text("0", style: AppTextStyles.balance(context))
-                            else
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: limitsByCurrency.entries.map((entry) {
-                                  final money = entry.value;
+                          if (limitsByCurrency.isEmpty)
+                            Text("0", style: AppTextStyles.balance(context))
+                          else
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: limitsByCurrency.entries.map((entry) {
+                                final money = entry.value;
 
-                                  return Text(
-                                    "${money.currency.flag ?? ''} ${money.format()}",
-                                    style: AppTextStyles.balance(context),
-                                  );
-                                }).toList(),
-                              ),
-                          ],
-                        ),
+                                return Text(
+                                  "${money.currency.flag ?? ''} ${money.format()}",
+                                  style: AppTextStyles.balance(context),
+                                );
+                              }).toList(),
+                            ),
+                        ],
                       ),
-
+                    ),
                     const SizedBox(height: 24),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _loadCards,
+                        child: ListView.separated(
+                          itemCount: _cards.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final card = _cards[index];
 
-                    /// 🔹 EMPTY STATE
-                    if (_cards.isEmpty)
-                      Expanded(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.credit_card_outlined, size: 48, color: AppColors.textSecondary),
-                              const SizedBox(height: 16),
-                              Text("No tienes tarjetas", style: AppTextStyles.subtitle1(context)),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Agrega una tarjeta para gestionar tu deuda inteligentemente",
-                                style: AppTextStyles.caption(context),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(onPressed: _goToCreateCard, child: const Text("Agregar tarjeta")),
-                            ],
-                          ),
-                        ),
-                      )
-                    /// 🔹 LISTA
-                    else
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: _loadCards,
-                          child: ListView.separated(
-                            itemCount: _cards.length,
-                            separatorBuilder: (_, _) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final card = _cards[index];
-
-                              return SwipeToDelete(
-                                onDelete: () => _deleteCard(card),
-                                child: CreditCardCard(card: card, onTap: () => _goToEditCard(card)),
-                              );
-                            },
-                          ),
+                            return SwipeToDelete(
+                              onDelete: () => _deleteCard(card),
+                              child: CreditCardCard(card: card, onTap: () => _goToEditCard(card)),
+                            );
+                          },
                         ),
                       ),
+                    ),
                   ],
                 ),
         ),

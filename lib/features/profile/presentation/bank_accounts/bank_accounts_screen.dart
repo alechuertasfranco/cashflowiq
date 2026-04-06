@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_accounts/form_account_screen.dart';
@@ -102,6 +103,16 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
           padding: const EdgeInsets.all(12),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
+              : (_accounts.isEmpty)
+              ? Expanded(
+                  child: InsightEmptyState(
+                    icon: Icons.account_balance_outlined,
+                    title: "No tienes cuentas bancarias",
+                    description: "Agrega una cuenta para empezar a entender tu dinero",
+                    actionText: "Crear cuenta",
+                    onAction: _goToCreateAccount,
+                  ),
+                )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -133,57 +144,32 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                     ),
 
                     const SizedBox(height: 24),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _loadAccounts,
+                        child: ListView.separated(
+                          itemCount: _accounts.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final account = _accounts[index];
 
-                    /// 🔹 EMPTY STATE
-                    if (_accounts.isEmpty)
-                      Expanded(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.account_balance_outlined, size: 48, color: AppColors.textSecondary),
-                              const SizedBox(height: 16),
-                              Text("No tienes cuentas bancarias", style: AppTextStyles.subtitle1(context)),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Agrega una cuenta para empezar a entender tu dinero",
-                                style: AppTextStyles.caption(context),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(onPressed: _goToCreateAccount, child: const Text("Crear cuenta")),
-                            ],
-                          ),
-                        ),
-                      )
-                    /// 🔹 LISTA
-                    else
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: _loadAccounts,
-                          child: ListView.separated(
-                            itemCount: _accounts.length,
-                            separatorBuilder: (_, _) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final account = _accounts[index];
+                            return SwipeToDelete(
+                              onDelete: () async {
+                                final messenger = ScaffoldMessenger.of(context);
 
-                              return SwipeToDelete(
-                                onDelete: () async {
-                                  final messenger = ScaffoldMessenger.of(context);
+                                await _service.deleteAccount(account.id);
+                                await _loadAccounts();
 
-                                  await _service.deleteAccount(account.id);
-                                  await _loadAccounts();
+                                if (!mounted) return;
 
-                                  if (!mounted) return;
-
-                                  messenger.showSnackBar(const SnackBar(content: Text("Cuenta eliminada")));
-                                },
-                                child: BankAccountCard(account: account, onTap: () => _goToEditAccount(account)),
-                              );
-                            },
-                          ),
+                                messenger.showSnackBar(const SnackBar(content: Text("Cuenta eliminada")));
+                              },
+                              child: BankAccountCard(account: account, onTap: () => _goToEditAccount(account)),
+                            );
+                          },
                         ),
                       ),
+                    ),
                   ],
                 ),
         ),

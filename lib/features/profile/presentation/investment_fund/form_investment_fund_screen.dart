@@ -119,7 +119,7 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
                                   return DropdownMenuItem(value: t, child: Text(t.toLabel()));
                                 }).toList(),
                                 onChanged: controller.setType,
-                                decoration: inputDecoration("Selecciona tipo"),
+                                decoration: inputDecoration(context, "Selecciona tipo"),
                               ),
 
                               const SizedBox(height: 12),
@@ -145,7 +145,7 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
                                   );
                                 }).toList(),
                                 onChanged: controller.setEntity,
-                                decoration: inputDecoration("Selecciona una entidad bancaria"),
+                                decoration: inputDecoration(context, "Selecciona una entidad bancaria"),
                               ),
                               Align(
                                 alignment: Alignment.centerRight,
@@ -237,7 +237,7 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
       child: TextFormField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        decoration: inputDecoration(label),
+        decoration: inputDecoration(context, label),
         validator: (v) {
           if (!required) return null;
           if (v == null || v.isEmpty) return "Requerido";

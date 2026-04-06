@@ -27,6 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al iniciar sesión')));
     }
 
+    if (!mounted) return;
     setState(() => loading = false);
   }
 
@@ -77,7 +78,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 24),
 
-            ElevatedButton(onPressed: loading ? null : login, child: loading ? const CircularProgressIndicator() : const Text("Iniciar sesión")),
+            ElevatedButton(
+              onPressed: loading ? null : login,
+              child: loading ? const CircularProgressIndicator() : const Text("Iniciar sesión"),
+            ),
 
             const SizedBox(height: 16),
 

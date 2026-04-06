@@ -1,10 +1,11 @@
 import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
-InputDecoration inputDecoration(String hint) {
+InputDecoration inputDecoration(BuildContext context, String hint) {
   return InputDecoration(
     hintText: hint,
-    hintStyle: TextStyle(color: AppColors.muted),
+    hintStyle: AppTextStyles.subtitle2(context, color: AppColors.muted),
     filled: true,
     fillColor: AppColors.surface,
     border: OutlineInputBorder(

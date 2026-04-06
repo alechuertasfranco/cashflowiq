@@ -105,7 +105,7 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _nameController,
-                                decoration: inputDecoration("Ej: BCP Ahorros"),
+                                decoration: inputDecoration(context, "Ej: BCP Ahorros"),
                                 validator: (value) => value == null || value.isEmpty ? "Ingresa un nombre" : null,
                               ),
                               const SizedBox(height: 12),
@@ -115,7 +115,7 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                               TextFormField(
                                 controller: _amountController,
                                 keyboardType: TextInputType.number,
-                                decoration: inputDecoration("0.00"),
+                                decoration: inputDecoration(context, "0.00"),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return "Ingresa un monto";
@@ -148,7 +148,7 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                                   );
                                 }).toList(),
                                 onChanged: controller.setEntity,
-                                decoration: inputDecoration("Selecciona una entidad bancaria"),
+                                decoration: inputDecoration(context, "Selecciona una entidad bancaria"),
                               ),
                               Align(
                                 alignment: Alignment.centerRight,
