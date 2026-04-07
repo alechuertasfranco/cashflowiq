@@ -40,15 +40,15 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
   void initState() {
     super.initState();
 
+    parent = widget.parent;
     if (isEdit) {
       final c = widget.category!;
       _nameController.text = c.name;
       type = c.type;
       selectedIcon = c.icon;
-      parent = c.parent;
+      selectedColor = parseHexColor(c.color);
     } else {
       type = widget.initialType;
-      parent = widget.parent;
     }
   }
 

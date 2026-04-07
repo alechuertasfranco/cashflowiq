@@ -11,8 +11,8 @@ class CategoryCard extends StatelessWidget {
 
   final bool isExpanded;
   final VoidCallback? onToggle;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
+  final void Function(Category category)? onEdit;
+  final void Function(Category category)? onDelete;
 
   const CategoryCard({
     super.key,
@@ -24,13 +24,6 @@ class CategoryCard extends StatelessWidget {
   });
 
   bool get _isParent => category.parentId == null;
-
-  bool get _isIncome => category.type == CategoryType.income;
-
-  Color get _accentColor {
-    if (!_isParent) return AppColors.textSecondary;
-    return _isIncome ? AppColors.accent : AppColors.error;
-  }
 
   double get _iconSize => _isParent ? 36 : 24;
   double get _iconInnerSize => _isParent ? 22 : 14;
@@ -46,7 +39,7 @@ class CategoryCard extends StatelessWidget {
       color: AppColors.surface,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: _isParent ? onToggle : onEdit,
+        onTap: onToggle,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(children: [_buildIcon(), const SizedBox(width: 16), _buildContent(context), _buildActions()]),
@@ -57,11 +50,16 @@ class CategoryCard extends StatelessWidget {
 
   /// ---------------- ICON ----------------
   Widget _buildIcon() {
+    final categoryColor = parseHexColor(category.color);
+
+    final bgColor = _isParent ? categoryColor : getContrastColor(categoryColor);
+    final iconColor = _isParent ? getContrastColor(categoryColor) : categoryColor;
+
     return Container(
       width: _iconSize,
       height: _iconSize,
-      decoration: BoxDecoration(color: AppColors.secondary, borderRadius: BorderRadius.circular(_radius)),
-      child: Icon(parseIcon(category.icon), color: _accentColor, size: _iconInnerSize),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(_radius)),
+      child: Icon(parseIcon(category.icon), color: iconColor, size: _iconInnerSize),
     );
   }
 
@@ -75,9 +73,19 @@ class CategoryCard extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _ActionIcon(icon: Icons.edit, color: AppColors.complementary, size: _isParent ? 20 : 16, onPressed: onEdit),
+        _ActionIcon(
+          icon: Icons.edit,
+          color: AppColors.complementary,
+          size: _isParent ? 20 : 16,
+          onPressed: () => onEdit?.call(category),
+        ),
         const SizedBox(width: 8),
-        _ActionIcon(icon: Icons.delete_outline, color: AppColors.error, size: _isParent ? 20 : 16, onPressed: onDelete),
+        _ActionIcon(
+          icon: Icons.delete_outline,
+          color: AppColors.error,
+          size: _isParent ? 20 : 16,
+          onPressed: () => onDelete?.call(category),
+        ),
         if (_isParent) ...[
           const SizedBox(width: 4),
           _ActionIcon(

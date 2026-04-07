@@ -10,6 +10,15 @@ Color parseHexColor(String? hex) {
   return Color(int.parse(buffer.toString(), radix: 16));
 }
 
+bool isColorDark(Color color) {
+  final brightness = ThemeData.estimateBrightnessForColor(color);
+  return brightness == Brightness.dark;
+}
+
+Color getContrastColor(Color background) {
+  return isColorDark(background) ? Colors.white : Colors.black;
+}
+
 double parseToDouble(dynamic value) {
   if (value == null) return 0.0;
   if (value is num) return value.toDouble();

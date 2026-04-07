@@ -24,15 +24,6 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
 
   final service = CategoryService();
 
-  Future<void> _goToEditCategory() async {
-    final updated = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => FormCategoriesScreen(category: widget.parent)),
-    );
-
-    if (updated == true) widget.onUpdated?.call();
-  }
-
   Future<void> _goToCreateSubcategory() async {
     final created = await Navigator.push(
       context,
@@ -44,7 +35,19 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
     if (created == true) widget.onUpdated?.call();
   }
 
-  Future<void> _deleteCategory() async {
+  Future<void> _goToEditCategory(Category cat) async {
+    final updated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            FormCategoriesScreen(category: cat, parent: (cat.parentId == widget.parent.id) ? widget.parent : null),
+      ),
+    );
+
+    if (updated == true) widget.onUpdated?.call();
+  }
+
+  Future<void> _deleteCategory(Category cat) async {
     final confirm = await showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -65,7 +68,7 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
     );
 
     if (confirm == true) {
-      await service.deleteCategory(widget.parent);
+      await service.deleteCategory(cat);
       widget.onUpdated?.call();
     }
   }

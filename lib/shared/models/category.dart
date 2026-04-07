@@ -62,6 +62,6 @@ class Category {
   }
 
   Map<String, dynamic> toJson() {
-    return {"name": name, "type": type.toApi(), "icon": icon, "color": color, "parent_id": parentId};
+    return {"id": id, "name": name, "type": type.toApi(), "icon": icon, "color": color, "parent_id": parentId};
   }
 }
