@@ -97,7 +97,7 @@ class _ColorSelectorState extends State<ColorSelector> {
 
                 Text(
                   _selectedColor != null ? "Color seleccionado" : "Seleccionar color",
-                  style: AppTextStyles.subtitle2(context),
+                  style: _selectedColor != null ? AppTextStyles.body1(context) : AppTextStyles.subtitle2(context),
                 ),
 
                 const Spacer(),

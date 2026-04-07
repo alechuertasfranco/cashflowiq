@@ -16,6 +16,15 @@ enum CategoryType {
   }
 
   String toApi() => name.toUpperCase();
+
+  String toLabel() {
+    switch (this) {
+      case CategoryType.income:
+        return "Ingreso";
+      case CategoryType.expense:
+        return "Gasto";
+    }
+  }
 }
 
 class Category {
@@ -25,8 +34,19 @@ class Category {
   final String? icon;
   final String? color;
   final String? parentId;
+  final Category? parent;
+  final List<Category> children;
 
-  Category({required this.id, required this.name, required this.type, this.icon, this.color, this.parentId});
+  Category({
+    required this.id,
+    required this.name,
+    required this.type,
+    this.icon,
+    this.color,
+    this.parentId,
+    this.parent,
+    this.children = const [],
+  });
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
@@ -36,6 +56,8 @@ class Category {
       icon: json['icon'],
       color: json['color'],
       parentId: json['parent_id']?.toString(),
+      parent: json['parent'] != null ? Category.fromJson(json['parent']) : null,
+      children: json['children'] != null ? (json['children'] as List).map((e) => Category.fromJson(e)).toList() : [],
     );
   }
 

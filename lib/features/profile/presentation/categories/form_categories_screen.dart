@@ -1,3 +1,6 @@
+// lib/features/profile/presentation/categories/form_categories_screen.dart
+
+import 'package:cashflowiq/core/utils/format.dart';
 import 'package:cashflowiq/core/widgets/decorations.dart';
 import 'package:cashflowiq/core/widgets/icon_selector.dart';
 import 'package:flutter/material.dart';
@@ -9,9 +12,10 @@ import 'package:cashflowiq/shared/models/category.dart';
 
 class FormCategoriesScreen extends StatefulWidget {
   final CategoryType? initialType;
-  final String? parentId;
+  final Category? parent;
+  final Category? category;
 
-  const FormCategoriesScreen({super.key, this.initialType, this.parentId});
+  const FormCategoriesScreen({super.key, this.initialType, this.parent, this.category});
 
   @override
   State<FormCategoriesScreen> createState() => _FormCategoriesScreenState();
@@ -26,26 +30,26 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
   CategoryType? type;
   String? selectedIcon;
   Color? selectedColor;
-  String? parentId;
+  Category? parent;
 
   bool isSaving = false;
 
-  /// Iconos disponibles (controlados)
-  final List<IconData> icons = const [
-    Icons.attach_money,
-    Icons.work,
-    Icons.trending_up,
-    Icons.business,
-    Icons.card_giftcard,
-    Icons.savings,
-  ];
+  bool get isEdit => widget.category != null;
 
   @override
   void initState() {
     super.initState();
 
-    type = widget.initialType;
-    parentId = widget.parentId;
+    if (isEdit) {
+      final c = widget.category!;
+      _nameController.text = c.name;
+      type = c.type;
+      selectedIcon = c.icon;
+      parent = c.parent;
+    } else {
+      type = widget.initialType;
+      parent = widget.parent;
+    }
   }
 
   Future<void> submit() async {
@@ -59,16 +63,20 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
     setState(() => isSaving = true);
 
     try {
-      await service.createCategory(
-        Category(
-          id: '',
-          name: _nameController.text,
-          type: type!,
-          icon: selectedIcon,
-          color: selectedColor?.toARGB32().toRadixString(16).substring(2),
-          parentId: parentId,
-        ),
+      final category = Category(
+        id: isEdit ? widget.category!.id : '',
+        name: _nameController.text,
+        type: type!,
+        icon: selectedIcon,
+        color: selectedColor?.toARGB32().toRadixString(16).substring(2),
+        parentId: parent?.id,
       );
+
+      if (isEdit) {
+        await service.updateCategory(category);
+      } else {
+        await service.createCategory(category);
+      }
 
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -79,10 +87,13 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final title = isEdit ? "Editar categoría" : "Nueva categoría";
+    final buttonText = isEdit ? "Guardar cambios" : "Crear categoría";
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text("Nueva categoría", style: AppTextStyles.h400(context)),
+        title: Text(title, style: AppTextStyles.h400(context)),
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
@@ -94,16 +105,39 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (parent?.id != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: AppColors.secondary, borderRadius: BorderRadius.circular(8)),
+                    child: Row(
+                      children: [
+                        Icon(parseIcon(parent?.icon), size: 18, color: AppColors.primary),
+                        const SizedBox(width: 8),
+
+                        Expanded(
+                          child: Text(
+                            "Subcategoría de ${parent?.name ?? 'categoría padre'}",
+                            style: AppTextStyles.body2(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                ],
+
                 /// TYPE
                 Text("Tipo", style: AppTextStyles.subtitle2(context)),
                 const SizedBox(height: 8),
 
                 DropdownButtonFormField<CategoryType>(
                   initialValue: type,
-                  style: AppTextStyles.subtitle2(context),
+                  style: AppTextStyles.body1(context),
                   decoration: inputDecoration(context, "Selecciona tipo"),
                   items: CategoryType.values.map((e) {
-                    return DropdownMenuItem(value: e, child: Text(e.name.toUpperCase()));
+                    return DropdownMenuItem(value: e, child: Text(e.toLabel()));
                   }).toList(),
                   onChanged: (v) => setState(() => type = v),
                 ),
@@ -115,6 +149,7 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
                 const SizedBox(height: 8),
 
                 TextFormField(
+                  style: AppTextStyles.body1(context),
                   controller: _nameController,
                   decoration: inputDecoration(context, "Ej: Salario"),
                   validator: (v) => v == null || v.isEmpty ? "Requerido" : null,
@@ -122,19 +157,22 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
 
                 const SizedBox(height: 16),
 
-                /// ICON SELECTOR
+                /// ICON
                 Text("Icono", style: AppTextStyles.subtitle2(context)),
                 const SizedBox(height: 8),
 
-                IconSelector(onSelected: (icon) => selectedIcon = icon?.codePoint.toString()),
+                IconSelector(
+                  initialIcon: selectedIcon != null ? parseIcon(selectedIcon) : null,
+                  onSelected: (icon) => selectedIcon = icon?.codePoint.toString(),
+                ),
 
                 const SizedBox(height: 16),
 
-                /// COLOR SELECTOR (COLAPSABLE 🔥)
+                /// COLOR
                 Text("Color", style: AppTextStyles.subtitle2(context)),
                 const SizedBox(height: 8),
 
-                ColorSelector(onSelected: (color) => selectedColor = color),
+                ColorSelector(initialColor: selectedColor, onSelected: (color) => selectedColor = color),
 
                 const Spacer(),
 
@@ -146,7 +184,7 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
                     onPressed: isSaving ? null : submit,
                     child: isSaving
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : Text("Crear categoría", style: AppTextStyles.subtitle2(context, color: Colors.white)),
+                        : Text(buttonText, style: AppTextStyles.subtitle2(context, color: Colors.white)),
                   ),
                 ),
               ],

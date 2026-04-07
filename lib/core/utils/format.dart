@@ -23,3 +23,12 @@ int parseToInt(dynamic value) {
   if (value is String) return int.tryParse(value) ?? 0;
   throw Exception("Invalid int: $value");
 }
+
+IconData parseIcon(String? icon) {
+  if (icon == null) return Icons.category;
+
+  final code = int.tryParse(icon);
+  if (code == null) return Icons.category;
+
+  return IconData(code, fontFamily: 'MaterialIcons');
+}

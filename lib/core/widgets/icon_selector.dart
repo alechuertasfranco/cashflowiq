@@ -25,16 +25,16 @@ class _IconSelectorState extends State<IconSelector> {
       widget.icons ??
       [
         Icons.attach_money,
-        Icons.account_balance_wallet,
+        Icons.work,
         Icons.shopping_cart,
         Icons.fastfood,
+        Icons.sports_bar,
         Icons.directions_car,
         Icons.home,
         Icons.school,
-        Icons.work,
-        Icons.trending_up,
-        Icons.trending_down,
+        Icons.sports_soccer,
         Icons.credit_card,
+        Icons.casino,
         Icons.savings,
         Icons.card_giftcard,
         Icons.receipt_long,
@@ -83,7 +83,7 @@ class _IconSelectorState extends State<IconSelector> {
 
                 Text(
                   _selectedIcon != null ? "Ícono seleccionado" : "Seleccionar ícono",
-                  style: AppTextStyles.subtitle2(context),
+                  style: _selectedIcon != null ? AppTextStyles.body1(context) : AppTextStyles.subtitle2(context),
                 ),
 
                 const Spacer(),

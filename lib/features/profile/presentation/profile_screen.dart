@@ -2,8 +2,10 @@ import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_accounts/bank_accounts_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_entities/bank_entities_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/categories/categories_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/credit_cards/credit_cards_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/investment_fund/investment_funds_screen.dart';
+import 'package:cashflowiq/shared/models/category.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -21,7 +23,7 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,7 +35,7 @@ class ProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              /// User Info Card
+              /// User Card
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -56,80 +58,130 @@ class ProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              /// Financial Assets
-              Padding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
-                child: Text("Activos financieros", style: AppTextStyles.subtitle1(context)),
-              ),
+              /// Categorías
+              _SectionTitle("Categorías"),
               const SizedBox(height: 12),
+              _MenuCard(
+                items: [
+                  _MenuItem(
+                    icon: Icons.arrow_downward,
+                    title: "Categorías de ingresos",
+                    subtitle: "Organiza tus ingresos por categoría",
+                    onTap: () => _go(context, const CategoriesScreen(type: CategoryType.income)),
+                  ),
 
-              Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.domain, color: AppColors.textSecondary),
-                      title: Text("Entidades bancarias", style: AppTextStyles.body1(context)),
-                      subtitle: Text("Organiza tus cuentas por banco", style: AppTextStyles.caption(context)),
-                      onTap: () =>
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const BankEntitiesScreen())),
-                    ),
-                    const Divider(height: 1),
-
-                    ListTile(
-                      leading: const Icon(Icons.account_balance, color: AppColors.textSecondary),
-                      title: Text("Cuentas bancarias", style: AppTextStyles.body1(context)),
-                      subtitle: Text("Gestiona tu dinero disponible", style: AppTextStyles.caption(context)),
-                      onTap: () =>
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const BankAccountsScreen())),
-                    ),
-                    const Divider(height: 1),
-
-                    ListTile(
-                      leading: const Icon(Icons.credit_card, color: AppColors.textSecondary),
-                      title: Text("Tarjetas de crédito", style: AppTextStyles.body1(context)),
-                      subtitle: Text("Controla tu deuda y límites", style: AppTextStyles.caption(context)),
-                      onTap: () =>
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const CreditCardsScreen())),
-                    ),
-                    const Divider(height: 1),
-
-                    ListTile(
-                      leading: const Icon(Icons.trending_up, color: AppColors.textSecondary),
-                      title: Text("Fondos de inversión", style: AppTextStyles.body1(context)),
-                      subtitle: Text("Haz crecer tu dinero", style: AppTextStyles.caption(context)),
-                      onTap: () =>
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const InvestmentFundsScreen())),
-                    ),
-                  ],
-                ),
+                  _MenuItem(
+                    icon: Icons.arrow_upward,
+                    title: "Categorías de gastos",
+                    subtitle: "Organiza tus gastos por categoría",
+                    onTap: () => _go(context, const CategoriesScreen(type: CategoryType.expense)),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 24),
 
-              /// Actions
-              Padding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 8),
-                child: Text("Cuenta", style: AppTextStyles.subtitle1(context)),
-              ),
+              /// Activos financieros
+              _SectionTitle("Activos financieros"),
               const SizedBox(height: 12),
+              _MenuCard(
+                items: [
+                  _MenuItem(
+                    icon: Icons.domain,
+                    title: "Entidades bancarias",
+                    subtitle: "Organiza tus cuentas por banco",
+                    onTap: () => _go(context, const BankEntitiesScreen()),
+                  ),
+                  _MenuItem(
+                    icon: Icons.account_balance,
+                    title: "Cuentas bancarias",
+                    subtitle: "Gestiona tu dinero disponible",
+                    onTap: () => _go(context, const BankAccountsScreen()),
+                  ),
+                  _MenuItem(
+                    icon: Icons.credit_card,
+                    title: "Tarjetas de crédito",
+                    subtitle: "Controla tu deuda y límites",
+                    onTap: () => _go(context, const CreditCardsScreen()),
+                  ),
+                  _MenuItem(
+                    icon: Icons.trending_up,
+                    title: "Fondos de inversión",
+                    subtitle: "Haz crecer tu dinero",
+                    onTap: () => _go(context, const InvestmentFundsScreen()),
+                  ),
+                ],
+              ),
 
-              Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.logout, color: AppColors.textSecondary),
-                      title: Text("Cerrar sesión", style: AppTextStyles.body1(context)),
-                      onTap: () async {
-                        await _logout();
-                      },
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 24),
+
+              /// Cuenta
+              _SectionTitle("Cuenta"),
+              const SizedBox(height: 12),
+              _MenuCard(
+                items: [_MenuItem(icon: Icons.logout, title: "Cerrar sesión", onTap: _logout)],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _go(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+}
+
+/// 🔹 Section title reutilizable
+class _SectionTitle extends StatelessWidget {
+  final String title;
+
+  const _SectionTitle(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Text(title, style: AppTextStyles.subtitle1(context)),
+    );
+  }
+}
+
+/// 🔹 Card reutilizable
+class _MenuCard extends StatelessWidget {
+  final List<_MenuItem> items;
+
+  const _MenuCard({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Column(
+        children: List.generate(items.length, (index) {
+          return Column(children: [items[index], if (index != items.length - 1) const Divider(height: 1)]);
+        }),
+      ),
+    );
+  }
+}
+
+/// 🔹 Item reutilizable
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  const _MenuItem({required this.icon, required this.title, this.subtitle, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.textSecondary),
+      title: Text(title, style: AppTextStyles.body1(context)),
+      subtitle: subtitle != null ? Text(subtitle!, style: AppTextStyles.caption(context)) : null,
+      onTap: onTap,
     );
   }
 }
