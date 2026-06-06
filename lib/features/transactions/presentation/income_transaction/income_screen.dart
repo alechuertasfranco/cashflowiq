@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
+import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
@@ -29,7 +30,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
   Future<void> load() async {
     try {
-      final data = await service.getCategories(type: CategoryType.income);
+      final data = await service.getCategoriesWithChildren(type: CategoryType.income);
       setState(() {
         categories = data;
         isLoading = false;
@@ -81,6 +82,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
   }
 
   Widget _form() {
-    return Center(child: Text("Formulario de ingreso (siguiente paso)", style: AppTextStyles.body1(context)));
+    return IncomeFormScreen(categories: categories);
   }
 }
