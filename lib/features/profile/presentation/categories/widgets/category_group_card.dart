@@ -68,7 +68,7 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
     );
 
     if (confirm == true) {
-      await service.deleteCategory(cat);
+      await service.deleteCategory(cat.id);
       widget.onUpdated?.call();
     }
   }
@@ -84,6 +84,7 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
           onToggle: () => setState(() => expanded = !expanded),
           onEdit: _goToEditCategory,
           onDelete: _deleteCategory,
+          onBudgetUpdated: widget.onUpdated,
         ),
 
         /// HIJOS

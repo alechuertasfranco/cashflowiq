@@ -80,7 +80,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           : ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: roots.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (_, i) {
                 final parent = roots[i];
                 final children = parent.children;
