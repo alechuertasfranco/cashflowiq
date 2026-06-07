@@ -18,7 +18,7 @@ class AccountBalance {
       id: json['id'] as int,
       name: json['name'] as String,
       currencyCode: json['currency_code'] as String,
-      balance: (json['balance'] as num).toDouble(),
+      balance: double.parse(json['balance'].toString()),
     );
   }
 }
@@ -39,9 +39,9 @@ class DashboardSummary {
   factory DashboardSummary.fromJson(Map<String, dynamic> json) {
     final rawAccounts = json['accounts'] as List<dynamic>? ?? [];
     return DashboardSummary(
-      totalIncome: (json['total_income'] as num).toDouble(),
-      totalExpense: (json['total_expense'] as num).toDouble(),
-      netBalance: (json['net_balance'] as num).toDouble(),
+      totalIncome: double.parse(json['total_income'].toString()),
+      totalExpense: double.parse(json['total_expense'].toString()),
+      netBalance: double.parse(json['net_balance'].toString()),
       accounts: rawAccounts
           .map((a) => AccountBalance.fromJson(a as Map<String, dynamic>))
           .toList(),
