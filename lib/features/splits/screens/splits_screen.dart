@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/features/splits/data/split_service.dart';
 import 'package:cashflowiq/shared/models/transaction_split.dart';
@@ -266,12 +267,11 @@ class _SplitCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                'S/ ${split.amount.toStringAsFixed(2)}',
-                style: AppTextStyles.h500(
-                  context,
-                  color: split.isSettled ? AppColors.successStrong : AppColors.error,
-                ),
+              AmountText(
+                symbol: split.currencySymbol ?? '',
+                amount: split.amount,
+                style: AppTextStyles.h500(context),
+                color: split.isSettled ? AppColors.successStrong : AppColors.error,
               ),
               if (showSettleButton && onSettle != null) ...[
                 const SizedBox(height: 6),

@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
@@ -115,11 +116,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String _fmtDate(DateTime d) =>
       "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
 
-  String _fmtAmount(double amount) {
-    final abs = amount.abs();
-    final str = abs % 1 == 0 ? abs.toStringAsFixed(0) : abs.toStringAsFixed(2);
-    return str;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -318,9 +314,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            "$sign${_fmtAmount(tx.amount)}",
-            style: AppTextStyles.subtitle2(context, color: color),
+          AmountText(
+            symbol: tx.currencySymbol,
+            amount: tx.amount,
+            sign: sign.isEmpty ? null : sign,
+            style: AppTextStyles.subtitle2(context),
+            color: color,
           ),
         ],
       ),

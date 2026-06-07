@@ -1,5 +1,6 @@
 // lib/features/dashboard/presentation/dashboard_screen.dart
 
+import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -84,9 +85,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     final summary = _summary!;
-    final currencyCode = summary.accounts.isNotEmpty
-        ? summary.accounts.first.currencyCode
-        : 'USD';
 
     AccountBalance? topAccount;
     if (summary.accounts.isNotEmpty) {
@@ -101,8 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const _Header(),
         const SizedBox(height: 20),
         _BalanceCard(
-          currencyCode: currencyCode,
-          netBalance: summary.netBalance,
+          accounts: summary.accounts,
           totalIncome: summary.totalIncome,
           totalExpense: summary.totalExpense,
         ),
@@ -140,48 +137,152 @@ class _Header extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _BalanceCard extends StatelessWidget {
-  final String currencyCode;
-  final double netBalance;
+  final List<AccountBalance> accounts;
   final double totalIncome;
   final double totalExpense;
 
   const _BalanceCard({
-    required this.currencyCode,
-    required this.netBalance,
+    required this.accounts,
     required this.totalIncome,
     required this.totalExpense,
   });
 
+  static String _symbol(String code) {
+    const map = {
+      'PEN': 'S/',
+      'USD': '\$',
+      'EUR': '€',
+      'GBP': '£',
+      'CLP': '\$',
+      'COP': '\$',
+      'MXN': '\$',
+      'BRL': 'R\$',
+    };
+    return map[code] ?? code;
+  }
+
+  /// Sum account balances grouped by currency code.
+  Map<String, double> _balancesByCurrency() {
+    final map = <String, double>{};
+    for (final a in accounts) {
+      map[a.currencyCode] = (map[a.currencyCode] ?? 0) + a.balance;
+    }
+    return map;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final byCurrency = _balancesByCurrency();
+    final isSingleCurrency = byCurrency.length <= 1;
+    final singleCode = isSingleCurrency && byCurrency.isNotEmpty
+        ? byCurrency.keys.first
+        : null;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Balance actual', style: AppTextStyles.caption(context)),
-            const SizedBox(height: 8),
-            Text(
-              '$currencyCode ${netBalance.toStringAsFixed(2)}',
-              style: AppTextStyles.h100(context),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '+ Ingresos: $currencyCode ${totalIncome.toStringAsFixed(2)}',
-                  style: AppTextStyles.body2(context, color: AppColors.success),
-                ),
-                Text(
-                  '- Gastos: $currencyCode ${totalExpense.toStringAsFixed(2)}',
-                  style: AppTextStyles.body2(context, color: AppColors.error),
-                ),
-              ],
-            ),
+            Text('Balance total', style: AppTextStyles.caption(context)),
+            const SizedBox(height: 10),
+
+            // Per-currency balance rows
+            if (byCurrency.isEmpty)
+              Text(
+                'Sin cuentas registradas',
+                style: AppTextStyles.body1(context, color: AppColors.muted),
+              )
+            else
+              ...byCurrency.entries.map((e) {
+                final isPositive = e.value >= 0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      CurrencyBadge(code: e.key),
+                      const SizedBox(width: 10),
+                      AmountText(
+                        symbol: _symbol(e.key),
+                        amount: e.value,
+                        style: AppTextStyles.h100(context),
+                        color: isPositive ? AppColors.textPrimary : AppColors.error,
+                      ),
+                    ],
+                  ),
+                );
+              }),
+
+            // Income/expense stats only meaningful when single currency
+            if (isSingleCurrency && singleCode != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatChip(
+                      label: 'Ingresos',
+                      symbol: _symbol(singleCode),
+                      amount: totalIncome,
+                      sign: '+',
+                      color: AppColors.success,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _StatChip(
+                      label: 'Gastos',
+                      symbol: _symbol(singleCode),
+                      amount: totalExpense,
+                      sign: '-',
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String symbol;
+  final double amount;
+  final String sign;
+  final Color color;
+
+  const _StatChip({
+    required this.label,
+    required this.symbol,
+    required this.amount,
+    required this.sign,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTextStyles.caption(context, color: color)),
+          const SizedBox(height: 4),
+          AmountText(
+            symbol: symbol,
+            amount: amount,
+            sign: sign,
+            style: AppTextStyles.body2(context),
+            color: color,
+          ),
+        ],
       ),
     );
   }
@@ -235,9 +336,11 @@ class _InsightCard extends StatelessWidget {
                     topAccount!.name,
                     style: AppTextStyles.subtitle1(context),
                   ),
-                  Text(
-                    '${topAccount!.currencyCode} ${topAccount!.balance.toStringAsFixed(2)}',
-                    style: AppTextStyles.body2(context, color: AppColors.primary),
+                  AmountText(
+                    symbol: _BalanceCard._symbol(topAccount!.currencyCode),
+                    amount: topAccount!.balance,
+                    style: AppTextStyles.body2(context),
+                    color: AppColors.primary,
                   ),
                 ],
               ),
@@ -304,9 +407,11 @@ class _AccountRow extends StatelessWidget {
                 ],
               ),
             ),
-            Text(
-              account.balance.toStringAsFixed(2),
-              style: AppTextStyles.h600(context, color: AppColors.primary),
+            AmountText(
+              symbol: _BalanceCard._symbol(account.currencyCode),
+              amount: account.balance,
+              style: AppTextStyles.h600(context),
+              color: AppColors.primary,
             ),
           ],
         ),

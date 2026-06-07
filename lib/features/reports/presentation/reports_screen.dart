@@ -161,6 +161,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
+                const _CurrencyNote(),
+                const SizedBox(height: 12),
                 if (_cashflow != null) ...[
                   _CashflowCard(report: _cashflow!),
                   const SizedBox(height: 20),
@@ -593,6 +595,37 @@ class _EntityStat extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Multi-currency disclaimer
+// ---------------------------------------------------------------------------
+
+class _CurrencyNote extends StatelessWidget {
+  const _CurrencyNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.secondary,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, size: 14, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Los montos consolidan todas las cuentas. Si tienes cuentas en distintas monedas los totales mezclan divisas.',
+              style: AppTextStyles.caption(context, color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

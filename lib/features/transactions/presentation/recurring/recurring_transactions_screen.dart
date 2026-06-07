@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/transactions/data/recurring_transaction_service.dart';
@@ -199,9 +200,12 @@ class _RecurringRuleTile extends StatelessWidget {
                 ),
 
                 // Amount
-                Text(
-                  "${isIncome ? '+' : '-'} ${rule.amount.toStringAsFixed(2)}",
-                  style: AppTextStyles.h500(context, color: typeColor),
+                AmountText(
+                  symbol: rule.currencySymbol ?? '',
+                  amount: rule.amount,
+                  sign: isIncome ? '+' : '-',
+                  style: AppTextStyles.h500(context),
+                  color: typeColor,
                 ),
               ],
             ),

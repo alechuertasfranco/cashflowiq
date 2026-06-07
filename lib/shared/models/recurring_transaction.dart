@@ -53,6 +53,8 @@ class RecurringTransaction {
   final int? accountId;
   final int? creditCardId;
   final int? currencyId;
+  final String? currencyCode;
+  final String? currencySymbol;
 
   RecurringTransaction({
     required this.id,
@@ -68,6 +70,8 @@ class RecurringTransaction {
     this.accountId,
     this.creditCardId,
     this.currencyId,
+    this.currencyCode,
+    this.currencySymbol,
   });
 
   factory RecurringTransaction.fromJson(Map<String, dynamic> json) {
@@ -85,6 +89,8 @@ class RecurringTransaction {
       accountId: json['account_id'] != null ? parseToInt(json['account_id']) : null,
       creditCardId: json['credit_card_id'] != null ? parseToInt(json['credit_card_id']) : null,
       currencyId: json['currency_id'] != null ? parseToInt(json['currency_id']) : null,
+      currencyCode: json['currency_code'] as String?,
+      currencySymbol: json['currency_symbol'] as String?,
     );
   }
 

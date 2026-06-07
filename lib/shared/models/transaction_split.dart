@@ -10,6 +10,7 @@ class TransactionSplit {
   final double amount;
   final bool isSettled;
   final DateTime createdAt;
+  final String? currencySymbol;
 
   TransactionSplit({
     required this.id,
@@ -18,6 +19,7 @@ class TransactionSplit {
     required this.amount,
     required this.isSettled,
     required this.createdAt,
+    this.currencySymbol,
   });
 
   factory TransactionSplit.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class TransactionSplit {
       amount: parseToDouble(json['amount']),
       isSettled: json['is_settled'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
+      currencySymbol: json['currency_symbol'] as String?,
     );
   }
 }

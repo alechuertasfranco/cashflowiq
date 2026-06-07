@@ -38,6 +38,9 @@ class Transaction {
   final bool isRecurring;
   final bool isFixed;
 
+  final String currencyCode;
+  final String currencySymbol;
+
   Transaction({
     required this.id,
     required this.type,
@@ -50,6 +53,8 @@ class Transaction {
     this.toAccountId,
     this.isRecurring = false,
     this.isFixed = false,
+    this.currencyCode = '',
+    this.currencySymbol = '',
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -65,6 +70,8 @@ class Transaction {
       toAccountId: json['to_account_id']?.toString(),
       isRecurring: json['is_recurring'] ?? false,
       isFixed: json['is_fixed'] ?? false,
+      currencyCode: json['currency_code'] as String? ?? '',
+      currencySymbol: json['currency_symbol'] as String? ?? '',
     );
   }
 
