@@ -9,6 +9,10 @@ class TransactionService {
     return Transaction.fromJson(data);
   }
 
+  Future<void> deleteTransaction(String id) async {
+    await ApiClient.delete("/transactions/$id");
+  }
+
   Future<List<Transaction>> getTransactions({
     String? type,
     String? fromDate,

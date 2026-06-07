@@ -1,6 +1,8 @@
 // lib/features/transactions/presentation/transaction_type_screen.dart
 
+import 'package:cashflowiq/features/transactions/presentation/expense_transaction/expense_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_screen.dart';
+import 'package:cashflowiq/features/transactions/presentation/transfer_transaction/transfer_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
@@ -45,18 +47,14 @@ class TransactionTypeScreen extends StatelessWidget {
                       description: "Salida de dinero",
                       icon: Icons.arrow_upward,
                       color: AppColors.error,
-                      onTap: () {
-                        // TODO: navegar a form gasto
-                      },
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpenseScreen())),
                     ),
                     TransactionTypeCard(
                       title: "Transferencia",
                       description: "Entre tus cuentas",
                       icon: Icons.swap_horiz,
                       color: AppColors.primary,
-                      onTap: () {
-                        // TODO: navegar a form transferencia
-                      },
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransferScreen())),
                     ),
                     TransactionTypeCard(
                       title: "Split",
