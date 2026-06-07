@@ -5,6 +5,7 @@ import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/splits/data/contact_service.dart';
+import 'package:cashflowiq/features/splits/data/split_service.dart';
 import 'package:cashflowiq/features/splits/screens/form_contact_screen.dart';
 import 'package:cashflowiq/shared/models/contact.dart';
 import 'package:flutter/material.dart';
@@ -19,8 +20,11 @@ class ContactsScreen extends StatefulWidget {
 
 class _ContactsScreenState extends State<ContactsScreen> {
   final _service = ContactService();
+  final _splitService = SplitService();
 
   List<Contact> _contacts = [];
+  // contact.id → total unsettled amount they owe the user
+  Map<int, double> _balances = {};
   bool _isLoading = true;
 
   @override
@@ -32,10 +36,25 @@ class _ContactsScreenState extends State<ContactsScreen> {
   Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
-      final contacts = await _service.fetchAll();
+      final results = await Future.wait([
+        _service.fetchAll(),
+        _splitService.fetchSplits(settled: false, limit: 500),
+      ]);
       if (!mounted) return;
+
+      final contacts = results[0] as List<Contact>;
+      final unsettled = results[1] as List;
+
+      // Sum unsettled amounts per contact
+      final balances = <int, double>{};
+      for (final split in unsettled) {
+        final id = split.contact.id;
+        balances[id] = (balances[id] ?? 0) + split.amount;
+      }
+
       setState(() {
         _contacts = contacts;
+        _balances = balances;
         _isLoading = false;
       });
     } catch (e) {
@@ -352,6 +371,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                           onDelete: () => _delete(contact),
                           child: _ContactTile(
                             contact: contact,
+                            balance: _balances[contact.id],
                             onTap: () => _goToEdit(contact),
                           ),
                         );
@@ -365,9 +385,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
 class _ContactTile extends StatelessWidget {
   final Contact contact;
+  final double? balance;
   final VoidCallback onTap;
 
-  const _ContactTile({required this.contact, required this.onTap});
+  const _ContactTile({required this.contact, this.balance, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -419,9 +440,41 @@ class _ContactTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.muted, size: 20),
+            const SizedBox(width: 8),
+            _BalanceBadge(balance: balance),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BalanceBadge extends StatelessWidget {
+  final double? balance;
+
+  const _BalanceBadge({this.balance});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDebt = balance != null && balance! > 0.005;
+
+    if (!hasDebt) {
+      return Text(
+        'Al día',
+        style: AppTextStyles.caption(context, color: AppColors.muted),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.success.withAlpha(25),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'Te debe\n${balance!.toStringAsFixed(2)}',
+        textAlign: TextAlign.center,
+        style: AppTextStyles.caption(context, color: AppColors.successStrong),
       ),
     );
   }
