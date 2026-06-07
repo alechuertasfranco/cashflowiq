@@ -7,6 +7,7 @@ import 'package:cashflowiq/core/widgets/decorations.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/features/splits/data/contact_service.dart';
+import 'package:cashflowiq/features/splits/screens/contacts_screen.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:cashflowiq/shared/models/contact.dart';
@@ -120,6 +121,18 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
 
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  Future<void> _goToCreateContact() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ContactsScreen()),
+    );
+    // Reload contacts after returning so the picker is populated
+    final contacts = await _contactService.fetchAll();
+    if (!mounted) return;
+    setState(() => _allContacts = contacts);
+    if (_allContacts.isNotEmpty) _openContactsPicker();
+  }
 
   Future<void> _openContactsPicker() async {
     // Show a bottom sheet with all contacts not yet added
@@ -449,12 +462,14 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                             const SizedBox(height: 8),
                             OutlinedButton.icon(
                               onPressed: _allContacts.isEmpty
-                                  ? null
+                                  ? _goToCreateContact
                                   : _openContactsPicker,
                               icon: const Icon(Icons.person_add_alt_1,
                                   color: AppColors.primary),
                               label: Text(
-                                'Agregar participante',
+                                _allContacts.isEmpty
+                                    ? 'Crear contacto'
+                                    : 'Agregar participante',
                                 style: AppTextStyles.body1(context,
                                     color: AppColors.primary),
                               ),
