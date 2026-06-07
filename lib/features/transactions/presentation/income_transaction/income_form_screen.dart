@@ -159,11 +159,16 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     }
   }
 
-  List<Category> get _flatCategories {
-    final result = <Category>[];
+  List<(Category, String)> get _selectableCategories {
+    final result = <(Category, String)>[];
     for (final cat in widget.categories) {
-      result.add(cat);
-      result.addAll(cat.children);
+      if (cat.children.isEmpty) {
+        result.add((cat, cat.name));
+      } else {
+        for (final child in cat.children) {
+          result.add((child, '${cat.name} › ${child.name}'));
+        }
+      }
     }
     return result;
   }
@@ -228,10 +233,10 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                     const SizedBox(height: 8),
                     DropdownButtonFormField<Category>(
                       initialValue: _selectedCategory,
-                      items: _flatCategories.map((cat) {
+                      items: _selectableCategories.map((entry) {
                         return DropdownMenuItem<Category>(
-                          value: cat,
-                          child: Text(cat.name, style: AppTextStyles.body1(context)),
+                          value: entry.$1,
+                          child: Text(entry.$2, style: AppTextStyles.body1(context)),
                         );
                       }).toList(),
                       onChanged: (cat) => setState(() => _selectedCategory = cat),

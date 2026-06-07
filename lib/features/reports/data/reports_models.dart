@@ -41,6 +41,8 @@ class CashflowReport {
 class CategoryReport {
   final int categoryId;
   final String categoryName;
+  final int? parentCategoryId;
+  final String? parentCategoryName;
   final String currencyCode;
   final String currencySymbol;
   final double total;
@@ -49,6 +51,8 @@ class CategoryReport {
   const CategoryReport({
     required this.categoryId,
     required this.categoryName,
+    this.parentCategoryId,
+    this.parentCategoryName,
     required this.currencyCode,
     required this.currencySymbol,
     required this.total,
@@ -59,6 +63,8 @@ class CategoryReport {
     return CategoryReport(
       categoryId: json['category_id'] as int,
       categoryName: json['category_name'] as String,
+      parentCategoryId: json['parent_category_id'] as int?,
+      parentCategoryName: json['parent_category_name'] as String?,
       currencyCode: json['currency_code'] as String? ?? '',
       currencySymbol: json['currency_symbol'] as String? ?? '',
       total: double.parse(json['total'].toString()),

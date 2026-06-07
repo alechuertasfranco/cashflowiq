@@ -33,15 +33,7 @@ class CategoryCard extends StatelessWidget {
   double? get _amount => category.budget?.amount;
   double? get _spent => category.budget?.spent;
 
-  double get _iconSize => _isParent ? 36 : 24;
-  double get _iconInnerSize => _isParent ? 22 : 14;
-  double get _radius => _isParent ? 8 : 4;
-
-  TextStyle _textStyle(BuildContext context) {
-    return _isParent ? AppTextStyles.subtitle1(context) : AppTextStyles.subtitle2(context);
-  }
-
-  bool get _hasBudget => _amount != null;
+  bool get _hasBudget => _amount != null && _amount! > 0;
   Currency? get _budgetCurrency => category.budget?.currency;
 
   double? get _progress {
@@ -55,7 +47,6 @@ class CategoryCard extends StatelessWidget {
       backgroundColor: AppColors.surface,
       builder: (_) => FormBudgetScreen(category: category),
     );
-
     if (result == true) onBudgetUpdated?.call();
   }
 
@@ -63,143 +54,234 @@ class CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: AppColors.surface,
+      margin: EdgeInsets.zero,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: onToggle,
+        onTap: _isParent ? onToggle : null,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: _isParent ? 14 : 10,
+          ),
           child: Row(
-            children: [_buildIcon(), const SizedBox(width: 16), _buildContent(context), _buildActions(context)],
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildIcon(),
+              const SizedBox(width: 12),
+              Expanded(child: _buildContent(context)),
+              _buildActions(context),
+            ],
           ),
         ),
       ),
     );
   }
 
-  /// ---------------- ICON ----------------
-  Widget _buildIcon() {
-    final categoryColor = parseHexColor(category.color);
+  // ── Icon ──────────────────────────────────────────────────────────────────
 
-    final bgColor = _isParent ? categoryColor : getContrastColor(categoryColor);
-    final iconColor = _isParent ? getContrastColor(categoryColor) : categoryColor;
+  Widget _buildIcon() {
+    final cat = parseHexColor(category.color);
+    final double size = _isParent ? 38 : 28;
+    final double iconSize = _isParent ? 20 : 14;
+    final double radius = _isParent ? 10 : 6;
+
+    // Parent: solid color background, contrast icon
+    // Child: light tint background, saturated category color icon
+    final bgColor = _isParent ? cat : cat.withAlpha(30);
+    final iconColor = _isParent ? getContrastColor(cat) : cat;
 
     return Container(
-      width: _iconSize,
-      height: _iconSize,
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(_radius)),
-      child: Icon(parseIcon(category.icon), color: iconColor, size: _iconInnerSize),
-    );
-  }
-
-  /// ---------------- CONTENT ----------------
-  Widget _buildContent(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(category.name, style: _textStyle(context)),
-
-          /// 💡 PRESUPUESTO (solo padres)
-          if (_isParent && _hasBudget && _budgetCurrency != null) ...[
-            const SizedBox(height: 8),
-
-            /// monto
-            Text(
-              "${Money(amount: _spent ?? 0, currency: _budgetCurrency!).format()} / "
-              "${Money(amount: _amount!, currency: _budgetCurrency!).format()}",
-            ),
-
-            const SizedBox(height: 6),
-
-            /// barra progreso
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: _progress!.clamp(0, 1),
-                minHeight: 6,
-                backgroundColor: AppColors.border,
-                valueColor: AlwaysStoppedAnimation(_getProgressColor()),
-              ),
-            ),
-          ],
-
-          /// 💡 sin presupuesto
-          if (_isParent && !_hasBudget) ...[
-            const SizedBox(height: 8),
-            Text("Sin presupuesto", style: AppTextStyles.body2(context, color: AppColors.textSecondary)),
-          ],
-        ],
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(radius),
       ),
+      child: Icon(parseIcon(category.icon), color: iconColor, size: iconSize),
     );
   }
 
-  /// ---------------- ACTIONS ----------------
-  Widget _buildActions(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+  // ── Content ───────────────────────────────────────────────────────────────
+
+  Widget _buildContent(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_isParent) ...[
-          const SizedBox(width: 8),
-          _ActionIcon(
-            icon: Icons.account_balance_wallet_outlined,
-            color: AppColors.primary,
-            size: 20,
-            onPressed: () => _onSetBudget(context),
+        Text(
+          category.name,
+          style: _isParent
+              ? AppTextStyles.subtitle1(context)
+              : AppTextStyles.body2(context),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (_isParent && _hasBudget && _budgetCurrency != null) ...[
+          const SizedBox(height: 8),
+          _BudgetBar(
+            spent: _spent ?? 0,
+            amount: _amount!,
+            currency: _budgetCurrency!,
+            progress: (_progress ?? 0).clamp(0.0, 1.0),
+            progressColor: _progressColor,
           ),
         ],
-        _ActionIcon(
-          icon: Icons.edit,
-          color: AppColors.complementary,
-          size: _isParent ? 20 : 16,
-          onPressed: () => onEdit?.call(category),
-        ),
-        const SizedBox(width: 8),
-        _ActionIcon(
-          icon: Icons.delete_outline,
-          color: AppColors.error,
-          size: _isParent ? 20 : 16,
-          onPressed: () => onDelete?.call(category),
-        ),
-        if (_isParent) ...[
-          const SizedBox(width: 4),
-          _ActionIcon(
-            icon: isExpanded ? Icons.expand_less : Icons.expand_more,
-            color: AppColors.textSecondary,
-            size: 28,
-            onPressed: onToggle,
+        if (_isParent && !_hasBudget) ...[
+          const SizedBox(height: 2),
+          Text(
+            'Sin presupuesto',
+            style: AppTextStyles.caption(context, color: AppColors.muted),
           ),
         ],
       ],
     );
   }
 
-  Color _getProgressColor() {
-    if (_progress == null) return AppColors.border;
+  // ── Actions ───────────────────────────────────────────────────────────────
 
-    if (_progress! < 0.7) return AppColors.accent; // bien
-    if (_progress! < 1) return AppColors.complementary; // alerta
-    return AppColors.error; // sobre gasto
+  Widget _buildActions(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_isParent) ...[
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _onSetBudget(context),
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 18,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+        PopupMenuButton<String>(
+          iconSize: 18,
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.more_vert, color: AppColors.muted),
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  const Icon(Icons.edit_outlined, size: 16, color: AppColors.complementary),
+                  const SizedBox(width: 10),
+                  Text('Editar', style: AppTextStyles.body2(context)),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+                  const SizedBox(width: 10),
+                  Text('Eliminar', style: AppTextStyles.body2(context, color: AppColors.error)),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (value) {
+            if (value == 'edit') onEdit?.call(category);
+            if (value == 'delete') onDelete?.call(category);
+          },
+        ),
+        if (_isParent) ...[
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: AnimatedRotation(
+                turns: isExpanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: const Icon(Icons.keyboard_arrow_down, size: 22, color: AppColors.muted),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Color get _progressColor {
+    final p = _progress ?? 0;
+    if (p < 0.7) return AppColors.accent;
+    if (p < 1.0) return AppColors.complementary;
+    return AppColors.error;
   }
 }
 
-/// ---------------- REUSABLE ACTION ICON ----------------
-class _ActionIcon extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final double size;
-  final VoidCallback? onPressed;
+// ── Budget Bar ───────────────────────────────────────────────────────────────
 
-  const _ActionIcon({required this.icon, required this.color, required this.size, this.onPressed});
+class _BudgetBar extends StatelessWidget {
+  final double spent;
+  final double amount;
+  final Currency currency;
+  final double progress;
+  final Color progressColor;
+
+  const _BudgetBar({
+    required this.spent,
+    required this.amount,
+    required this.currency,
+    required this.progress,
+    required this.progressColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onPressed,
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(icon, size: size, color: color),
-      ),
+    final isOver = progress >= 1.0;
+    final remaining = amount - spent;
+    final pct = (progress * 100).round();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              Money(amount: spent, currency: currency).format(),
+              style: AppTextStyles.body2(context),
+            ),
+            Text(
+              '$pct%',
+              style: AppTextStyles.caption(context, color: progressColor),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 6,
+            backgroundColor: AppColors.border,
+            valueColor: AlwaysStoppedAnimation(progressColor),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              isOver
+                  ? 'Excedido: ${Money(amount: -remaining, currency: currency).format()}'
+                  : 'Disponible: ${Money(amount: remaining, currency: currency).format()}',
+              style: AppTextStyles.caption(
+                context,
+                color: isOver ? AppColors.error : AppColors.muted,
+              ),
+            ),
+            Text(
+              Money(amount: amount, currency: currency).format(),
+              style: AppTextStyles.caption(context, color: AppColors.muted),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
