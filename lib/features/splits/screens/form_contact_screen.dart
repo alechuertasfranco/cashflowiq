@@ -90,7 +90,8 @@ class _FormContactScreenState extends State<FormContactScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           Expanded(
             child: Padding(
@@ -193,6 +194,7 @@ class _FormContactScreenState extends State<FormContactScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

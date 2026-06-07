@@ -65,29 +65,31 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         onPressed: _goToCreateCategory,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : roots.isEmpty
-          ? InsightEmptyState(
-              icon: Icons.category_outlined,
-              title: "No tienes categorías",
-              description: isIncome
-                  ? "Agrega categorías para entender de dónde viene tu dinero"
-                  : "Agrega categorías para entender en qué gastas",
-              actionText: "Crear categoría",
-              onAction: _goToCreateCategory,
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: roots.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (_, i) {
-                final parent = roots[i];
-                final children = parent.children;
+      body: SafeArea(
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : roots.isEmpty
+            ? InsightEmptyState(
+                icon: Icons.category_outlined,
+                title: "No tienes categorías",
+                description: isIncome
+                    ? "Agrega categorías para entender de dónde viene tu dinero"
+                    : "Agrega categorías para entender en qué gastas",
+                actionText: "Crear categoría",
+                onAction: _goToCreateCategory,
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: roots.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (_, i) {
+                  final parent = roots[i];
+                  final children = parent.children;
 
-                return CategoryGroupCard(parent: parent, children: children, onUpdated: load);
-              },
-            ),
+                  return CategoryGroupCard(parent: parent, children: children, onUpdated: load);
+                },
+              ),
+      ),
     );
   }
 }

@@ -110,7 +110,8 @@ class _SplitsScreenState extends State<SplitsScreen>
           ],
         ),
       ),
-      body: TabBarView(
+      body: SafeArea(
+        child: TabBarView(
         controller: _tabController,
         children: [
           _SplitList(
@@ -134,6 +135,7 @@ class _SplitsScreenState extends State<SplitsScreen>
                 'Las deudas que hayas marcado como pagadas aparecerán aquí',
           ),
         ],
+      ),
       ),
     );
   }

@@ -301,7 +301,8 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
       ),
-      body: _isLoading
+      body: SafeArea(
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -530,6 +531,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                 ),
               ],
             ),
+      ),
     );
   }
 

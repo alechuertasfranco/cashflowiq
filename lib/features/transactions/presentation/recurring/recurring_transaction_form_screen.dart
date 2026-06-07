@@ -194,7 +194,8 @@ class _RecurringTransactionFormScreenState
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
       ),
-      body: _isLoading
+      body: SafeArea(
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -416,6 +417,7 @@ class _RecurringTransactionFormScreenState
                 ),
               ],
             ),
+      ),
     );
   }
 

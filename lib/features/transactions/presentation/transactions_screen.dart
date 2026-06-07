@@ -148,19 +148,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _typeFilterChips(),
-          if (_dateRange != null) _dateRangeBanner(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _transactions.isEmpty
-                    ? _emptyState()
-                    : _list(),
-          ),
-        ],
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _typeFilterChips(),
+            if (_dateRange != null) _dateRangeBanner(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _transactions.isEmpty
+                      ? _emptyState()
+                      : _list(),
+            ),
+          ],
+        ),
       ),
     );
   }
