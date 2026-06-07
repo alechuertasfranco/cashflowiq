@@ -1,5 +1,6 @@
 // lib/features/dashboard/presentation/dashboard_screen.dart
 
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
@@ -56,7 +57,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadSummary,
+          onRefresh: () async {
+            DataCache.instance.invalidate('dashboard_summary');
+            await _loadSummary();
+          },
           child: _buildBody(context),
         ),
       ),
@@ -100,6 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 20),
         _BalanceCard(
           accounts: summary.accounts,
+          netBalance: summary.netBalance,
           totalIncome: summary.totalIncome,
           totalExpense: summary.totalExpense,
         ),
@@ -138,11 +143,13 @@ class _Header extends StatelessWidget {
 
 class _BalanceCard extends StatelessWidget {
   final List<AccountBalance> accounts;
+  final double netBalance;
   final double totalIncome;
   final double totalExpense;
 
   const _BalanceCard({
     required this.accounts,
+    required this.netBalance,
     required this.totalIncome,
     required this.totalExpense,
   });
@@ -173,10 +180,7 @@ class _BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final byCurrency = _balancesByCurrency();
-    final isSingleCurrency = byCurrency.length <= 1;
-    final singleCode = isSingleCurrency && byCurrency.isNotEmpty
-        ? byCurrency.keys.first
-        : null;
+    final singleCode = byCurrency.length == 1 ? byCurrency.keys.first : null;
 
     return Card(
       child: Padding(
@@ -184,44 +188,37 @@ class _BalanceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Balance total', style: AppTextStyles.caption(context)),
-            const SizedBox(height: 10),
+            Row(
+              children: [
+                Text('Flujo del mes', style: AppTextStyles.caption(context)),
+                const Spacer(),
+                if (singleCode != null) CurrencyBadge(code: singleCode),
+              ],
+            ),
+            const SizedBox(height: 8),
 
-            // Per-currency balance rows
+            // Net = income − expense (month-to-date)
             if (byCurrency.isEmpty)
               Text(
                 'Sin cuentas registradas',
                 style: AppTextStyles.body1(context, color: AppColors.muted),
               )
             else
-              ...byCurrency.entries.map((e) {
-                final isPositive = e.value >= 0;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      CurrencyBadge(code: e.key),
-                      const SizedBox(width: 10),
-                      AmountText(
-                        symbol: _symbol(e.key),
-                        amount: e.value,
-                        style: AppTextStyles.h100(context),
-                        color: isPositive ? AppColors.textPrimary : AppColors.error,
-                      ),
-                    ],
-                  ),
-                );
-              }),
+              AmountText(
+                symbol: singleCode != null ? _symbol(singleCode) : '',
+                amount: netBalance,
+                style: AppTextStyles.h100(context),
+                color: netBalance >= 0 ? AppColors.textPrimary : AppColors.error,
+              ),
 
-            // Income/expense stats only meaningful when single currency
-            if (isSingleCurrency && singleCode != null) ...[
+            if (byCurrency.isNotEmpty) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: _StatChip(
                       label: 'Ingresos',
-                      symbol: _symbol(singleCode),
+                      symbol: singleCode != null ? _symbol(singleCode) : '',
                       amount: totalIncome,
                       sign: '+',
                       color: AppColors.success,
@@ -231,7 +228,7 @@ class _BalanceCard extends StatelessWidget {
                   Expanded(
                     child: _StatChip(
                       label: 'Gastos',
-                      symbol: _symbol(singleCode),
+                      symbol: singleCode != null ? _symbol(singleCode) : '',
                       amount: totalExpense,
                       sign: '-',
                       color: AppColors.error,
