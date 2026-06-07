@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/features/transactions/presentation/expense_transaction/expense_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_screen.dart';
+import 'package:cashflowiq/features/transactions/presentation/recurring/recurring_transactions_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/transfer_transaction/transfer_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
@@ -64,6 +65,16 @@ class TransactionTypeScreen extends StatelessWidget {
                       onTap: () {
                         // TODO: navegar a form split
                       },
+                    ),
+                    TransactionTypeCard(
+                      title: "Recurrentes",
+                      description: "Reglas automáticas",
+                      icon: Icons.repeat,
+                      color: AppColors.accent,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const RecurringTransactionsScreen()),
+                      ),
                     ),
                   ],
                 ),

@@ -1,0 +1,261 @@
+// lib/features/transactions/presentation/recurring/recurring_transactions_screen.dart
+
+import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
+import 'package:cashflowiq/features/transactions/data/recurring_transaction_service.dart';
+import 'package:cashflowiq/features/transactions/presentation/recurring/recurring_transaction_form_screen.dart';
+import 'package:cashflowiq/shared/models/recurring_transaction.dart';
+import 'package:flutter/material.dart';
+
+class RecurringTransactionsScreen extends StatefulWidget {
+  const RecurringTransactionsScreen({super.key});
+
+  @override
+  State<RecurringTransactionsScreen> createState() =>
+      _RecurringTransactionsScreenState();
+}
+
+class _RecurringTransactionsScreenState
+    extends State<RecurringTransactionsScreen> {
+  final _service = RecurringTransactionService();
+
+  List<RecurringTransaction> _rules = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _isLoading = true);
+    try {
+      final rules = await _service.fetchAll();
+      rules.sort((a, b) => a.nextExecutionDate.compareTo(b.nextExecutionDate));
+      if (!mounted) return;
+      setState(() {
+        _rules = rules;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Error loading recurring transactions: $e");
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error al cargar las reglas recurrentes")),
+      );
+    }
+  }
+
+  Future<void> _goToCreate() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RecurringTransactionFormScreen(),
+      ),
+    );
+    if (result == true) _load();
+  }
+
+  Future<void> _goToEdit(RecurringTransaction rule) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecurringTransactionFormScreen(existing: rule),
+      ),
+    );
+    if (result == true) _load();
+  }
+
+  Future<void> _delete(RecurringTransaction rule) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _service.delete(rule.id);
+      await _load();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text("Regla eliminada")),
+      );
+    } catch (e) {
+      debugPrint("Error deleting recurring rule: $e");
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text("Error al eliminar la regla")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text("Transacciones recurrentes", style: AppTextStyles.h400(context)),
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primary),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: _goToCreate,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _rules.isEmpty
+                ? InsightEmptyState(
+                    icon: Icons.repeat,
+                    title: "Sin reglas recurrentes",
+                    description:
+                        "Automatiza tus ingresos y gastos periódicos creando una regla recurrente",
+                    actionText: "Crear regla",
+                    onAction: _goToCreate,
+                  )
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _rules.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final rule = _rules[index];
+                        return SwipeToDelete(
+                          onDelete: () => _delete(rule),
+                          child: _RecurringRuleTile(
+                            rule: rule,
+                            onTap: () => _goToEdit(rule),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+      ),
+    );
+  }
+}
+
+class _RecurringRuleTile extends StatelessWidget {
+  final RecurringTransaction rule;
+  final VoidCallback onTap;
+
+  const _RecurringRuleTile({required this.rule, required this.onTap});
+
+  String _formatDate(DateTime date) =>
+      "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+
+  @override
+  Widget build(BuildContext context) {
+    final isIncome = rule.type == 'INCOME';
+    final typeColor = isIncome ? AppColors.success : AppColors.error;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Type indicator
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: typeColor.withAlpha(25),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                    color: typeColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Name and category
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(rule.name, style: AppTextStyles.h600(context)),
+                      if (rule.categoryName != null)
+                        Text(
+                          rule.categoryName!,
+                          style: AppTextStyles.caption(context,
+                              color: AppColors.textSecondary),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // Amount
+                Text(
+                  "${isIncome ? '+' : '-'} ${rule.amount.toStringAsFixed(2)}",
+                  style: AppTextStyles.h500(context, color: typeColor),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                // Frequency badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    rule.frequency.toLabel(),
+                    style: AppTextStyles.caption(context, color: AppColors.primary),
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Next execution date
+                const Icon(Icons.event, size: 14, color: AppColors.muted),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDate(rule.nextExecutionDate),
+                  style: AppTextStyles.caption(context),
+                ),
+
+                const Spacer(),
+
+                // Active indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: rule.isActive
+                        ? AppColors.success.withAlpha(25)
+                        : AppColors.muted.withAlpha(40),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    rule.isActive ? "Activo" : "Inactivo",
+                    style: AppTextStyles.caption(
+                      context,
+                      color: rule.isActive ? AppColors.successStrong : AppColors.muted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
