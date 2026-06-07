@@ -85,14 +85,12 @@ class _BankEntitiesScreenState extends State<BankEntitiesScreen> {
               ? const Center(child: CircularProgressIndicator())
               : _entities.isEmpty
               /// 🔹 Estado vacío
-              ? Expanded(
-                  child: InsightEmptyState(
-                    icon: Icons.account_balance_outlined,
-                    title: "No tienes entidades bancarias",
-                    description: "Agrega una entidad para empezar a entender tu dinero",
-                    actionText: "Crear entidad",
-                    onAction: _goToCreateEntity,
-                  ),
+              ? InsightEmptyState(
+                  icon: Icons.account_balance_outlined,
+                  title: "No tienes entidades bancarias",
+                  description: "Agrega una entidad para empezar a entender tu dinero",
+                  actionText: "Crear entidad",
+                  onAction: _goToCreateEntity,
                 )
               /// 🔹 Lista
               : RefreshIndicator(

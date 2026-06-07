@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
+import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/presentation/controllers/form_credit_card_controller.dart';
 import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
 import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
@@ -38,7 +39,12 @@ class _FormCreditCardScreenState extends State<FormCreditCardScreen> {
   void initState() {
     super.initState();
 
-    controller = FormCreditCardController(CreditCardService(), BankEntityService(), CurrencyService());
+    controller = FormCreditCardController(
+      CreditCardService(),
+      BankEntityService(),
+      CurrencyService(),
+      BankAccountService(),
+    );
     controller.addListener(() => setState(() {}));
     controller.init(widget.card);
 

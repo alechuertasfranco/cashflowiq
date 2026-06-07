@@ -44,6 +44,14 @@ class InvestmentFundCard extends StatelessWidget {
             /// 💰 CAPITAL INVERTIDO (DECISIÓN)
             Text(money.format(), style: AppTextStyles.balance(context)),
 
+            if (fund.currentValue != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                "Valor actual: ${fund.currentValueMoney!.format()}",
+                style: AppTextStyles.body2(context, color: AppColors.textSecondary),
+              ),
+            ],
+
             const SizedBox(height: 8),
 
             Text(fund.bankEntity.name, style: AppTextStyles.body2(context)),

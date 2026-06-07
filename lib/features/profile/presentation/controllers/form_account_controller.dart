@@ -38,18 +38,53 @@ class FormAccountController extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    final results = await Future.wait([_currencyService.getCurrencies(), _entityService.getEntities()]);
+    final results = await Future.wait([
+      _currencyService.getCurrencies(),
+      _entityService.getEntities(),
+      _service.getAccounts(),
+    ]);
 
     currencies = results[0] as List<Currency>;
     entities = results[1] as List<BankEntity>;
+    final existingAccounts = results[2] as List<BankAccount>;
 
     if (account != null) {
       selectedCurrency = account.balance.currency;
       selectedEntity = entities.firstWhere((e) => e.id == account.bankEntity.id);
+    } else {
+      selectedCurrency = _mostUsedCurrency(currencies, existingAccounts);
     }
 
     isLoading = false;
     notifyListeners();
+  }
+
+  /// Returns the currency used most often across [accounts], falling back to
+  /// the first entry of [currencies] when there is no data or a tie cannot
+  /// be broken (first-encountered wins on tie).
+  Currency? _mostUsedCurrency(List<Currency> currencies, List<BankAccount> accounts) {
+    if (currencies.isEmpty) return null;
+    if (accounts.isEmpty) return currencies.first;
+
+    final counts = <String, int>{};
+    for (final a in accounts) {
+      counts[a.currency.code] = (counts[a.currency.code] ?? 0) + 1;
+    }
+
+    String? topCode;
+    int topCount = 0;
+    for (final entry in counts.entries) {
+      if (entry.value > topCount) {
+        topCount = entry.value;
+        topCode = entry.key;
+      }
+    }
+
+    if (topCode == null) return currencies.first;
+    return currencies.firstWhere(
+      (c) => c.code == topCode,
+      orElse: () => currencies.first,
+    );
   }
 
   Future<void> submit({required String name, required String amount, BankAccount? original}) async {

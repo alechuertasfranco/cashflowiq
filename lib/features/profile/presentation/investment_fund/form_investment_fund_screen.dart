@@ -6,6 +6,7 @@ import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/decorations.dart';
 import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
 
+import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/presentation/controllers/form_investment_fund_controller.dart';
 import 'package:cashflowiq/features/profile/data/investment_fund_service.dart';
 
@@ -29,6 +30,7 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
 
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
+  final _currentValueController = TextEditingController();
 
   late final FormInvestmentFundController controller;
 
@@ -38,7 +40,12 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
   void initState() {
     super.initState();
 
-    controller = FormInvestmentFundController(InvestmentFundService(), BankEntityService(), CurrencyService());
+    controller = FormInvestmentFundController(
+      InvestmentFundService(),
+      BankEntityService(),
+      CurrencyService(),
+      BankAccountService(),
+    );
     controller.addListener(() => setState(() {}));
     controller.init(widget.fund);
 
@@ -46,6 +53,7 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
       final f = widget.fund!;
       _nameController.text = f.name;
       _amountController.text = f.investedAmount.toString();
+      _currentValueController.text = f.currentValue?.toString() ?? '';
     }
   }
 
@@ -68,6 +76,7 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
       await controller.submit(
         name: _nameController.text,
         investedAmount: _amountController.text,
+        currentValue: _currentValueController.text,
         original: widget.fund,
       );
 
@@ -110,6 +119,10 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
                               _label("Capital invertido"),
                               const SizedBox(height: 8),
                               _input("Ej: 10000.00", _amountController, isNumber: true),
+
+                              _label("Valor actual (opcional)"),
+                              const SizedBox(height: 8),
+                              _input("Ej: 11500.00", _currentValueController, isNumber: true, required: false),
 
                               _label("Tipo de fondo"),
                               const SizedBox(height: 8),

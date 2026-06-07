@@ -83,6 +83,9 @@ class InvestmentFund {
   /// 💰 Capital invertido (NO es balance disponible)
   final double investedAmount;
 
+  /// 📈 Valor actual del fondo (opcional, puede diferir del capital invertido)
+  final double? currentValue;
+
   /// 🧠 Tipo → clave para insights futuros
   final InvestmentFundType fundType;
 
@@ -93,13 +96,17 @@ class InvestmentFund {
     required this.id,
     required this.name,
     required this.investedAmount,
+    this.currentValue,
     required this.fundType,
     required this.currency,
     required this.bankEntity,
   });
 
-  /// 💰 Representación monetaria
+  /// 💰 Representación monetaria del capital invertido
   Money get investedMoney => Money(amount: investedAmount, currency: currency);
+
+  /// 📈 Representación monetaria del valor actual (null si no definido)
+  Money? get currentValueMoney => currentValue != null ? Money(amount: currentValue!, currency: currency) : null;
 
   /// 🧠 Identidad de dominio
   @override
@@ -115,6 +122,7 @@ class InvestmentFund {
       id: json['id'].toString(),
       name: json['name'] ?? '',
       investedAmount: parseToDouble(json['invested_amount']),
+      currentValue: json['current_value'] != null ? parseToDouble(json['current_value']) : null,
       fundType: InvestmentFundType.fromString(json['fund_type']),
       currency: Currency.fromMap(json['currency']),
       bankEntity: BankEntity.fromJson(json['bank_entity']),
@@ -126,6 +134,7 @@ class InvestmentFund {
     return {
       "name": name,
       "invested_amount": investedAmount,
+      if (currentValue != null) "current_value": currentValue,
       "fund_type": fundType.toApi(),
       "currency_id": currency.id,
       "bank_entity_id": bankEntity.id,
@@ -135,6 +144,7 @@ class InvestmentFund {
   InvestmentFund copyWith({
     String? name,
     double? investedAmount,
+    double? currentValue,
     InvestmentFundType? fundType,
     Currency? currency,
     BankEntity? bankEntity,
@@ -143,6 +153,7 @@ class InvestmentFund {
       id: id,
       name: name ?? this.name,
       investedAmount: investedAmount ?? this.investedAmount,
+      currentValue: currentValue ?? this.currentValue,
       fundType: fundType ?? this.fundType,
       currency: currency ?? this.currency,
       bankEntity: bankEntity ?? this.bankEntity,
