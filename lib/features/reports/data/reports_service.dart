@@ -4,12 +4,15 @@ import '../../../core/network/api_client.dart';
 import 'reports_models.dart';
 
 class ReportsService {
-  Future<CashflowReport> getCashflow({
+  Future<List<CashflowReport>> getCashflow({
     required int year,
     required int month,
   }) async {
     final json = await ApiClient.getJson('/reports/cashflow?year=$year&month=$month');
-    return CashflowReport.fromJson(json as Map<String, dynamic>);
+    final rawList = json as List<dynamic>;
+    return rawList
+        .map((item) => CashflowReport.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<CategoryReport>> getByCategory({

@@ -3,6 +3,8 @@
 class CashflowReport {
   final int year;
   final int month;
+  final String currencyCode;
+  final String currencySymbol;
   final double totalIncome;
   final double totalExpense;
   final double fixedExpense;
@@ -12,6 +14,8 @@ class CashflowReport {
   const CashflowReport({
     required this.year,
     required this.month,
+    required this.currencyCode,
+    required this.currencySymbol,
     required this.totalIncome,
     required this.totalExpense,
     required this.fixedExpense,
@@ -23,6 +27,8 @@ class CashflowReport {
     return CashflowReport(
       year: json['year'] as int,
       month: json['month'] as int,
+      currencyCode: json['currency_code'] as String? ?? '',
+      currencySymbol: json['currency_symbol'] as String? ?? '',
       totalIncome: double.parse(json['total_income'].toString()),
       totalExpense: double.parse(json['total_expense'].toString()),
       fixedExpense: double.parse(json['fixed_expense'].toString()),
@@ -35,12 +41,16 @@ class CashflowReport {
 class CategoryReport {
   final int categoryId;
   final String categoryName;
+  final String currencyCode;
+  final String currencySymbol;
   final double total;
   final double percentage;
 
   const CategoryReport({
     required this.categoryId,
     required this.categoryName,
+    required this.currencyCode,
+    required this.currencySymbol,
     required this.total,
     required this.percentage,
   });
@@ -49,6 +59,8 @@ class CategoryReport {
     return CategoryReport(
       categoryId: json['category_id'] as int,
       categoryName: json['category_name'] as String,
+      currencyCode: json['currency_code'] as String? ?? '',
+      currencySymbol: json['currency_symbol'] as String? ?? '',
       total: double.parse(json['total'].toString()),
       percentage: double.parse(json['percentage'].toString()),
     );
@@ -58,6 +70,8 @@ class CategoryReport {
 class EntityReport {
   final int entityId;
   final String entityName;
+  final String currencyCode;
+  final String currencySymbol;
   final double totalIncome;
   final double totalExpense;
   final double net;
@@ -65,6 +79,8 @@ class EntityReport {
   const EntityReport({
     required this.entityId,
     required this.entityName,
+    required this.currencyCode,
+    required this.currencySymbol,
     required this.totalIncome,
     required this.totalExpense,
     required this.net,
@@ -74,6 +90,8 @@ class EntityReport {
     return EntityReport(
       entityId: json['entity_id'] as int,
       entityName: json['entity_name'] as String,
+      currencyCode: json['currency_code'] as String? ?? '',
+      currencySymbol: json['currency_symbol'] as String? ?? '',
       totalIncome: double.parse(json['total_income'].toString()),
       totalExpense: double.parse(json['total_expense'].toString()),
       net: double.parse(json['net'].toString()),

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/amount_text.dart';
 import '../data/reports_models.dart';
 import '../data/reports_service.dart';
 
@@ -19,7 +20,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   late int _year;
   late int _month;
 
-  CashflowReport? _cashflow;
+  List<CashflowReport> _cashflows = [];
   List<CategoryReport> _categories = [];
   List<EntityReport> _entities = [];
 
@@ -55,7 +56,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       if (!mounted) return;
       setState(() {
-        _cashflow = results[0] as CashflowReport;
+        _cashflows = results[0] as List<CashflowReport>;
         _categories = results[1] as List<CategoryReport>;
         _entities = results[2] as List<EntityReport>;
         _isLoading = false;
@@ -96,6 +97,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
       }
     });
     _loadAll();
+  }
+
+  /// All distinct currency codes that appear in any of the three datasets.
+  List<String> get _currencyCodes {
+    final codes = <String>{
+      for (final r in _cashflows) r.currencyCode,
+      for (final r in _categories) r.currencyCode,
+      for (final r in _entities) r.currencyCode,
+    };
+    final sorted = codes.toList()..sort();
+    return sorted;
   }
 
   @override
@@ -156,25 +168,86 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ),
           )
+        else if (_currencyCodes.isEmpty)
+          SliverFillRemaining(
+            child: Center(
+              child: Text(
+                'Sin movimientos este mes',
+                style: AppTextStyles.body1(context, color: AppColors.muted),
+              ),
+            ),
+          )
         else
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const _CurrencyNote(),
-                const SizedBox(height: 12),
-                if (_cashflow != null) ...[
-                  _CashflowCard(report: _cashflow!),
-                  const SizedBox(height: 20),
-                ],
-                _CategorySection(categories: _categories),
-                const SizedBox(height: 20),
-                _EntitySection(entities: _entities),
-              ]),
+              delegate: SliverChildListDelegate(
+                _buildCurrencySections(context),
+              ),
             ),
           ),
       ],
     );
+  }
+
+  List<Widget> _buildCurrencySections(BuildContext context) {
+    final widgets = <Widget>[];
+
+    for (final code in _currencyCodes) {
+      final cashflow = _cashflows.where((r) => r.currencyCode == code).firstOrNull;
+      final categories = _categories.where((r) => r.currencyCode == code).toList();
+      final entities = _entities.where((r) => r.currencyCode == code).toList();
+      final symbol = cashflow?.currencySymbol ??
+          categories.firstOrNull?.currencySymbol ??
+          entities.firstOrNull?.currencySymbol ??
+          code;
+
+      // Currency section header
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  code,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Divider(color: AppColors.border, height: 1)),
+            ],
+          ),
+        ),
+      );
+
+      if (cashflow != null) {
+        widgets.add(_CashflowCard(report: cashflow, symbol: symbol));
+        widgets.add(const SizedBox(height: 16));
+      }
+
+      if (categories.isNotEmpty) {
+        widgets.add(_CategorySection(categories: categories, symbol: symbol));
+        widgets.add(const SizedBox(height: 16));
+      }
+
+      if (entities.isNotEmpty) {
+        widgets.add(_EntitySection(entities: entities, symbol: symbol));
+        widgets.add(const SizedBox(height: 16));
+      }
+    }
+
+    return widgets;
   }
 }
 
@@ -238,8 +311,9 @@ class _MonthSelector extends StatelessWidget {
 
 class _CashflowCard extends StatelessWidget {
   final CashflowReport report;
+  final String symbol;
 
-  const _CashflowCard({required this.report});
+  const _CashflowCard({required this.report, required this.symbol});
 
   @override
   Widget build(BuildContext context) {
@@ -254,13 +328,13 @@ class _CashflowCard extends StatelessWidget {
             Text('Flujo de caja', style: AppTextStyles.h500(context)),
             const SizedBox(height: 16),
 
-            // Income / Expense side by side
             Row(
               children: [
                 Expanded(
                   child: _SummaryTile(
                     label: 'Ingresos',
                     amount: report.totalIncome,
+                    symbol: symbol,
                     color: AppColors.success,
                     icon: Icons.arrow_downward_rounded,
                   ),
@@ -270,6 +344,7 @@ class _CashflowCard extends StatelessWidget {
                   child: _SummaryTile(
                     label: 'Gastos',
                     amount: report.totalExpense,
+                    symbol: symbol,
                     color: AppColors.error,
                     icon: Icons.arrow_upward_rounded,
                   ),
@@ -281,22 +356,22 @@ class _CashflowCard extends StatelessWidget {
             const Divider(height: 1, color: AppColors.border),
             const SizedBox(height: 16),
 
-            // Fixed vs variable
             _ExpenseRow(
               label: 'Gasto fijo',
               amount: report.fixedExpense,
+              symbol: symbol,
             ),
             const SizedBox(height: 8),
             _ExpenseRow(
               label: 'Gasto variable',
               amount: report.variableExpense,
+              symbol: symbol,
             ),
 
             const SizedBox(height: 16),
             const Divider(height: 1, color: AppColors.border),
             const SizedBox(height: 16),
 
-            // Savings rate
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -329,12 +404,14 @@ class _CashflowCard extends StatelessWidget {
 class _SummaryTile extends StatelessWidget {
   final String label;
   final double amount;
+  final String symbol;
   final Color color;
   final IconData icon;
 
   const _SummaryTile({
     required this.label,
     required this.amount,
+    required this.symbol,
     required this.color,
     required this.icon,
   });
@@ -358,11 +435,11 @@ class _SummaryTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            amount.toStringAsFixed(2),
-            style: AppTextStyles.h500(context, color: color),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          AmountText(
+            symbol: symbol,
+            amount: amount,
+            style: AppTextStyles.h500(context),
+            color: color,
           ),
         ],
       ),
@@ -373,8 +450,13 @@ class _SummaryTile extends StatelessWidget {
 class _ExpenseRow extends StatelessWidget {
   final String label;
   final double amount;
+  final String symbol;
 
-  const _ExpenseRow({required this.label, required this.amount});
+  const _ExpenseRow({
+    required this.label,
+    required this.amount,
+    required this.symbol,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -382,8 +464,9 @@ class _ExpenseRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: AppTextStyles.body1(context, color: AppColors.textSecondary)),
-        Text(
-          amount.toStringAsFixed(2),
+        AmountText(
+          symbol: symbol,
+          amount: amount,
           style: AppTextStyles.body1(context),
         ),
       ],
@@ -397,8 +480,9 @@ class _ExpenseRow extends StatelessWidget {
 
 class _CategorySection extends StatelessWidget {
   final List<CategoryReport> categories;
+  final String symbol;
 
-  const _CategorySection({required this.categories});
+  const _CategorySection({required this.categories, required this.symbol});
 
   @override
   Widget build(BuildContext context) {
@@ -412,27 +496,14 @@ class _CategorySection extends StatelessWidget {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: displayed.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        'Sin datos para este mes',
-                        style: AppTextStyles.body1(
-                          context,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ),
-                  )
-                : Column(
-                    children: [
-                      for (int i = 0; i < displayed.length; i++) ...[
-                        if (i > 0) const SizedBox(height: 14),
-                        _CategoryRow(report: displayed[i]),
-                      ],
-                    ],
-                  ),
+            child: Column(
+              children: [
+                for (int i = 0; i < displayed.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 14),
+                  _CategoryRow(report: displayed[i], symbol: symbol),
+                ],
+              ],
+            ),
           ),
         ),
       ],
@@ -442,8 +513,9 @@ class _CategorySection extends StatelessWidget {
 
 class _CategoryRow extends StatelessWidget {
   final CategoryReport report;
+  final String symbol;
 
-  const _CategoryRow({required this.report});
+  const _CategoryRow({required this.report, required this.symbol});
 
   @override
   Widget build(BuildContext context) {
@@ -464,9 +536,19 @@ class _CategoryRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '${report.total.toStringAsFixed(2)}  ${report.percentage.toStringAsFixed(1)}%',
-              style: AppTextStyles.caption(context),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AmountText(
+                  symbol: symbol,
+                  amount: report.total,
+                  style: AppTextStyles.caption(context),
+                ),
+                Text(
+                  '  ${report.percentage.toStringAsFixed(1)}%',
+                  style: AppTextStyles.caption(context),
+                ),
+              ],
             ),
           ],
         ),
@@ -491,8 +573,9 @@ class _CategoryRow extends StatelessWidget {
 
 class _EntitySection extends StatelessWidget {
   final List<EntityReport> entities;
+  final String symbol;
 
-  const _EntitySection({required this.entities});
+  const _EntitySection({required this.entities, required this.symbol});
 
   @override
   Widget build(BuildContext context) {
@@ -501,23 +584,10 @@ class _EntitySection extends StatelessWidget {
       children: [
         Text('Por entidad bancaria', style: AppTextStyles.h500(context)),
         const SizedBox(height: 12),
-        if (entities.isEmpty)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Center(
-                child: Text(
-                  'Sin datos para este mes',
-                  style: AppTextStyles.body1(context, color: AppColors.muted),
-                ),
-              ),
-            ),
-          )
-        else
-          for (final entity in entities) ...[
-            _EntityCard(report: entity),
-            const SizedBox(height: 8),
-          ],
+        for (final entity in entities) ...[
+          _EntityCard(report: entity, symbol: symbol),
+          const SizedBox(height: 8),
+        ],
       ],
     );
   }
@@ -525,8 +595,9 @@ class _EntitySection extends StatelessWidget {
 
 class _EntityCard extends StatelessWidget {
   final EntityReport report;
+  final String symbol;
 
-  const _EntityCard({required this.report});
+  const _EntityCard({required this.report, required this.symbol});
 
   @override
   Widget build(BuildContext context) {
@@ -544,6 +615,7 @@ class _EntityCard extends StatelessWidget {
                   child: _EntityStat(
                     label: 'Ingresos',
                     value: report.totalIncome,
+                    symbol: symbol,
                     color: AppColors.success,
                   ),
                 ),
@@ -551,6 +623,7 @@ class _EntityCard extends StatelessWidget {
                   child: _EntityStat(
                     label: 'Gastos',
                     value: report.totalExpense,
+                    symbol: symbol,
                     color: AppColors.error,
                   ),
                 ),
@@ -558,6 +631,7 @@ class _EntityCard extends StatelessWidget {
                   child: _EntityStat(
                     label: 'Neto',
                     value: report.net,
+                    symbol: symbol,
                     color: AppColors.primary,
                   ),
                 ),
@@ -573,11 +647,13 @@ class _EntityCard extends StatelessWidget {
 class _EntityStat extends StatelessWidget {
   final String label;
   final double value;
+  final String symbol;
   final Color color;
 
   const _EntityStat({
     required this.label,
     required this.value,
+    required this.symbol,
     required this.color,
   });
 
@@ -588,44 +664,13 @@ class _EntityStat extends StatelessWidget {
       children: [
         Text(label, style: AppTextStyles.caption(context)),
         const SizedBox(height: 2),
-        Text(
-          value.toStringAsFixed(2),
-          style: AppTextStyles.body1(context, color: color),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        AmountText(
+          symbol: symbol,
+          amount: value,
+          style: AppTextStyles.body1(context),
+          color: color,
         ),
       ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Multi-currency disclaimer
-// ---------------------------------------------------------------------------
-
-class _CurrencyNote extends StatelessWidget {
-  const _CurrencyNote();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.secondary,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, size: 14, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Los montos consolidan todas las cuentas. Si tienes cuentas en distintas monedas los totales mezclan divisas.',
-              style: AppTextStyles.caption(context, color: AppColors.primary),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
