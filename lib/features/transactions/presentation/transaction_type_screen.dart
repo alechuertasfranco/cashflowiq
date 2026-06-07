@@ -1,5 +1,6 @@
 // lib/features/transactions/presentation/transaction_type_screen.dart
 
+import 'package:cashflowiq/features/splits/screens/split_form_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/expense_transaction/expense_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/recurring/recurring_transactions_screen.dart';
@@ -62,9 +63,11 @@ class TransactionTypeScreen extends StatelessWidget {
                       description: "Gasto compartido",
                       icon: Icons.group,
                       color: AppColors.primary,
-                      onTap: () {
-                        // TODO: navegar a form split
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SplitFormScreen()),
+                      ),
                     ),
                     TransactionTypeCard(
                       title: "Recurrentes",
