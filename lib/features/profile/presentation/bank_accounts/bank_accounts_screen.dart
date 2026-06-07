@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
@@ -146,7 +147,10 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                     const SizedBox(height: 24),
                     Expanded(
                       child: RefreshIndicator(
-                        onRefresh: _loadAccounts,
+                        onRefresh: () async {
+                          DataCache.instance.invalidate('accounts');
+                          await _loadAccounts();
+                        },
                         child: ListView.separated(
                           itemCount: _accounts.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 12),

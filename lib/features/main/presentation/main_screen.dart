@@ -1,6 +1,7 @@
 // lib/features/main/presentation/main_screen.dart
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/features/main/presentation/widgets/custom_bottom_bar.dart';
 import 'package:cashflowiq/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/profile_screen.dart';
@@ -16,7 +17,7 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   late final PageController _pageController;
 
@@ -32,6 +33,21 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      DataCache.instance.clear();
+    }
   }
 
   void _onTabTapped(int index) {

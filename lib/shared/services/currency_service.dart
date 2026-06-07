@@ -1,17 +1,17 @@
 // lib\shared\services\currency_service.dart
 
 import 'package:cashflowiq/core/network/api_client.dart';
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 
 class CurrencyService {
-  /// 🧠 Cache en memoria
-  List<Currency>? _cache;
-
   /// 🌎 GET ALL CURRENCIES
   Future<List<Currency>> getCurrencies({bool forceRefresh = false}) async {
     try {
-      if (_cache != null && !forceRefresh) {
-        return _cache!;
+      const key = 'currencies';
+      if (!forceRefresh) {
+        final cached = DataCache.instance.get<List<Currency>>(key);
+        if (cached != null) return cached;
       }
 
       final List data = await ApiClient.getJson("/currencies");
@@ -20,7 +20,7 @@ class CurrencyService {
         return Currency.fromMap(json);
       }).toList();
 
-      _cache = currencies;
+      DataCache.instance.set(key, currencies);
 
       return currencies;
     } catch (e) {
@@ -36,10 +36,11 @@ class CurrencyService {
 
   /// ⚡ GET FROM CACHE (sync)
   Currency? getCachedByCode(String code) {
-    if (_cache == null) return null;
+    final cached = DataCache.instance.get<List<Currency>>('currencies');
+    if (cached == null) return null;
 
     try {
-      return _cache!.firstWhere((c) => c.code == code);
+      return cached.firstWhere((c) => c.code == code);
     } catch (_) {
       return null;
     }
@@ -47,7 +48,7 @@ class CurrencyService {
 
   /// 🔄 REFRESH CACHE
   Future<void> refresh() async {
-    _cache = null;
+    DataCache.instance.invalidate('currencies');
     await getCurrencies(forceRefresh: true);
   }
 

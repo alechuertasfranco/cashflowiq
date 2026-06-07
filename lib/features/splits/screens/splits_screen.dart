@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/features/splits/data/split_service.dart';
@@ -40,7 +41,8 @@ class _SplitsScreenState extends State<SplitsScreen>
     super.dispose();
   }
 
-  Future<void> _loadPending() async {
+  Future<void> _loadPending({bool invalidate = false}) async {
+    if (invalidate) DataCache.instance.invalidate('splits_pending');
     setState(() => _isLoadingPending = true);
     try {
       final splits = await _service.fetchSplits(settled: false);
@@ -56,7 +58,8 @@ class _SplitsScreenState extends State<SplitsScreen>
     }
   }
 
-  Future<void> _loadSettled() async {
+  Future<void> _loadSettled({bool invalidate = false}) async {
+    if (invalidate) DataCache.instance.invalidate('splits_settled');
     setState(() => _isLoadingSettled = true);
     try {
       final splits = await _service.fetchSplits(settled: true);
@@ -119,7 +122,7 @@ class _SplitsScreenState extends State<SplitsScreen>
             splits: _pending,
             isLoading: _isLoadingPending,
             showSettleButton: true,
-            onRefresh: _loadPending,
+            onRefresh: () => _loadPending(invalidate: true),
             onSettle: _settle,
             emptyTitle: 'Sin deudas pendientes',
             emptyDescription:
@@ -129,7 +132,7 @@ class _SplitsScreenState extends State<SplitsScreen>
             splits: _settled,
             isLoading: _isLoadingSettled,
             showSettleButton: false,
-            onRefresh: _loadSettled,
+            onRefresh: () => _loadSettled(invalidate: true),
             onSettle: null,
             emptyTitle: 'Sin deudas liquidadas',
             emptyDescription:

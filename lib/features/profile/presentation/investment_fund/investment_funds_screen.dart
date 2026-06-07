@@ -1,5 +1,6 @@
 // lib/features/investment_fund/presentation/investment_funds_screen.dart
 
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
@@ -161,7 +162,10 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
                     const SizedBox(height: 24),
                     Expanded(
                       child: RefreshIndicator(
-                        onRefresh: _loadFunds,
+                        onRefresh: () async {
+                          DataCache.instance.invalidate('investment_funds');
+                          await _loadFunds();
+                        },
                         child: ListView.separated(
                           itemCount: _funds.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 12),

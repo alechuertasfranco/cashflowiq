@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
@@ -241,7 +242,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final dateKeys = grouped.keys.toList();
 
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () async {
+        DataCache.instance.invalidatePrefix('transactions');
+        DataCache.instance.invalidate('categories_all');
+        DataCache.instance.invalidate('accounts');
+        DataCache.instance.invalidate('credit_cards');
+        await _load();
+      },
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         itemCount: dateKeys.length,

@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
@@ -152,7 +153,10 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
                     const SizedBox(height: 24),
                     Expanded(
                       child: RefreshIndicator(
-                        onRefresh: _loadCards,
+                        onRefresh: () async {
+                          DataCache.instance.invalidate('credit_cards');
+                          await _loadCards();
+                        },
                         child: ListView.separated(
                           itemCount: _cards.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 12),

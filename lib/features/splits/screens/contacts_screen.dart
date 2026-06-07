@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/splits/data/contact_service.dart';
@@ -358,7 +359,11 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     onAction: _goToCreate,
                   )
                 : RefreshIndicator(
-                    onRefresh: _load,
+                    onRefresh: () async {
+                      DataCache.instance.invalidate('contacts');
+                      DataCache.instance.invalidate('splits_pending');
+                      await _load();
+                    },
                     child: ListView.separated(
                       padding: const EdgeInsets.all(12),
                       itemCount: _contacts.length,

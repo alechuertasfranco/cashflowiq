@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_entities/form_entities_screen.dart';
@@ -94,7 +95,10 @@ class _BankEntitiesScreenState extends State<BankEntitiesScreen> {
                 )
               /// 🔹 Lista
               : RefreshIndicator(
-                  onRefresh: _loadEntities,
+                  onRefresh: () async {
+                    DataCache.instance.invalidate('bank_entities');
+                    await _loadEntities();
+                  },
                   child: ListView.separated(
                     itemCount: _entities.length,
                     separatorBuilder: (_, _) => const Divider(color: AppColors.border),

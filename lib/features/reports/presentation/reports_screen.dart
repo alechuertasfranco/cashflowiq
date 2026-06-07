@@ -1,5 +1,6 @@
 // lib/features/reports/presentation/reports_screen.dart
 
+import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -116,7 +117,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadAll,
+          onRefresh: () async {
+            DataCache.instance.invalidatePrefix('reports');
+            await _loadAll();
+          },
           child: _buildBody(context),
         ),
       ),
