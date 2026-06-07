@@ -5,6 +5,7 @@ import 'package:cashflowiq/features/main/presentation/widgets/custom_bottom_bar.
 import 'package:cashflowiq/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/profile_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/transaction_type_screen.dart';
+import 'package:cashflowiq/features/reports/presentation/reports_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/transactions_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -23,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     DashboardScreen(),
     TransactionsScreen(),
     TransactionTypeScreen(),
-    _ReportsScreen(),
+    ReportsScreen(),
     ProfileScreen(),
   ];
 
@@ -55,14 +56,5 @@ class _MainScreenState extends State<MainScreen> {
 
       bottomNavigationBar: CustomBottomBar(currentIndex: _currentIndex, onTap: _onTabTapped),
     );
-  }
-}
-
-class _ReportsScreen extends StatelessWidget {
-  const _ReportsScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Reportes"));
   }
 }
