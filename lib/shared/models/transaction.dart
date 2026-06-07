@@ -34,6 +34,7 @@ class Transaction {
   final String? accountId;
   final String? creditCardId;
   final String? toAccountId;
+  final String? toCreditCardId;
 
   final bool isRecurring;
   final bool isFixed;
@@ -51,6 +52,7 @@ class Transaction {
     this.accountId,
     this.creditCardId,
     this.toAccountId,
+    this.toCreditCardId,
     this.isRecurring = false,
     this.isFixed = false,
     this.currencyCode = '',
@@ -68,6 +70,7 @@ class Transaction {
       accountId: json['account_id']?.toString(),
       creditCardId: json['credit_card_id']?.toString(),
       toAccountId: json['to_account_id']?.toString(),
+      toCreditCardId: json['to_credit_card_id']?.toString(),
       isRecurring: json['is_recurring'] ?? false,
       isFixed: json['is_fixed'] ?? false,
       currencyCode: json['currency_code'] as String? ?? '',
@@ -85,6 +88,7 @@ class Transaction {
       "account_id": accountId,
       "credit_card_id": creditCardId,
       "to_account_id": toAccountId,
+      "to_credit_card_id": toCreditCardId,
       "is_recurring": isRecurring,
       "is_fixed": isFixed,
     };

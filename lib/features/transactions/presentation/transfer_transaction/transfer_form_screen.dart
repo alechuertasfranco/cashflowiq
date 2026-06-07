@@ -3,8 +3,10 @@
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
+import 'package:cashflowiq/shared/models/credit_card.dart';
 import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:flutter/material.dart';
 
@@ -23,17 +25,41 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
   final _descriptionController = TextEditingController();
 
   final _transactionService = TransactionService();
+  final _creditCardService = CreditCardService();
 
   BankAccount? _fromAccount;
   BankAccount? _toAccount;
+  bool _toCard = false;
+  String? _toCreditCardId;
+  List<CreditCard> _creditCards = [];
+  bool _isLoadingCards = true;
+
   DateTime _selectedDate = DateTime.now();
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   @override
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final cards = await _creditCardService.getCreditCards();
+      setState(() {
+        _creditCards = cards;
+        _isLoadingCards = false;
+      });
+    } catch (_) {
+      setState(() => _isLoadingCards = false);
+    }
   }
 
   Future<void> _pickDate() async {
@@ -49,17 +75,33 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_fromAccount == null || _toAccount == null) {
+    if (_fromAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Selecciona las cuentas de origen y destino")),
+        const SnackBar(content: Text("Selecciona la cuenta de origen")),
       );
       return;
     }
-    if (_fromAccount!.id == _toAccount!.id) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Las cuentas de origen y destino deben ser diferentes")),
-      );
-      return;
+
+    if (_toCard) {
+      if (_toCreditCardId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Selecciona una tarjeta de crédito de destino")),
+        );
+        return;
+      }
+    } else {
+      if (_toAccount == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Selecciona la cuenta de destino")),
+        );
+        return;
+      }
+      if (_fromAccount!.id == _toAccount!.id) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Las cuentas de origen y destino deben ser diferentes")),
+        );
+        return;
+      }
     }
 
     setState(() => _isSaving = true);
@@ -72,7 +114,8 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
           amount: double.parse(_amountController.text.trim()),
           date: _selectedDate,
           accountId: _fromAccount!.id,
-          toAccountId: _toAccount!.id,
+          toAccountId: _toCard ? null : _toAccount!.id,
+          toCreditCardId: _toCard ? _toCreditCardId : null,
           description: _descriptionController.text.trim().isNotEmpty
               ? _descriptionController.text.trim()
               : null,
@@ -93,6 +136,10 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingCards) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Column(
       children: [
         Expanded(
@@ -162,27 +209,18 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    _label("Cuenta destino"),
+                    _label("Destino"),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<BankAccount>(
-                      initialValue: _toAccount,
-                      items: widget.accounts.map((acc) {
-                        return DropdownMenuItem<BankAccount>(
-                          value: acc,
-                          child: Text(acc.name, style: AppTextStyles.body1(context)),
-                        );
-                      }).toList(),
-                      onChanged: (acc) => setState(() => _toAccount = acc),
-                      decoration: inputDecoration(context, "Selecciona la cuenta de destino"),
-                      validator: (v) => v == null ? "Selecciona la cuenta de destino" : null,
-                    ),
+                    _destinationToggle(),
+                    const SizedBox(height: 12),
+                    _destinationDropdown(),
                     const SizedBox(height: 16),
 
                     _label("Descripción (opcional)"),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _descriptionController,
-                      decoration: inputDecoration(context, "Ej: Ahorro mensual"),
+                      decoration: inputDecoration(context, "Ej: Pago de tarjeta"),
                       maxLines: 2,
                     ),
                     const SizedBox(height: 16),
@@ -245,6 +283,113 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _destinationToggle() {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() {
+              _toCard = false;
+              _toCreditCardId = null;
+            }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: !_toCard ? AppColors.primary : AppColors.surface,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Center(
+                child: Text(
+                  "Cuenta bancaria",
+                  style: AppTextStyles.body2(
+                    context,
+                    color: !_toCard ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() {
+              _toCard = true;
+              _toAccount = null;
+            }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: _toCard ? AppColors.primary : AppColors.surface,
+                borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Center(
+                child: Text(
+                  "Tarjeta de crédito",
+                  style: AppTextStyles.body2(
+                    context,
+                    color: _toCard ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _destinationDropdown() {
+    if (!_toCard) {
+      if (widget.accounts.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            "No tienes cuentas bancarias registradas",
+            style: AppTextStyles.body2(context, color: AppColors.muted),
+          ),
+        );
+      }
+      return DropdownButtonFormField<BankAccount>(
+        initialValue: _toAccount,
+        items: widget.accounts.map((acc) {
+          return DropdownMenuItem<BankAccount>(
+            value: acc,
+            child: Text(acc.name, style: AppTextStyles.body1(context)),
+          );
+        }).toList(),
+        onChanged: (acc) => setState(() => _toAccount = acc),
+        decoration: inputDecoration(context, "Selecciona la cuenta de destino"),
+        validator: (v) => v == null ? "Selecciona la cuenta de destino" : null,
+      );
+    }
+
+    if (_creditCards.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          "No tienes tarjetas de crédito registradas",
+          style: AppTextStyles.body2(context, color: AppColors.muted),
+        ),
+      );
+    }
+    return DropdownButtonFormField<String>(
+      initialValue: _toCreditCardId,
+      items: _creditCards.map((card) {
+        return DropdownMenuItem<String>(
+          value: card.id,
+          child: Text(card.name, style: AppTextStyles.body1(context)),
+        );
+      }).toList(),
+      onChanged: (id) => setState(() => _toCreditCardId = id),
+      decoration: inputDecoration(context, "Selecciona una tarjeta"),
+      validator: (v) => v == null ? "Selecciona una tarjeta" : null,
     );
   }
 

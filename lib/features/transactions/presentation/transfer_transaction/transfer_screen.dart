@@ -51,7 +51,7 @@ class _TransferScreenState extends State<TransferScreen> {
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : accounts.length < 2
+            : accounts.isEmpty
             ? _emptyState()
             : TransferFormScreen(accounts: accounts),
       ),
@@ -61,8 +61,8 @@ class _TransferScreenState extends State<TransferScreen> {
   Widget _emptyState() {
     return InsightEmptyState(
       icon: Icons.account_balance,
-      title: "Necesitas al menos 2 cuentas",
-      description: "Para registrar una transferencia debes tener al menos dos cuentas bancarias activas",
+      title: "Necesitas al menos 1 cuenta",
+      description: "Para registrar una transferencia debes tener al menos una cuenta bancaria activa",
       actionText: "Ir a mis cuentas",
       onAction: () => Navigator.pop(context),
     );
