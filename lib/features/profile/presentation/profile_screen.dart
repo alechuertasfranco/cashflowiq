@@ -5,6 +5,7 @@ import 'package:cashflowiq/features/profile/presentation/bank_entities/bank_enti
 import 'package:cashflowiq/features/profile/presentation/categories/categories_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/credit_cards/credit_cards_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/investment_fund/investment_funds_screen.dart';
+import 'package:cashflowiq/features/splits/screens/contacts_screen.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -109,6 +110,22 @@ class ProfileScreen extends StatelessWidget {
                     title: "Fondos de inversión",
                     subtitle: "Haz crecer tu dinero",
                     onTap: () => _go(context, const InvestmentFundsScreen()),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              /// Contactos
+              _SectionTitle("Contactos"),
+              const SizedBox(height: 12),
+              _MenuCard(
+                items: [
+                  _MenuItem(
+                    icon: Icons.people,
+                    title: "Mis contactos",
+                    subtitle: "Gestiona contactos para gastos compartidos",
+                    onTap: () => _go(context, const ContactsScreen()),
                   ),
                 ],
               ),
