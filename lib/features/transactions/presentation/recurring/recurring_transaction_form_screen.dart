@@ -1,5 +1,6 @@
 // lib/features/transactions/presentation/recurring/recurring_transaction_form_screen.dart
 
+import 'package:cashflowiq/core/services/notification_service.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
@@ -43,7 +44,9 @@ class _RecurringTransactionFormScreenState
   bool _isSaving = false;
 
   String _type = 'INCOME'; // INCOME | EXPENSE
+  bool _isFixedAmount = true;
   RecurringFrequency _frequency = RecurringFrequency.monthly;
+  int? _notificationDaysBefore;
   Category? _selectedCategory;
   BankAccount? _selectedAccount;
   Currency? _selectedCurrency; // only used when no account is selected
@@ -54,7 +57,6 @@ class _RecurringTransactionFormScreenState
     final wanted = _type == 'INCOME' ? CategoryType.income : CategoryType.expense;
     return _categories.where((c) => c.type == wanted).toList();
   }
-
 
   bool get _isEditing => widget.existing != null;
 
@@ -93,11 +95,15 @@ class _RecurringTransactionFormScreenState
       if (_isEditing) {
         final e = widget.existing!;
         _nameController.text = e.name;
-        _amountController.text = e.amount.toString();
+        _isFixedAmount = e.amount != null;
+        if (_isFixedAmount && e.amount != null) {
+          _amountController.text = e.amount.toString();
+        }
         _type = e.type;
         _frequency = e.frequency;
         _nextExecutionDate = e.nextExecutionDate;
         _endDate = e.endDate;
+        _notificationDaysBefore = e.notificationDaysBefore;
 
         if (e.categoryId != null) {
           try {
@@ -149,9 +155,15 @@ class _RecurringTransactionFormScreenState
 
     setState(() => _isSaving = true);
 
+    // Cancel the old notification when editing before saving
+    if (_isEditing) {
+      NotificationService.instance
+          .cancelRecurringNotification(widget.existing!.id);
+    }
+
     final payload = <String, dynamic>{
       'name': _nameController.text.trim(),
-      'amount': double.parse(_amountController.text.trim()),
+      'amount': _isFixedAmount ? double.parse(_amountController.text.trim()) : null,
       'type': _type,
       'frequency': _frequency.toApi(),
       'next_execution_date': _nextExecutionDate.toIso8601String(),
@@ -160,14 +172,20 @@ class _RecurringTransactionFormScreenState
       if (_selectedAccount != null) 'account_id': int.tryParse(_selectedAccount!.id),
       if (_selectedAccount == null && _selectedCurrency != null)
         'currency_id': _selectedCurrency!.id,
+      'notification_days_before': _notificationDaysBefore,
     };
 
     try {
+      RecurringTransaction result;
       if (_isEditing) {
-        await _recurringService.update(widget.existing!.id, payload);
+        result = await _recurringService.update(widget.existing!.id, payload);
       } else {
-        await _recurringService.create(payload);
+        result = await _recurringService.create(payload);
       }
+
+      // Schedule the notification for the saved rule
+      await NotificationService.instance.scheduleRecurringNotification(result);
+
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
@@ -229,23 +247,32 @@ class _RecurringTransactionFormScreenState
                             ),
                             const SizedBox(height: 16),
 
-                            // Amount
-                            _label("Monto"),
+                            // Amount type toggle
+                            _label("Tipo de monto"),
                             const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _amountController,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(decimal: true),
-                              decoration: inputDecoration(context, "0.00"),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return "Ingresa un monto";
-                                final parsed = double.tryParse(v);
-                                if (parsed == null) return "Monto inválido";
-                                if (parsed <= 0) return "El monto debe ser mayor a 0";
-                                return null;
-                              },
-                            ),
+                            _amountTypeToggle(),
                             const SizedBox(height: 16),
+
+                            // Amount (only when fixed)
+                            if (_isFixedAmount) ...[
+                              _label("Monto"),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _amountController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(decimal: true),
+                                decoration: inputDecoration(context, "0.00"),
+                                validator: (v) {
+                                  if (!_isFixedAmount) return null;
+                                  if (v == null || v.isEmpty) return "Ingresa un monto";
+                                  final parsed = double.tryParse(v);
+                                  if (parsed == null) return "Monto inválido";
+                                  if (parsed <= 0) return "El monto debe ser mayor a 0";
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                            ],
 
                             // Category (filtered by type)
                             _label("Categoría"),
@@ -338,6 +365,43 @@ class _RecurringTransactionFormScreenState
                                 if (f != null) setState(() => _frequency = f);
                               },
                               decoration: inputDecoration(context, "Frecuencia"),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Notification reminder
+                            _label("Recordatorio"),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<int?>(
+                              value: _notificationDaysBefore,
+                              items: const [
+                                DropdownMenuItem<int?>(
+                                  value: null,
+                                  child: Text("Sin recordatorio"),
+                                ),
+                                DropdownMenuItem<int?>(
+                                  value: 0,
+                                  child: Text("El mismo día"),
+                                ),
+                                DropdownMenuItem<int?>(
+                                  value: 1,
+                                  child: Text("1 día antes"),
+                                ),
+                                DropdownMenuItem<int?>(
+                                  value: 3,
+                                  child: Text("3 días antes"),
+                                ),
+                                DropdownMenuItem<int?>(
+                                  value: 7,
+                                  child: Text("7 días antes"),
+                                ),
+                              ],
+                              onChanged: (v) => setState(() => _notificationDaysBefore = v),
+                              decoration: inputDecoration(context, "Sin recordatorio"),
+                            ),
+                            const SizedBox(height: 10),
+                            _NotificationInfoBox(
+                              notificationDaysBefore: _notificationDaysBefore,
+                              isFixedAmount: _isFixedAmount,
                             ),
                             const SizedBox(height: 16),
 
@@ -477,6 +541,62 @@ class _RecurringTransactionFormScreenState
     );
   }
 
+  Widget _amountTypeToggle() {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => _isFixedAmount = true),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: _isFixedAmount ? AppColors.primary : AppColors.surface,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Center(
+                child: Text(
+                  "Monto fijo",
+                  style: AppTextStyles.body2(
+                    context,
+                    color: _isFixedAmount ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() {
+              _isFixedAmount = false;
+              _amountController.clear();
+            }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: !_isFixedAmount ? AppColors.primary : AppColors.surface,
+                borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Center(
+                child: Text(
+                  "Monto variable",
+                  style: AppTextStyles.body2(
+                    context,
+                    color: !_isFixedAmount ? Colors.white : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _datePicker({
     required IconData icon,
     required String label,
@@ -484,6 +604,7 @@ class _RecurringTransactionFormScreenState
     Color? labelColor,
     Widget? trailing,
   }) {
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -505,9 +626,59 @@ class _RecurringTransactionFormScreenState
               ),
             ),
             const Spacer(),
-            ?trailing,
+            if (trailing != null) trailing,
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NotificationInfoBox extends StatelessWidget {
+  final int? notificationDaysBefore;
+  final bool isFixedAmount;
+
+  const _NotificationInfoBox({
+    required this.notificationDaysBefore,
+    required this.isFixedAmount,
+  });
+
+  String get _message {
+    if (notificationDaysBefore == null) {
+      return 'Sin recordatorio: la transacción se creará automáticamente en la fecha de ejecución, sin necesidad de acción.';
+    }
+    final when = switch (notificationDaysBefore) {
+      0 => 'el mismo día de la ejecución',
+      1 => '1 día antes',
+      _ => '$notificationDaysBefore días antes',
+    };
+    if (isFixedAmount) {
+      return 'Recibirás una notificación $when. Al tocarla, la transacción se registrará automáticamente.';
+    } else {
+      return 'Recibirás una notificación $when para ingresar el monto manualmente.';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.secondary,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline, size: 15, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _message,
+              style: AppTextStyles.caption(context, color: AppColors.primary),
+            ),
+          ),
+        ],
       ),
     );
   }
