@@ -13,7 +13,9 @@ class InvestmentFundCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final money = fund.investedMoney;
+    final hasCurrentValue = fund.currentValue != null;
+    final diff = hasCurrentValue ? fund.currentValue! - fund.investedAmount : null;
+    final isGain = diff != null && diff >= 0;
 
     return GestureDetector(
       onTap: onTap,
@@ -27,12 +29,15 @@ class InvestmentFundCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 🔹 HEADER
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(fund.name, style: AppTextStyles.subtitle1(context), overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    fund.name,
+                    style: AppTextStyles.subtitle1(context),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 _TypeBadge(type: fund.fundType),
@@ -41,19 +46,32 @@ class InvestmentFundCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            /// 💰 CAPITAL INVERTIDO (DECISIÓN)
-            Text(money.format(), style: AppTextStyles.balance(context)),
+            // Primary: current value if available, otherwise invested amount
+            Text(
+              hasCurrentValue
+                  ? fund.currentValueMoney!.format()
+                  : fund.investedMoney.format(),
+              style: AppTextStyles.balance(context),
+            ),
 
-            if (fund.currentValue != null) ...[
+            if (hasCurrentValue) ...[
               const SizedBox(height: 4),
+              // Secondary: invested amount
               Text(
-                "Valor actual: ${fund.currentValueMoney!.format()}",
+                "Invertido: ${fund.investedMoney.format()}",
                 style: AppTextStyles.body2(context, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 6),
+              // Diff chip: gain or loss
+              _DiffChip(
+                diff: diff!,
+                symbol: fund.currency.symbol,
+                decimals: fund.currency.decimals,
+                isGain: isGain,
               ),
             ],
 
             const SizedBox(height: 8),
-
             Text(fund.bankEntity.name, style: AppTextStyles.body2(context)),
           ],
         ),
@@ -62,7 +80,47 @@ class InvestmentFundCard extends StatelessWidget {
   }
 }
 
-/// 🔹 BADGE DE TIPO (contexto, no decisión)
+class _DiffChip extends StatelessWidget {
+  final double diff;
+  final String symbol;
+  final int decimals;
+  final bool isGain;
+
+  const _DiffChip({
+    required this.diff,
+    required this.symbol,
+    required this.decimals,
+    required this.isGain,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isGain ? AppColors.success : AppColors.error;
+    final sign = isGain ? '+' : '';
+    final label = '$sign$symbol ${diff.abs().toStringAsFixed(decimals)}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(26),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isGain ? Icons.trending_up : Icons.trending_down,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(label, style: AppTextStyles.caption(context, color: color)),
+        ],
+      ),
+    );
+  }
+}
+
 class _TypeBadge extends StatelessWidget {
   final InvestmentFundType type;
 

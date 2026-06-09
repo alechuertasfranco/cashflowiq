@@ -9,6 +9,7 @@ import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 
 import 'package:cashflowiq/features/profile/data/investment_fund_service.dart';
 import 'package:cashflowiq/features/profile/presentation/investment_fund/form_investment_fund_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/investment_fund/fund_detail_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/investment_fund/widgets/card.dart';
 
 import 'package:cashflowiq/shared/models/investment_fund.dart';
@@ -77,14 +78,14 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
     if (result == true) _loadFunds();
   }
 
-  /// ✏️ Editar
-  Future<void> _goToEdit(InvestmentFund fund) async {
-    final result = await Navigator.push(
+  /// 🔍 Ver detalle / historial
+  Future<void> _goToDetail(InvestmentFund fund) async {
+    await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => FormInvestmentFundScreen(fund: fund)),
+      MaterialPageRoute(builder: (_) => FundDetailScreen(fund: fund)),
     );
-
-    if (result == true) _loadFunds();
+    // Reload in case current_value was updated from detail
+    _loadFunds();
   }
 
   /// ❌ Delete
@@ -174,7 +175,7 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
 
                             return SwipeToDelete(
                               onDelete: () => _delete(fund),
-                              child: InvestmentFundCard(fund: fund, onTap: () => _goToEdit(fund)),
+                              child: InvestmentFundCard(fund: fund, onTap: () => _goToDetail(fund)),
                             );
                           },
                         ),
