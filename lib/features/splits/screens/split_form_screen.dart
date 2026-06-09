@@ -389,7 +389,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                                     items: _accounts.map((acc) {
                                       return DropdownMenuItem<BankAccount>(
                                         value: acc,
-                                        child: Text(acc.name,
+                                        child: Text("${acc.bankEntity.code} · ${acc.name}",
                                             style:
                                                 AppTextStyles.body1(context)),
                                       );

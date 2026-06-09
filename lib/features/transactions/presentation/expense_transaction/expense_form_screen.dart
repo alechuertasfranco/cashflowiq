@@ -378,7 +378,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         items: _accounts.map((acc) {
           return DropdownMenuItem<BankAccount>(
             value: acc,
-            child: Text(acc.name, style: AppTextStyles.body1(context)),
+            child: Text("${acc.bankEntity.code} · ${acc.name}", style: AppTextStyles.body1(context)),
           );
         }).toList(),
         onChanged: (acc) => setState(() => _selectedAccount = acc),
@@ -401,7 +401,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       items: _creditCards.map((card) {
         return DropdownMenuItem<CreditCard>(
           value: card,
-          child: Text(card.name, style: AppTextStyles.body1(context)),
+          child: Text("${card.bankEntity.code} · ${card.name}", style: AppTextStyles.body1(context)),
         );
       }).toList(),
       onChanged: (card) => setState(() => _selectedCreditCard = card),

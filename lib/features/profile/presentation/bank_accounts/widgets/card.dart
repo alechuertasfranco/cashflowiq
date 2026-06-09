@@ -42,7 +42,10 @@ class BankAccountCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(account.name, style: AppTextStyles.subtitle2(context)),
-                  Text(account.bankEntity.name, style: AppTextStyles.caption(context)),
+                  Text(
+                    "${account.bankEntity.code} · ${account.bankEntity.name}",
+                    style: AppTextStyles.caption(context),
+                  ),
                 ],
               ),
             ),

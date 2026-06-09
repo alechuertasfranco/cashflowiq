@@ -200,7 +200,7 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
                       items: widget.accounts.map((acc) {
                         return DropdownMenuItem<BankAccount>(
                           value: acc,
-                          child: Text(acc.name, style: AppTextStyles.body1(context)),
+                          child: Text("${acc.bankEntity.code} · ${acc.name}", style: AppTextStyles.body1(context)),
                         );
                       }).toList(),
                       onChanged: (acc) => setState(() => _fromAccount = acc),
@@ -361,7 +361,7 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
         items: widget.accounts.map((acc) {
           return DropdownMenuItem<BankAccount>(
             value: acc,
-            child: Text(acc.name, style: AppTextStyles.body1(context)),
+            child: Text("${acc.bankEntity.code} · ${acc.name}", style: AppTextStyles.body1(context)),
           );
         }).toList(),
         onChanged: (acc) => setState(() => _toAccount = acc),
@@ -384,7 +384,7 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
       items: _creditCards.map((card) {
         return DropdownMenuItem<String>(
           value: card.id,
-          child: Text(card.name, style: AppTextStyles.body1(context)),
+          child: Text("${card.bankEntity.code} · ${card.name}", style: AppTextStyles.body1(context)),
         );
       }).toList(),
       onChanged: (id) => setState(() => _toCreditCardId = id),

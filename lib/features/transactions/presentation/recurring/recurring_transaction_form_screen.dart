@@ -304,8 +304,7 @@ class _RecurringTransactionFormScreenState
                                     items: _accounts.map((acc) {
                                       return DropdownMenuItem<BankAccount>(
                                         value: acc,
-                                        child:
-                                            Text(acc.name, style: AppTextStyles.body1(context)),
+                                        child: Text("${acc.bankEntity.code} · ${acc.name}", style: AppTextStyles.body1(context)),
                                       );
                                     }).toList(),
                                     onChanged: (acc) => setState(() {

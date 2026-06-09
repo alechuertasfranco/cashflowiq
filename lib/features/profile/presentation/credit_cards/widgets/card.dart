@@ -30,7 +30,16 @@ class CreditCardCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(card.name, style: AppTextStyles.subtitle1(context), overflow: TextOverflow.ellipsis),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(card.name, style: AppTextStyles.subtitle1(context), overflow: TextOverflow.ellipsis),
+                      Text(
+                        "${card.bankEntity.code} · ${card.bankEntity.name}",
+                        style: AppTextStyles.caption(context),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 8),
                 _BrandBadge(brand: card.brand.name),
