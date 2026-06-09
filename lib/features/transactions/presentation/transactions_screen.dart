@@ -12,6 +12,7 @@ import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
 import 'package:cashflowiq/features/transactions/presentation/transaction_type_screen.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
+import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:cashflowiq/shared/models/credit_card.dart';
 import 'package:cashflowiq/shared/models/transaction.dart';
@@ -31,12 +32,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   final _cardService = CreditCardService();
 
   List<Transaction> _transactions = [];
+  List<BankAccount> _allAccounts = [];
   Map<String, String> _categoryNames = {};
   Map<String, String> _accountNames = {};
   Map<String, String> _cardNames = {};
 
   TransactionType? _typeFilter;
   DateTimeRange? _dateRange;
+  BankEntity? _entityFilter;
+  BankAccount? _accountFilter;
   bool _isLoading = true;
 
   @override
@@ -68,6 +72,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (!mounted) return;
       setState(() {
         _transactions = txs;
+        _allAccounts = accounts;
         _categoryNames = {for (final c in cats) c.id: c.name};
         _accountNames = {for (final a in accounts) a.id: a.name};
         _cardNames = {for (final c in cards) c.id: c.name};
@@ -77,6 +82,33 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
+  }
+
+  List<Transaction> get _filteredTransactions {
+    if (_accountFilter != null) {
+      final id = _accountFilter!.id;
+      return _transactions.where((tx) => tx.accountId == id || tx.toAccountId == id).toList();
+    }
+    if (_entityFilter != null) {
+      final ids = _allAccounts
+          .where((a) => a.bankEntity.id == _entityFilter!.id)
+          .map((a) => a.id)
+          .toSet();
+      return _transactions
+          .where((tx) =>
+              (tx.accountId != null && ids.contains(tx.accountId)) ||
+              (tx.toAccountId != null && ids.contains(tx.toAccountId)))
+          .toList();
+    }
+    return _transactions;
+  }
+
+  List<BankEntity> get _uniqueEntities {
+    final seen = <String>{};
+    return [
+      for (final a in _allAccounts)
+        if (seen.add(a.bankEntity.id)) a.bankEntity,
+    ];
   }
 
   Future<void> _delete(Transaction tx) async {
@@ -104,8 +136,116 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Filtrar por cuenta", style: AppTextStyles.h500(ctx)),
+                if (_entityFilter != null || _accountFilter != null)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _entityFilter = null;
+                        _accountFilter = null;
+                      });
+                      Navigator.pop(ctx);
+                    },
+                    child: Text("Limpiar", style: AppTextStyles.body2(ctx, color: AppColors.primary)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_uniqueEntities.isNotEmpty) ...[
+              Text("Entidad bancaria", style: AppTextStyles.caption(ctx, color: AppColors.textSecondary)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _uniqueEntities.map((entity) {
+                  final selected = _entityFilter?.id == entity.id;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _entityFilter = selected ? null : entity;
+                        _accountFilter = null;
+                      });
+                      Navigator.pop(ctx);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected ? AppColors.primary : AppColors.background,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: selected ? AppColors.primary : AppColors.border,
+                        ),
+                      ),
+                      child: Text(
+                        entity.name,
+                        style: AppTextStyles.body2(ctx, color: selected ? Colors.white : AppColors.textSecondary),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+            ],
+            Text("Cuenta específica", style: AppTextStyles.caption(ctx, color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _allAccounts.map((account) {
+                final selected = _accountFilter?.id == account.id;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _accountFilter = selected ? null : account;
+                      _entityFilter = null;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected ? AppColors.primary : AppColors.background,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: selected ? AppColors.primary : AppColors.border,
+                      ),
+                    ),
+                    child: Text(
+                      account.name,
+                      style: AppTextStyles.body2(ctx, color: selected ? Colors.white : AppColors.textSecondary),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Map<String, List<Transaction>> get _grouped {
-    final sorted = [..._transactions]..sort((a, b) => b.date.compareTo(a.date));
+    final sorted = [..._filteredTransactions]..sort((a, b) => b.date.compareTo(a.date));
     final map = <String, List<Transaction>>{};
     for (final tx in sorted) {
       final key = _fmtDate(tx.date);
@@ -117,9 +257,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String _fmtDate(DateTime d) =>
       "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
 
-
   @override
   Widget build(BuildContext context) {
+    final hasAccountFilter = _entityFilter != null || _accountFilter != null;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -134,6 +275,32 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
             onPressed: _pickDateRange,
             tooltip: "Filtrar por fecha",
+          ),
+          Stack(
+            alignment: Alignment.topRight,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.tune,
+                  color: hasAccountFilter ? AppColors.primary : AppColors.muted,
+                ),
+                onPressed: _showFilterSheet,
+                tooltip: "Filtrar por cuenta",
+              ),
+              if (hasAccountFilter)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.add, color: AppColors.primary),
@@ -151,10 +318,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           children: [
             _typeFilterChips(),
             if (_dateRange != null) _dateRangeBanner(),
+            if (hasAccountFilter) _accountFilterBanner(),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _transactions.isEmpty
+                  : _filteredTransactions.isEmpty
                       ? _emptyState()
                       : _list(),
             ),
@@ -230,6 +398,37 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               setState(() => _dateRange = null);
               _load();
             },
+            child: const Icon(Icons.close, size: 16, color: AppColors.primary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _accountFilterBanner() {
+    final label = _accountFilter?.name ?? _entityFilter!.name;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.secondary,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.account_balance, size: 16, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.body2(context, color: AppColors.primary),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() {
+              _entityFilter = null;
+              _accountFilter = null;
+            }),
             child: const Icon(Icons.close, size: 16, color: AppColors.primary),
           ),
         ],

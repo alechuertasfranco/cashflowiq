@@ -39,7 +39,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
       final accounts = await _service.getAccounts();
       if (!mounted) return;
       setState(() {
-        _accounts = accounts;
+        _accounts = accounts..sort((a, b) => b.initialAmount.compareTo(a.initialAmount));
         _isLoading = false;
       });
     } catch (e) {

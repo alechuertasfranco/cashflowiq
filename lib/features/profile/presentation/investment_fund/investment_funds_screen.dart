@@ -43,7 +43,7 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _funds = funds;
+        _funds = funds..sort((a, b) => b.investedAmount.compareTo(a.investedAmount));
         _isLoading = false;
       });
     } catch (e) {
