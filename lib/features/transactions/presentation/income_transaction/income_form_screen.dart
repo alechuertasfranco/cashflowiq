@@ -4,11 +4,9 @@ import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/decorations.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
-import 'package:cashflowiq/features/transactions/data/recurring_transaction_service.dart';
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/category.dart';
-import 'package:cashflowiq/shared/models/recurring_transaction.dart';
 import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:flutter/material.dart';
 
@@ -28,7 +26,6 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
   final _accountService = BankAccountService();
   final _transactionService = TransactionService();
-  final _recurringService = RecurringTransactionService();
 
   List<BankAccount> _accounts = [];
   bool _isLoadingAccounts = true;
@@ -36,14 +33,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   Category? _selectedCategory;
   BankAccount? _selectedAccount;
   DateTime _selectedDate = DateTime.now();
-  bool _isRecurring = false;
-  bool _isFixed = false;
   bool _isSaving = false;
-
-  // Recurring fields
-  RecurringFrequency _frequency = RecurringFrequency.monthly;
-  DateTime _nextExecutionDate = DateTime.now();
-  DateTime? _endDate;
 
   @override
   void initState() {
@@ -80,26 +70,6 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
-  Future<void> _pickNextExecutionDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _nextExecutionDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) setState(() => _nextExecutionDate = picked);
-  }
-
-  Future<void> _pickEndDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _endDate ?? _nextExecutionDate.add(const Duration(days: 30)),
-      firstDate: _nextExecutionDate,
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) setState(() => _endDate = picked);
-  }
-
   String _formatDate(DateTime date) =>
       "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
 
@@ -115,41 +85,23 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     setState(() => _isSaving = true);
 
     try {
-      if (_isRecurring) {
-        // Create a recurring rule instead of a one-off transaction
-        await _recurringService.create({
-          'name': _descriptionController.text.trim().isNotEmpty
+      await _transactionService.createTransaction(
+        Transaction(
+          id: '',
+          type: TransactionType.income,
+          amount: double.parse(_amountController.text.trim()),
+          date: _selectedDate,
+          categoryId: _selectedCategory!.id,
+          accountId: _selectedAccount!.id,
+          description: _descriptionController.text.trim().isNotEmpty
               ? _descriptionController.text.trim()
-              : 'Ingreso recurrente',
-          'amount': double.parse(_amountController.text.trim()),
-          'type': 'INCOME',
-          'frequency': _frequency.toApi(),
-          'next_execution_date': _nextExecutionDate.toIso8601String(),
-          if (_endDate != null) 'end_date': _endDate!.toIso8601String().split('T').first,
-          if (_selectedCategory != null) 'category_id': int.tryParse(_selectedCategory!.id),
-          'account_id': _selectedAccount!.id,
-        });
-      } else {
-        await _transactionService.createTransaction(
-          Transaction(
-            id: '',
-            type: TransactionType.income,
-            amount: double.parse(_amountController.text.trim()),
-            date: _selectedDate,
-            categoryId: _selectedCategory!.id,
-            accountId: _selectedAccount!.id,
-            description: _descriptionController.text.trim().isNotEmpty
-                ? _descriptionController.text.trim()
-                : null,
-            isRecurring: _isRecurring,
-            isFixed: _isFixed,
-          ),
-        );
-      }
+              : null,
+        ),
+      );
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint("createTransaction/recurring error: $e");
+      debugPrint("createTransaction error: $e");
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error al registrar el ingreso")),
@@ -277,97 +229,6 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                       maxLines: 2,
                     ),
                     const SizedBox(height: 16),
-
-                    // ── Recurring toggle ──────────────────────────────────
-                    _toggleRow(
-                      "Transacción recurrente",
-                      _isRecurring,
-                      (v) => setState(() => _isRecurring = v),
-                    ),
-
-                    if (_isRecurring) ...[
-                      const SizedBox(height: 12),
-                      _label("Frecuencia"),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<RecurringFrequency>(
-                        initialValue: _frequency,
-                        items: RecurringFrequency.values.map((f) {
-                          return DropdownMenuItem<RecurringFrequency>(
-                            value: f,
-                            child: Text(f.toLabel(), style: AppTextStyles.body1(context)),
-                          );
-                        }).toList(),
-                        onChanged: (f) {
-                          if (f != null) setState(() => _frequency = f);
-                        },
-                        decoration: inputDecoration(context, "Selecciona la frecuencia"),
-                      ),
-                      const SizedBox(height: 12),
-                      _label("Primera ejecución"),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: _pickNextExecutionDate,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.event, size: 18, color: AppColors.muted),
-                              const SizedBox(width: 8),
-                              Text(_formatDate(_nextExecutionDate), style: AppTextStyles.subtitle2(context)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _label("Fecha de fin (opcional)"),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: _pickEndDate,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.event_busy, size: 18, color: AppColors.muted),
-                              const SizedBox(width: 8),
-                              Text(
-                                _endDate != null ? _formatDate(_endDate!) : "Sin fecha de fin",
-                                style: AppTextStyles.subtitle2(
-                                  context,
-                                  color: _endDate != null ? AppColors.textPrimary : AppColors.muted,
-                                ),
-                              ),
-                              const Spacer(),
-                              if (_endDate != null)
-                                GestureDetector(
-                                  onTap: () => setState(() => _endDate = null),
-                                  child: const Icon(Icons.close, size: 16, color: AppColors.muted),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    if (!_isRecurring) ...[
-                      const SizedBox(height: 4),
-                      _toggleRow(
-                        "¿Es fijo?",
-                        _isFixed,
-                        (v) => setState(() => _isFixed = v),
-                      ),
-                    ],
-
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -404,7 +265,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          _isRecurring ? "Crear regla recurrente" : "Registrar ingreso",
+                          "Registrar ingreso",
                           style: AppTextStyles.subtitle2(context, color: Colors.white),
                         ),
                 ),
@@ -432,14 +293,4 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
   Widget _label(String text) =>
       Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
-
-  Widget _toggleRow(String label, bool value, ValueChanged<bool> onChanged) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: AppTextStyles.body1(context)),
-        Switch(value: value, onChanged: onChanged, activeThumbColor: AppColors.primary),
-      ],
-    );
-  }
 }

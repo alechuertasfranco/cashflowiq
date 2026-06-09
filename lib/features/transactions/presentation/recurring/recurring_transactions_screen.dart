@@ -1,5 +1,6 @@
 // lib/features/transactions/presentation/recurring/recurring_transactions_screen.dart
 
+import 'package:cashflowiq/core/services/notification_service.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
@@ -7,6 +8,7 @@ import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/transactions/data/recurring_transaction_service.dart';
+import 'package:cashflowiq/features/transactions/presentation/recurring/recurring_execution_form_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/recurring/recurring_transaction_form_screen.dart';
 import 'package:cashflowiq/shared/models/recurring_transaction.dart';
 import 'package:flutter/material.dart';
@@ -72,6 +74,33 @@ class _RecurringTransactionsScreenState
     if (result == true) _load();
   }
 
+  Future<void> _executeRule(RecurringTransaction rule) async {
+    if (rule.amount != null) {
+      try {
+        await NotificationService.instance.autoRegister(rule);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${rule.name} registrado')),
+        );
+        await _load();
+      } catch (e) {
+        debugPrint('Error executing rule: $e');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al registrar la transacción')),
+        );
+      }
+    } else {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RecurringExecutionFormScreen(rule: rule),
+        ),
+      );
+      if (result == true) _load();
+    }
+  }
+
   Future<void> _delete(RecurringTransaction rule) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -133,6 +162,7 @@ class _RecurringTransactionsScreenState
                           child: _RecurringRuleTile(
                             rule: rule,
                             onTap: () => _goToEdit(rule),
+                            onExecute: () => _executeRule(rule),
                           ),
                         );
                       },
@@ -146,8 +176,13 @@ class _RecurringTransactionsScreenState
 class _RecurringRuleTile extends StatelessWidget {
   final RecurringTransaction rule;
   final VoidCallback onTap;
+  final VoidCallback onExecute;
 
-  const _RecurringRuleTile({required this.rule, required this.onTap});
+  const _RecurringRuleTile({
+    required this.rule,
+    required this.onTap,
+    required this.onExecute,
+  });
 
   String _formatDate(DateTime date) =>
       "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
@@ -204,13 +239,26 @@ class _RecurringRuleTile extends StatelessWidget {
                 ),
 
                 // Amount
-                AmountText(
-                  symbol: rule.currencySymbol ?? '',
-                  amount: rule.amount,
-                  sign: isIncome ? '+' : '-',
-                  style: AppTextStyles.h500(context),
-                  color: typeColor,
-                ),
+                if (rule.amount != null)
+                  AmountText(
+                    symbol: rule.currencySymbol ?? '',
+                    amount: rule.amount!,
+                    sign: isIncome ? '+' : '-',
+                    style: AppTextStyles.h500(context),
+                    color: typeColor,
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.muted.withAlpha(30),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Variable',
+                      style: AppTextStyles.caption(context, color: AppColors.muted),
+                    ),
+                  ),
               ],
             ),
 
@@ -242,23 +290,40 @@ class _RecurringRuleTile extends StatelessWidget {
 
                 const Spacer(),
 
-                // Active indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: rule.isActive
-                        ? AppColors.success.withAlpha(25)
-                        : AppColors.muted.withAlpha(40),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    rule.isActive ? "Activo" : "Inactivo",
-                    style: AppTextStyles.caption(
-                      context,
-                      color: rule.isActive ? AppColors.successStrong : AppColors.muted,
+                // "Registrar ahora" for notification-based active rules; badge otherwise
+                if (rule.notificationDaysBefore != null && rule.isActive)
+                  GestureDetector(
+                    onTap: onExecute,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.primary.withAlpha(60)),
+                      ),
+                      child: Text(
+                        'Registrar ahora',
+                        style: AppTextStyles.caption(context, color: AppColors.primary),
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: rule.isActive
+                          ? AppColors.success.withAlpha(25)
+                          : AppColors.muted.withAlpha(40),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      rule.isActive ? 'Activo' : 'Inactivo',
+                      style: AppTextStyles.caption(
+                        context,
+                        color: rule.isActive ? AppColors.successStrong : AppColors.muted,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ],

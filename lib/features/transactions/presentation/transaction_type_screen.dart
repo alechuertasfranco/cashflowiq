@@ -59,17 +59,6 @@ class TransactionTypeScreen extends StatelessWidget {
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransferScreen())),
                     ),
                     TransactionTypeCard(
-                      title: "Split",
-                      description: "Gasto compartido",
-                      icon: Icons.group,
-                      color: AppColors.primary,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SplitFormScreen()),
-                      ),
-                    ),
-                    TransactionTypeCard(
                       title: "Recurrentes",
                       description: "Reglas automáticas",
                       icon: Icons.repeat,
@@ -78,6 +67,13 @@ class TransactionTypeScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(builder: (_) => const RecurringTransactionsScreen()),
                       ),
+                    ),
+                    TransactionTypeCard(
+                      title: "Split",
+                      description: "Gasto compartido",
+                      icon: Icons.group,
+                      color: AppColors.primary,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SplitFormScreen())),
                     ),
                   ],
                 ),

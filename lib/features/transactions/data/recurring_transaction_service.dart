@@ -32,4 +32,10 @@ class RecurringTransactionService {
     await ApiClient.delete('/recurring-transactions/$id');
     DataCache.instance.invalidate('recurring_transactions');
   }
+
+  Future<RecurringTransaction> advance(int id) async {
+    DataCache.instance.invalidate('recurring_transactions');
+    final json = await ApiClient.postJson('/recurring-transactions/$id/advance');
+    return RecurringTransaction.fromJson(json as Map<String, dynamic>);
+  }
 }
