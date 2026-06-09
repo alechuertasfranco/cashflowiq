@@ -90,13 +90,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final summary = _summary!;
 
-    AccountBalance? topAccount;
-    if (summary.accounts.isNotEmpty) {
-      topAccount = summary.accounts.reduce(
-        (a, b) => a.balance >= b.balance ? a : b,
-      );
-    }
-
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -109,7 +102,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           totalExpense: summary.totalExpense,
         ),
         const SizedBox(height: 20),
-        _InsightCard(topAccount: topAccount),
+        _InsightCard(
+          mostActiveAccountName: summary.mostActiveAccountName,
+          mostActiveAccountTxCount: summary.mostActiveAccountTxCount,
+        ),
         const SizedBox(height: 20),
         _AccountsList(accounts: summary.accounts),
       ],
@@ -286,17 +282,21 @@ class _StatChip extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Insight card
+// Insight card — account with most transactions this month
 // ---------------------------------------------------------------------------
 
 class _InsightCard extends StatelessWidget {
-  final AccountBalance? topAccount;
+  final String? mostActiveAccountName;
+  final int mostActiveAccountTxCount;
 
-  const _InsightCard({required this.topAccount});
+  const _InsightCard({
+    required this.mostActiveAccountName,
+    required this.mostActiveAccountTxCount,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (topAccount == null) {
+    if (mostActiveAccountName == null) {
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -321,23 +321,21 @@ class _InsightCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            const Icon(Icons.trending_up, color: AppColors.success),
+            const Icon(Icons.bolt_rounded, color: AppColors.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Cuenta con mayor saldo', style: AppTextStyles.caption(context)),
+                  Text('Cuenta más activa este mes', style: AppTextStyles.caption(context)),
                   const SizedBox(height: 2),
                   Text(
-                    topAccount!.name,
+                    mostActiveAccountName!,
                     style: AppTextStyles.subtitle1(context),
                   ),
-                  AmountText(
-                    symbol: _BalanceCard._symbol(topAccount!.currencyCode),
-                    amount: topAccount!.balance,
-                    style: AppTextStyles.body2(context),
-                    color: AppColors.primary,
+                  Text(
+                    '$mostActiveAccountTxCount movimiento${mostActiveAccountTxCount == 1 ? '' : 's'}',
+                    style: AppTextStyles.body2(context, color: AppColors.primary),
                   ),
                 ],
               ),
@@ -400,7 +398,7 @@ class _AccountRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(account.name, style: AppTextStyles.subtitle1(context)),
-                  Text(account.currencyCode, style: AppTextStyles.caption(context)),
+                  Text(account.bankEntityCode, style: AppTextStyles.caption(context)),
                 ],
               ),
             ),
