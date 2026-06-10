@@ -87,36 +87,32 @@ class NotificationService {
   }
 
   Future<void> autoRegister(RecurringTransaction rule) async {
-    try {
-      final payload = <String, dynamic>{
-        'type': rule.type,
-        'amount': rule.amount,
-        'description': rule.name,
-        'date': rule.nextExecutionDate.toIso8601String(),
-        'category_id': rule.categoryId,
-        'currency_id': rule.currencyId,
-        'is_recurring': true,
-        'is_fixed': true,
-        'recurring_transaction_id': rule.id,
-        if (rule.type == 'INCOME') 'to_account_id': rule.accountId,
-        if (rule.type == 'EXPENSE' && rule.creditCardId != null)
-          'from_credit_card_id': rule.creditCardId,
-        if (rule.type == 'EXPENSE' && rule.creditCardId == null)
-          'from_account_id': rule.accountId,
-      };
-      await ApiClient.post('/transactions', body: payload);
+    final payload = <String, dynamic>{
+      'type': rule.type,
+      'amount': rule.amount,
+      'description': rule.name,
+      'date': rule.nextExecutionDate.toIso8601String(),
+      'category_id': rule.categoryId,
+      'currency_id': rule.currencyId,
+      'is_recurring': true,
+      'is_fixed': true,
+      'recurring_transaction_id': rule.id,
+      if (rule.type == 'INCOME') 'to_account_id': rule.accountId,
+      if (rule.type == 'EXPENSE' && rule.creditCardId != null)
+        'credit_card_id': rule.creditCardId,
+      if (rule.type == 'EXPENSE' && rule.creditCardId == null)
+        'account_id': rule.accountId,
+    };
+    await ApiClient.post('/transactions', body: payload);
 
-      final svc = RecurringTransactionService();
-      final updated = await svc.advance(rule.id);
-      await scheduleRecurringNotification(updated);
+    final svc = RecurringTransactionService();
+    final updated = await svc.advance(rule.id);
+    await scheduleRecurringNotification(updated);
 
-      await showInstant(
-        title: 'Transacción registrada',
-        body: '${rule.name}: ${rule.currencySymbol ?? ''}${rule.amount!.toStringAsFixed(2)}',
-      );
-    } catch (e) {
-      debugPrint('Auto-register failed: $e');
-    }
+    await showInstant(
+      title: 'Transacción registrada',
+      body: '${rule.name}: ${rule.currencySymbol ?? ''}${rule.amount!.toStringAsFixed(2)}',
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -198,7 +194,7 @@ class NotificationService {
         ),
         iOS: const DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: jsonEncode({'ruleId': rule.id, 'isFixed': isFixed}),

@@ -50,9 +50,9 @@ class _RecurringExecutionFormScreenState
         'recurring_transaction_id': rule.id,
         if (rule.type == 'INCOME') 'to_account_id': rule.accountId,
         if (rule.type == 'EXPENSE' && rule.creditCardId != null)
-          'from_credit_card_id': rule.creditCardId,
+          'credit_card_id': rule.creditCardId,
         if (rule.type == 'EXPENSE' && rule.creditCardId == null)
-          'from_account_id': rule.accountId,
+          'account_id': rule.accountId,
       };
       await ApiClient.post('/transactions', body: payload);
       final updated = await _service.advance(rule.id);
