@@ -53,9 +53,19 @@ class _RecurringTransactionFormScreenState
   DateTime _nextExecutionDate = DateTime.now();
   DateTime? _endDate;
 
-  List<Category> get _filteredCategories {
+  List<(Category, String)> get _selectableFilteredCategories {
     final wanted = _type == 'INCOME' ? CategoryType.income : CategoryType.expense;
-    return _categories.where((c) => c.type == wanted).toList();
+    final result = <(Category, String)>[];
+    for (final cat in _categories.where((c) => c.type == wanted)) {
+      if (cat.children.isEmpty) {
+        result.add((cat, cat.name));
+      } else {
+        for (final child in cat.children) {
+          result.add((child, '${cat.name} › ${child.name}'));
+        }
+      }
+    }
+    return result;
   }
 
   bool get _isEditing => widget.existing != null;
@@ -76,7 +86,7 @@ class _RecurringTransactionFormScreenState
   Future<void> _loadData() async {
     try {
       final results = await Future.wait([
-        _categoryService.getCategories(),
+        _categoryService.getCategoriesWithChildren(),
         _accountService.getAccounts(),
         _currencyService.getCurrencies(),
       ]);
@@ -106,11 +116,18 @@ class _RecurringTransactionFormScreenState
         _notificationDaysBefore = e.notificationDaysBefore;
 
         if (e.categoryId != null) {
-          try {
-            _selectedCategory = _categories.firstWhere(
-              (c) => c.id == e.categoryId.toString(),
-            );
-          } catch (_) {}
+          final targetId = e.categoryId.toString();
+          for (final cat in _categories) {
+            if (cat.id == targetId) {
+              _selectedCategory = cat;
+              break;
+            }
+            final child = cat.children.where((c) => c.id == targetId).firstOrNull;
+            if (child != null) {
+              _selectedCategory = child;
+              break;
+            }
+          }
         }
         if (e.accountId != null) {
           try {
@@ -280,10 +297,10 @@ class _RecurringTransactionFormScreenState
                             DropdownButtonFormField<Category>(
                               key: ValueKey(_type),
                               initialValue: _selectedCategory,
-                              items: _filteredCategories.map((cat) {
+                              items: _selectableFilteredCategories.map((entry) {
                                 return DropdownMenuItem<Category>(
-                                  value: cat,
-                                  child: Text(cat.name, style: AppTextStyles.body1(context)),
+                                  value: entry.$1,
+                                  child: Text(entry.$2, style: AppTextStyles.body1(context)),
                                 );
                               }).toList(),
                               onChanged: (cat) => setState(() => _selectedCategory = cat),
