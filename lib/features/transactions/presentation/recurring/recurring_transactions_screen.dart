@@ -184,6 +184,12 @@ class _RecurringRuleTile extends StatelessWidget {
     required this.onExecute,
   });
 
+  bool get _isCurrentPeriodRegistered {
+    final today = DateTime.now();
+    final next = rule.nextExecutionDate;
+    return next.isAfter(DateTime(today.year, today.month, today.day));
+  }
+
   String _formatDate(DateTime date) =>
       "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
 
@@ -290,8 +296,31 @@ class _RecurringRuleTile extends StatelessWidget {
 
                 const Spacer(),
 
-                // "Registrar ahora" for notification-based active rules; badge otherwise
-                if (rule.notificationDaysBefore != null && rule.isActive)
+                if (!rule.isActive)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.muted.withAlpha(40),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Inactivo',
+                      style: AppTextStyles.caption(context, color: AppColors.muted),
+                    ),
+                  )
+                else if (rule.notificationDaysBefore != null && _isCurrentPeriodRegistered)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withAlpha(25),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Registrado',
+                      style: AppTextStyles.caption(context, color: AppColors.successStrong),
+                    ),
+                  )
+                else if (rule.notificationDaysBefore != null)
                   GestureDetector(
                     onTap: onExecute,
                     child: Container(
@@ -311,17 +340,12 @@ class _RecurringRuleTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: rule.isActive
-                          ? AppColors.success.withAlpha(25)
-                          : AppColors.muted.withAlpha(40),
+                      color: AppColors.success.withAlpha(25),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      rule.isActive ? 'Activo' : 'Inactivo',
-                      style: AppTextStyles.caption(
-                        context,
-                        color: rule.isActive ? AppColors.successStrong : AppColors.muted,
-                      ),
+                      'Activo',
+                      style: AppTextStyles.caption(context, color: AppColors.successStrong),
                     ),
                   ),
               ],
