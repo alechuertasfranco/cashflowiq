@@ -535,22 +535,34 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   (IconData, Color, String, String, String) _tileData(Transaction tx) {
     switch (tx.type) {
       case TransactionType.income:
-        final category = tx.categoryId != null ? _categoryNames[tx.categoryId] ?? "Ingreso" : "Ingreso";
+        final incomeCategory = tx.categoryId != null ? _categoryNames[tx.categoryId] ?? "Ingreso" : "Ingreso";
         final account = tx.accountId != null ? _accountNames[tx.accountId] ?? "" : "";
-        return (Icons.arrow_downward, AppColors.success, category, account, "+");
+        final hasIncomeDesc = tx.description != null && tx.description!.isNotEmpty;
+        final incomeSubtitle = hasIncomeDesc
+            ? (account.isNotEmpty ? "$incomeCategory · $account" : incomeCategory)
+            : account;
+        return (Icons.arrow_downward, AppColors.success, hasIncomeDesc ? tx.description! : incomeCategory, incomeSubtitle, "+");
 
       case TransactionType.expense:
-        final category = tx.categoryId != null ? _categoryNames[tx.categoryId] ?? "Gasto" : "Gasto";
+        final expenseCategory = tx.categoryId != null ? _categoryNames[tx.categoryId] ?? "Gasto" : "Gasto";
         final source = tx.creditCardId != null
             ? _cardNames[tx.creditCardId] ?? ""
             : tx.accountId != null
                 ? _accountNames[tx.accountId] ?? ""
                 : "";
-        return (Icons.arrow_upward, AppColors.error, category, source, "-");
+        final hasExpenseDesc = tx.description != null && tx.description!.isNotEmpty;
+        final expenseSubtitle = hasExpenseDesc
+            ? (source.isNotEmpty ? "$expenseCategory · $source" : expenseCategory)
+            : source;
+        return (Icons.arrow_upward, AppColors.error, hasExpenseDesc ? tx.description! : expenseCategory, expenseSubtitle, "-");
 
       case TransactionType.transfer:
         final from = tx.accountId != null ? _accountNames[tx.accountId] ?? "" : "";
-        final to = tx.toAccountId != null ? _accountNames[tx.toAccountId] ?? "" : "";
+        final to = tx.toAccountId != null
+            ? _accountNames[tx.toAccountId] ?? ""
+            : tx.toCreditCardId != null
+                ? _cardNames[tx.toCreditCardId] ?? ""
+                : "";
         final subtitle = from.isNotEmpty && to.isNotEmpty ? "$from → $to" : "";
         return (Icons.swap_horiz, AppColors.primary, "Transferencia", subtitle, "");
     }
