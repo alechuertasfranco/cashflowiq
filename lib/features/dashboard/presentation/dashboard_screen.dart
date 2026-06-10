@@ -2,6 +2,7 @@
 
 import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
+import 'package:cashflowiq/features/transactions/presentation/transactions_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -351,19 +352,40 @@ class _InsightCard extends StatelessWidget {
 // Accounts list
 // ---------------------------------------------------------------------------
 
-class _AccountsList extends StatelessWidget {
+class _AccountsList extends StatefulWidget {
   final List<AccountBalance> accounts;
 
   const _AccountsList({required this.accounts});
 
   @override
+  State<_AccountsList> createState() => _AccountsListState();
+}
+
+class _AccountsListState extends State<_AccountsList> {
+  String? _entityFilter;
+
+  List<String> get _uniqueEntityCodes {
+    final seen = <String>{};
+    return [
+      for (final a in widget.accounts)
+        if (seen.add(a.bankEntityCode)) a.bankEntityCode,
+    ];
+  }
+
+  List<AccountBalance> get _filtered => _entityFilter == null
+      ? widget.accounts
+      : widget.accounts.where((a) => a.bankEntityCode == _entityFilter).toList();
+
+  @override
   Widget build(BuildContext context) {
+    final entities = _uniqueEntityCodes;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Mis cuentas', style: AppTextStyles.h500(context)),
         const SizedBox(height: 12),
-        if (accounts.isEmpty)
+        if (widget.accounts.isEmpty)
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -372,43 +394,113 @@ class _AccountsList extends StatelessWidget {
               ),
             ),
           )
-        else
-          ...accounts.map((account) => _AccountRow(account: account)),
+        else ...[
+          if (entities.length > 1) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _EntityChip(
+                    label: 'Todas',
+                    selected: _entityFilter == null,
+                    onTap: () => setState(() => _entityFilter = null),
+                  ),
+                  ...entities.map((code) => _EntityChip(
+                        label: code,
+                        selected: _entityFilter == code,
+                        onTap: () => setState(
+                          () => _entityFilter = _entityFilter == code ? null : code,
+                        ),
+                      )),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          ..._filtered.map((account) => _AccountRow(
+                account: account,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TransactionsScreen(initialAccountId: account.id.toString()),
+                  ),
+                ),
+              )),
+        ],
       ],
+    );
+  }
+}
+
+class _EntityChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _EntityChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: selected ? AppColors.primary : AppColors.border),
+          ),
+          child: Text(
+            label,
+            style: AppTextStyles.caption(
+              context,
+              color: selected ? Colors.white : AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _AccountRow extends StatelessWidget {
   final AccountBalance account;
+  final VoidCallback onTap;
 
-  const _AccountRow({required this.account});
+  const _AccountRow({required this.account, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(account.name, style: AppTextStyles.subtitle1(context)),
-                  Text(account.bankEntityCode, style: AppTextStyles.caption(context)),
-                ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(account.name, style: AppTextStyles.subtitle1(context)),
+                    Text(account.bankEntityCode, style: AppTextStyles.caption(context)),
+                  ],
+                ),
               ),
-            ),
-            AmountText(
-              symbol: _BalanceCard._symbol(account.currencyCode),
-              amount: account.balance,
-              style: AppTextStyles.h600(context),
-              color: AppColors.primary,
-            ),
-          ],
+              AmountText(
+                symbol: _BalanceCard._symbol(account.currencyCode),
+                amount: account.balance,
+                style: AppTextStyles.h600(context),
+                color: AppColors.primary,
+              ),
+            ],
+          ),
         ),
       ),
     );
