@@ -19,7 +19,9 @@ import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:flutter/material.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key});
+  final String? initialAccountId;
+
+  const TransactionsScreen({super.key, this.initialAccountId});
 
   @override
   State<TransactionsScreen> createState() => _TransactionsScreenState();
@@ -76,6 +78,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         _categoryNames = {for (final c in cats) c.id: c.name};
         _accountNames = {for (final a in accounts) a.id: a.name};
         _cardNames = {for (final c in cards) c.id: c.name};
+        if (widget.initialAccountId != null && _accountFilter == null) {
+          _accountFilter = accounts.where((a) => a.id == widget.initialAccountId).firstOrNull;
+        }
         _isLoading = false;
       });
     } catch (_) {
