@@ -363,6 +363,16 @@ class _AccountsList extends StatefulWidget {
 
 class _AccountsListState extends State<_AccountsList> {
   String? _entityFilter;
+  bool _showAll = false;
+
+  static const _previewCount = 5;
+
+  void _setEntityFilter(String? code) {
+    setState(() {
+      _entityFilter = code;
+      _showAll = false;
+    });
+  }
 
   List<String> get _uniqueEntityCodes {
     final seen = <String>{};
@@ -379,6 +389,9 @@ class _AccountsListState extends State<_AccountsList> {
   @override
   Widget build(BuildContext context) {
     final entities = _uniqueEntityCodes;
+    final filtered = _filtered;
+    final hasMore = !_showAll && filtered.length > _previewCount;
+    final visible = _showAll ? filtered : filtered.take(_previewCount).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,21 +416,19 @@ class _AccountsListState extends State<_AccountsList> {
                   _EntityChip(
                     label: 'Todas',
                     selected: _entityFilter == null,
-                    onTap: () => setState(() => _entityFilter = null),
+                    onTap: () => _setEntityFilter(null),
                   ),
                   ...entities.map((code) => _EntityChip(
                         label: code,
                         selected: _entityFilter == code,
-                        onTap: () => setState(
-                          () => _entityFilter = _entityFilter == code ? null : code,
-                        ),
+                        onTap: () => _setEntityFilter(_entityFilter == code ? null : code),
                       )),
                 ],
               ),
             ),
             const SizedBox(height: 10),
           ],
-          ..._filtered.map((account) => _AccountRow(
+          ...visible.map((account) => _AccountRow(
                 account: account,
                 onTap: () => Navigator.push(
                   context,
@@ -426,6 +437,30 @@ class _AccountsListState extends State<_AccountsList> {
                   ),
                 ),
               )),
+          if (hasMore)
+            GestureDetector(
+              onTap: () => setState(() => _showAll = true),
+              child: Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Ver todas las cuentas (${filtered.length})',
+                      style: AppTextStyles.body2(context, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.expand_more, size: 16, color: AppColors.primary),
+                  ],
+                ),
+              ),
+            ),
         ],
       ],
     );
