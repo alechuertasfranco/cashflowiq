@@ -9,6 +9,8 @@ class TransactionService {
     final data = await ApiClient.postJson("/transactions", body: tx.toJson());
     DataCache.instance.invalidatePrefix('transactions');
     DataCache.instance.invalidate('dashboard_summary');
+    // A transaction may back a recurring rule's current period.
+    DataCache.instance.invalidate('recurring_transactions');
     return Transaction.fromJson(data);
   }
 
@@ -16,6 +18,8 @@ class TransactionService {
     await ApiClient.delete("/transactions/$id");
     DataCache.instance.invalidatePrefix('transactions');
     DataCache.instance.invalidate('dashboard_summary');
+    // Deleting a movement may flip a recurring rule back to "not registered".
+    DataCache.instance.invalidate('recurring_transactions');
   }
 
   Future<List<Transaction>> getTransactions({
