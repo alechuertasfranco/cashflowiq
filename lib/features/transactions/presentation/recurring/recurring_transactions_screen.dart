@@ -74,8 +74,42 @@ class _RecurringTransactionsScreenState
     if (result == true) _load();
   }
 
+  Future<bool?> _confirmRegister(RecurringTransaction rule) {
+    final isIncome = rule.type == 'INCOME';
+    final amountStr =
+        '${rule.currencySymbol ?? ''}${rule.amount!.toStringAsFixed(2)}';
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Registrar pago', style: AppTextStyles.h500(context)),
+        content: Text(
+          '¿Deseas registrar "${rule.name}" por '
+          '${isIncome ? '+' : '-'}$amountStr? '
+          'Se creará una transacción en tus movimientos.',
+          style: AppTextStyles.body1(context, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancelar',
+                style: AppTextStyles.subtitle2(context, color: AppColors.muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Registrar',
+                style:
+                    AppTextStyles.subtitle1(context, color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _executeRule(RecurringTransaction rule) async {
     if (rule.amount != null) {
+      final confirmed = await _confirmRegister(rule);
+      if (confirmed != true) return;
       try {
         await NotificationService.instance.autoRegister(rule);
         if (!mounted) return;
@@ -183,12 +217,6 @@ class _RecurringRuleTile extends StatelessWidget {
     required this.onTap,
     required this.onExecute,
   });
-
-  bool get _isCurrentPeriodRegistered {
-    final today = DateTime.now();
-    final next = rule.nextExecutionDate;
-    return next.isAfter(DateTime(today.year, today.month, today.day));
-  }
 
   String _formatDate(DateTime date) =>
       "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
@@ -308,7 +336,7 @@ class _RecurringRuleTile extends StatelessWidget {
                       style: AppTextStyles.caption(context, color: AppColors.muted),
                     ),
                   )
-                else if (rule.notificationDaysBefore != null && _isCurrentPeriodRegistered)
+                else if (rule.notificationDaysBefore != null && rule.currentPeriodRegistered)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(

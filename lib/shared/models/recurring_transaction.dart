@@ -57,6 +57,10 @@ class RecurringTransaction {
   final String? currencySymbol;
   final int? notificationDaysBefore;
 
+  /// True only when an actual transaction backs the current period
+  /// (computed server-side; not inferred from the next execution date).
+  final bool currentPeriodRegistered;
+
   RecurringTransaction({
     required this.id,
     required this.name,
@@ -74,6 +78,7 @@ class RecurringTransaction {
     this.currencyCode,
     this.currencySymbol,
     this.notificationDaysBefore,
+    this.currentPeriodRegistered = false,
   });
 
   factory RecurringTransaction.fromJson(Map<String, dynamic> json) {
@@ -94,6 +99,7 @@ class RecurringTransaction {
       currencyCode: json['currency_code'] as String?,
       currencySymbol: json['currency_symbol'] as String?,
       notificationDaysBefore: json['notification_days_before'] as int?,
+      currentPeriodRegistered: json['current_period_registered'] ?? false,
     );
   }
 
