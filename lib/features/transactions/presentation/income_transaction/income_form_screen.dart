@@ -12,8 +12,9 @@ import 'package:flutter/material.dart';
 
 class IncomeFormScreen extends StatefulWidget {
   final List<Category> categories;
+  final Transaction? prefill;
 
-  const IncomeFormScreen({super.key, required this.categories});
+  const IncomeFormScreen({super.key, required this.categories, this.prefill});
 
   @override
   State<IncomeFormScreen> createState() => _IncomeFormScreenState();
@@ -38,6 +39,16 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.prefill != null) {
+      final p = widget.prefill!;
+      final a = p.amount;
+      _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
+      _descriptionController.text = p.description ?? '';
+      _selectedCategory = _selectableCategories
+          .where((e) => e.$1.id == p.categoryId)
+          .map((e) => e.$1)
+          .firstOrNull;
+    }
     _loadAccounts();
   }
 
@@ -54,6 +65,11 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
       setState(() {
         _accounts = accounts;
         _isLoadingAccounts = false;
+        if (widget.prefill?.accountId != null) {
+          _selectedAccount = accounts
+              .where((a) => a.id == widget.prefill!.accountId)
+              .firstOrNull;
+        }
       });
     } catch (_) {
       setState(() => _isLoadingAccounts = false);

@@ -16,8 +16,9 @@ enum _PaymentSource { bankAccount, creditCard }
 
 class ExpenseFormScreen extends StatefulWidget {
   final List<Category> categories;
+  final Transaction? prefill;
 
-  const ExpenseFormScreen({super.key, required this.categories});
+  const ExpenseFormScreen({super.key, required this.categories, this.prefill});
 
   @override
   State<ExpenseFormScreen> createState() => _ExpenseFormScreenState();
@@ -46,6 +47,17 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.prefill != null) {
+      final p = widget.prefill!;
+      final a = p.amount;
+      _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
+      _descriptionController.text = p.description ?? '';
+      _selectedCategory = _selectableCategories
+          .where((e) => e.$1.id == p.categoryId)
+          .map((e) => e.$1)
+          .firstOrNull;
+      if (p.creditCardId != null) _paymentSource = _PaymentSource.creditCard;
+    }
     _loadSources();
   }
 
@@ -66,6 +78,18 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         _accounts = results[0] as List<BankAccount>;
         _creditCards = results[1] as List<CreditCard>;
         _isLoadingSources = false;
+        if (widget.prefill != null) {
+          final p = widget.prefill!;
+          if (p.creditCardId != null) {
+            _selectedCreditCard = _creditCards
+                .where((c) => c.id == p.creditCardId)
+                .firstOrNull;
+          } else if (p.accountId != null) {
+            _selectedAccount = _accounts
+                .where((a) => a.id == p.accountId)
+                .firstOrNull;
+          }
+        }
       });
     } catch (_) {
       setState(() => _isLoadingSources = false);

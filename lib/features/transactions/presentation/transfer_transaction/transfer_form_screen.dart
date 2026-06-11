@@ -12,8 +12,9 @@ import 'package:flutter/material.dart';
 
 class TransferFormScreen extends StatefulWidget {
   final List<BankAccount> accounts;
+  final Transaction? prefill;
 
-  const TransferFormScreen({super.key, required this.accounts});
+  const TransferFormScreen({super.key, required this.accounts, this.prefill});
 
   @override
   State<TransferFormScreen> createState() => _TransferFormScreenState();
@@ -40,6 +41,19 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.prefill != null) {
+      final p = widget.prefill!;
+      final a = p.amount;
+      _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
+      _descriptionController.text = p.description ?? '';
+      _fromAccount = widget.accounts.where((a) => a.id == p.accountId).firstOrNull;
+      if (p.toCreditCardId != null) {
+        _toCard = true;
+        // _toCreditCardId is set after credit cards load in _load()
+      } else if (p.toAccountId != null) {
+        _toAccount = widget.accounts.where((a) => a.id == p.toAccountId).firstOrNull;
+      }
+    }
     _load();
   }
 
@@ -56,6 +70,9 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
       setState(() {
         _creditCards = cards;
         _isLoadingCards = false;
+        if (widget.prefill?.toCreditCardId != null) {
+          _toCreditCardId = widget.prefill!.toCreditCardId;
+        }
       });
     } catch (_) {
       setState(() => _isLoadingCards = false);

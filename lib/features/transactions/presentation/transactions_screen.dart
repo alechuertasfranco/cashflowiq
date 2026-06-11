@@ -10,6 +10,7 @@ import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
+import 'package:cashflowiq/features/transactions/presentation/transaction_detail_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/transaction_type_screen.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
@@ -114,6 +115,23 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       for (final a in _allAccounts)
         if (seen.add(a.bankEntity.id)) a.bankEntity,
     ];
+  }
+
+  Future<void> _openDetail(Transaction tx) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionDetailScreen(
+          transaction: tx,
+          categoryName: tx.categoryId != null ? _categoryNames[tx.categoryId] : null,
+          accountName: tx.accountId != null ? _accountNames[tx.accountId] : null,
+          cardName: tx.creditCardId != null ? _cardNames[tx.creditCardId] : null,
+          toAccountName: tx.toAccountId != null ? _accountNames[tx.toAccountId] : null,
+          toCardName: tx.toCreditCardId != null ? _cardNames[tx.toCreditCardId] : null,
+        ),
+      ),
+    );
+    if (result == true) _load();
   }
 
   Future<void> _delete(Transaction tx) async {
@@ -475,7 +493,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             child: SwipeToDelete(
               key: ValueKey(tx.id),
               onDelete: () => _delete(tx),
-              child: _transactionTile(tx),
+              child: GestureDetector(
+                onTap: () => _openDetail(tx),
+                child: _transactionTile(tx),
+              ),
             ),
           ),
         ),

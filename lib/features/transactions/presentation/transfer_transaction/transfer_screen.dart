@@ -1,6 +1,7 @@
 // lib/features/transactions/presentation/transfer_transaction/transfer_screen.dart
 
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:cashflowiq/features/transactions/presentation/transfer_transaction/transfer_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
@@ -9,7 +10,9 @@ import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 
 class TransferScreen extends StatefulWidget {
-  const TransferScreen({super.key});
+  final Transaction? prefill;
+
+  const TransferScreen({super.key, this.prefill});
 
   @override
   State<TransferScreen> createState() => _TransferScreenState();
@@ -53,7 +56,7 @@ class _TransferScreenState extends State<TransferScreen> {
             ? const Center(child: CircularProgressIndicator())
             : accounts.isEmpty
             ? _emptyState()
-            : TransferFormScreen(accounts: accounts),
+            : TransferFormScreen(accounts: accounts, prefill: widget.prefill),
       ),
     );
   }

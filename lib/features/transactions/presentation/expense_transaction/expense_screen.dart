@@ -1,6 +1,7 @@
 // lib/features/transactions/presentation/expense_transaction/expense_screen.dart
 
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/expense_transaction/expense_form_screen.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,9 @@ import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 
 class ExpenseScreen extends StatefulWidget {
-  const ExpenseScreen({super.key});
+  final Transaction? prefill;
+
+  const ExpenseScreen({super.key, this.prefill});
 
   @override
   State<ExpenseScreen> createState() => _ExpenseScreenState();
@@ -82,6 +85,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Widget _form() {
-    return ExpenseFormScreen(categories: categories);
+    return ExpenseFormScreen(categories: categories, prefill: widget.prefill);
   }
 }

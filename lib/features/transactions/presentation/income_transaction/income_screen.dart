@@ -1,6 +1,7 @@
 // lib\features\transactions\presentation\income_transaction\income_screen.dart
 
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_form_screen.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,9 @@ import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 
 class IncomeScreen extends StatefulWidget {
-  const IncomeScreen({super.key});
+  final Transaction? prefill;
+
+  const IncomeScreen({super.key, this.prefill});
 
   @override
   State<IncomeScreen> createState() => _IncomeScreenState();
@@ -82,6 +85,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
   }
 
   Widget _form() {
-    return IncomeFormScreen(categories: categories);
+    return IncomeFormScreen(categories: categories, prefill: widget.prefill);
   }
 }
