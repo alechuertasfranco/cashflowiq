@@ -3,26 +3,22 @@
 import 'package:cashflowiq/core/network/api_client.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/core/widgets/step_indicator.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/data/category_service.dart';
+import 'package:cashflowiq/features/profile/presentation/bank_accounts/form_account_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
 import 'package:cashflowiq/features/splits/data/contact_service.dart';
 import 'package:cashflowiq/features/splits/screens/contacts_screen.dart';
+import 'package:cashflowiq/features/splits/screens/widgets/split_step_account.dart';
+import 'package:cashflowiq/features/splits/screens/widgets/split_step_amount.dart';
+import 'package:cashflowiq/features/splits/screens/widgets/split_step_categories.dart';
+import 'package:cashflowiq/features/splits/screens/widgets/split_step_participants.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
+import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:cashflowiq/shared/models/contact.dart';
 import 'package:flutter/material.dart';
-
-/// A participant entry: a contact + an amount controller.
-class _Participant {
-  final Contact contact;
-  final TextEditingController amountController;
-
-  _Participant({required this.contact})
-      : amountController = TextEditingController();
-
-  void dispose() => amountController.dispose();
-}
 
 class SplitFormScreen extends StatefulWidget {
   const SplitFormScreen({super.key});
@@ -32,9 +28,9 @@ class SplitFormScreen extends StatefulWidget {
 }
 
 class _SplitFormScreenState extends State<SplitFormScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _pageController = PageController();
 
   final _categoryService = CategoryService();
   final _accountService = BankAccountService();
@@ -43,24 +39,35 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
   List<Category> _expenseCategories = [];
   List<BankAccount> _accounts = [];
   List<Contact> _allContacts = [];
-
-  Category? _selectedCategory;
-  BankAccount? _selectedAccount;
-  DateTime _date = DateTime.now();
-
-  /// Split mode: true = equal, false = custom
-  bool _equalSplit = true;
-
-  final List<_Participant> _participants = [];
-
   bool _isLoading = true;
   bool _isSaving = false;
+
+  // ── Step 2: category (two-level) ─────────────────────────────────────────
+  Category? _selectedParentCategory;
+  Category? _selectedCategory;
+  String _categoryViewKey = 'parents';
+  bool _categoryForward = true;
+
+  // ── Step 3: account (two-level, entity→account) ──────────────────────────
+  BankEntity? _selectedEntity;
+  BankAccount? _selectedAccount;
+  String _entityViewKey = 'entities';
+  bool _entityForward = true;
+
+  // ── Step 4: participants ─────────────────────────────────────────────────
+  final List<SplitParticipant> _participants = [];
+  bool _equalSplit = true;
+
+  DateTime _date = DateTime.now();
+  int _currentStep = 0;
+  String? _amountError;
+  String? _descriptionError;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
     _amountController.addListener(_onAmountChanged);
+    _loadData();
   }
 
   @override
@@ -68,16 +75,19 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
     _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
     _descriptionController.dispose();
+    _pageController.dispose();
     for (final p in _participants) {
       p.dispose();
     }
     super.dispose();
   }
 
+  // ── Data loading ──────────────────────────────────────────────────────────
+
   Future<void> _loadData() async {
     try {
       final results = await Future.wait([
-        _categoryService.getCategories(type: CategoryType.expense),
+        _categoryService.getCategoriesWithChildren(type: CategoryType.expense),
         _accountService.getAccounts(),
         _contactService.fetchAll(),
       ]);
@@ -95,8 +105,11 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
     }
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
   void _onAmountChanged() {
     if (_equalSplit) _distributeEqually();
+    if (_amountError != null) setState(() => _amountError = null);
   }
 
   void _distributeEqually() {
@@ -104,8 +117,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
     final total = double.tryParse(_amountController.text.trim()) ?? 0;
     final share = _participants.isNotEmpty ? total / _participants.length : 0;
     for (final p in _participants) {
-      p.amountController.text =
-          share > 0 ? share.toStringAsFixed(2) : '';
+      p.amountController.text = share > 0 ? share.toStringAsFixed(2) : '';
     }
   }
 
@@ -119,31 +131,181 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
     if (picked != null) setState(() => _date = picked);
   }
 
-  String _formatDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
-  Future<void> _goToCreateContact() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ContactsScreen()),
-    );
-    // Reload contacts after returning so the picker is populated
-    final contacts = await _contactService.fetchAll();
-    if (!mounted) return;
-    setState(() => _allContacts = contacts);
-    if (_allContacts.isNotEmpty) _openContactsPicker();
+  List<BankEntity> get _entities {
+    final seen = <String>{};
+    return [
+      for (final a in _accounts)
+        if (seen.add(a.bankEntity.id)) a.bankEntity,
+    ];
   }
 
+  List<BankAccount> _accountsFor(BankEntity e) =>
+      _accounts.where((a) => a.bankEntity.id == e.id).toList();
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  bool _validateStep1() {
+    final text = _amountController.text.trim();
+    final desc = _descriptionController.text.trim();
+
+    String? amountErr;
+    String? descErr;
+
+    if (text.isEmpty) {
+      amountErr = "Ingresa un monto";
+    } else {
+      final parsed = double.tryParse(text);
+      if (parsed == null) {
+        amountErr = "Monto inválido";
+      } else if (parsed <= 0) {
+        amountErr = "El monto debe ser mayor a 0";
+      }
+    }
+
+    if (desc.isEmpty) {
+      descErr = "Ingresa una descripción";
+    }
+
+    setState(() {
+      _amountError = amountErr;
+      _descriptionError = descErr;
+    });
+
+    return amountErr == null && descErr == null;
+  }
+
+  void _goToStep(int step) {
+    setState(() => _currentStep = step);
+    _pageController.animateToPage(
+      step,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _nextStep() {
+    if (_currentStep == 0) {
+      if (_validateStep1()) _goToStep(1);
+    } else if (_currentStep < 3) {
+      _goToStep(_currentStep + 1);
+    }
+  }
+
+  void _prevStep() {
+    if (_currentStep == 1 &&
+        _selectedParentCategory != null &&
+        _selectedParentCategory!.children.isNotEmpty) {
+      _backFromCategoryChildren();
+      return;
+    }
+    if (_currentStep == 2 && _selectedEntity != null) {
+      _backFromEntityAccounts();
+      return;
+    }
+    if (_currentStep > 0) {
+      _goToStep(_currentStep - 1);
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  // ── Step 2 callbacks ──────────────────────────────────────────────────────
+
+  void _onParentCategoryTap(Category category) {
+    if (category.children.isNotEmpty) {
+      setState(() {
+        _selectedParentCategory = category;
+        _selectedCategory = null;
+        _categoryForward = true;
+        _categoryViewKey = 'children_${category.id}';
+      });
+    } else {
+      setState(() {
+        _selectedParentCategory = category;
+        _selectedCategory = category;
+      });
+    }
+  }
+
+  void _onChildCategoryTap(Category category) {
+    setState(() => _selectedCategory = category);
+  }
+
+  void _backFromCategoryChildren() {
+    setState(() {
+      _selectedParentCategory = null;
+      _selectedCategory = null;
+      _categoryForward = false;
+      _categoryViewKey = 'parents';
+    });
+  }
+
+  // ── Step 3 callbacks ──────────────────────────────────────────────────────
+
+  void _onEntityTap(BankEntity entity) {
+    setState(() {
+      if (_selectedEntity?.id != entity.id) _selectedAccount = null;
+      _selectedEntity = entity;
+      _entityForward = true;
+      _entityViewKey = 'accounts_${entity.id}';
+    });
+  }
+
+  void _onAccountTap(BankAccount account) {
+    setState(() => _selectedAccount = account);
+  }
+
+  void _backFromEntityAccounts() {
+    setState(() {
+      _selectedEntity = null;
+      _entityForward = false;
+      _entityViewKey = 'entities';
+    });
+  }
+
+  // ── Navigation to creation forms ──────────────────────────────────────────
+
+  Future<void> _navigateToCategoryForm({Category? parent}) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FormCategoriesScreen(
+          initialType: CategoryType.expense,
+          parent: parent,
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      final cats = await _categoryService.getCategoriesWithChildren(
+          type: CategoryType.expense);
+      if (!mounted) return;
+      setState(() => _expenseCategories = cats);
+    }
+  }
+
+  Future<void> _navigateToAccountForm() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const FormAccountScreen()),
+    );
+    if (result == true && mounted) {
+      final accounts = await _accountService.getAccounts();
+      if (!mounted) return;
+      setState(() => _accounts = accounts);
+    }
+  }
+
+  // ── Participant management ────────────────────────────────────────────────
+
   Future<void> _openContactsPicker() async {
-    // Show a bottom sheet with all contacts not yet added
     final alreadyAdded = _participants.map((p) => p.contact.id).toSet();
     final available =
         _allContacts.where((c) => !alreadyAdded.contains(c.id)).toList();
 
     if (available.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Todos los contactos ya fueron agregados')),
+        const SnackBar(content: Text('Todos los contactos ya fueron agregados')),
       );
       return;
     }
@@ -182,7 +344,8 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                     controller: scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: available.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 8),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
                     itemBuilder: (_, index) {
                       final c = available[index];
                       final subtitle = [
@@ -207,7 +370,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                         onTap: () {
                           Navigator.pop(ctx);
                           setState(() {
-                            _participants.add(_Participant(contact: c));
+                            _participants.add(SplitParticipant(contact: c));
                             if (_equalSplit) _distributeEqually();
                           });
                         },
@@ -223,6 +386,17 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
     );
   }
 
+  Future<void> _goToCreateContact() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ContactsScreen()),
+    );
+    final contacts = await _contactService.fetchAll();
+    if (!mounted) return;
+    setState(() => _allContacts = contacts);
+    if (_allContacts.isNotEmpty) _openContactsPicker();
+  }
+
   void _removeParticipant(int index) {
     setState(() {
       _participants[index].dispose();
@@ -231,25 +405,23 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
     });
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  // ── Submit ────────────────────────────────────────────────────────────────
 
+  Future<void> _submit() async {
     if (_participants.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Agrega al menos un participante')),
+        const SnackBar(content: Text('Agrega al menos un participante')),
       );
       return;
     }
 
-    // Validate split amounts
     for (final p in _participants) {
       final v = double.tryParse(p.amountController.text.trim());
       if (v == null || v <= 0) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'El monto de ${p.contact.name} es inválido')),
+              content: Text('El monto de ${p.contact.name} es inválido')),
         );
         return;
       }
@@ -284,12 +456,15 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
       debugPrint('SplitFormScreen submit error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al registrar el gasto compartido')),
+        const SnackBar(
+            content: Text('Error al registrar el gasto compartido')),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -303,427 +478,145 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
       ),
       body: SafeArea(
         child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Form(
-                      key: _formKey,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 16),
-
-                            // Amount
-                            _label('Monto total'),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _amountController,
-                              keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true),
-                              decoration: inputDecoration(context, '0.00'),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) {
-                                  return 'Ingresa el monto total';
-                                }
-                                final parsed = double.tryParse(v);
-                                if (parsed == null) return 'Monto inválido';
-                                if (parsed <= 0) {
-                                  return 'El monto debe ser mayor a 0';
-                                }
-                                return null;
-                              },
+            ? const Center(child: CircularProgressIndicator())
+            : PopScope(
+                canPop: _currentStep == 0,
+                onPopInvokedWithResult: (didPop, _) {
+                  if (!didPop) _prevStep();
+                },
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          SplitStepAmount(
+                            amountController: _amountController,
+                            descriptionController: _descriptionController,
+                            selectedDate: _date,
+                            amountError: _amountError,
+                            descriptionError: _descriptionError,
+                            onDateTap: _pickDate,
+                            onAmountChanged: _onAmountChanged,
+                            onDescriptionChanged: () {
+                              if (_descriptionError != null) {
+                                setState(() => _descriptionError = null);
+                              }
+                            },
+                          ),
+                          SplitStepCategories(
+                            categories: _expenseCategories,
+                            selectedParentCategory: _selectedParentCategory,
+                            selectedCategory: _selectedCategory,
+                            viewKey: _categoryViewKey,
+                            goingForward: _categoryForward,
+                            onParentTap: _onParentCategoryTap,
+                            onChildTap: _onChildCategoryTap,
+                            onBack: _backFromCategoryChildren,
+                            onAddCategory: () => _navigateToCategoryForm(),
+                            onAddSubcategory: () => _navigateToCategoryForm(
+                              parent: _selectedParentCategory,
                             ),
-                            const SizedBox(height: 16),
-
-                            // Description
-                            _label('Descripción'),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _descriptionController,
-                              decoration:
-                                  inputDecoration(context, 'Ej: Cena de cumpleaños'),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) {
-                                  return 'Ingresa una descripción';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Category
-                            _label('Categoría'),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<Category>(
-                              key: const ValueKey('split_category'),
-                              initialValue: _selectedCategory,
-                              items: _expenseCategories.map((cat) {
-                                return DropdownMenuItem<Category>(
-                                  value: cat,
-                                  child: Text(cat.name,
-                                      style: AppTextStyles.body1(context)),
-                                );
-                              }).toList(),
-                              onChanged: (cat) =>
-                                  setState(() => _selectedCategory = cat),
-                              decoration:
-                                  inputDecoration(context, 'Selecciona una categoría'),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Account
-                            _label('Cuenta (opcional)'),
-                            const SizedBox(height: 8),
-                            _accounts.isEmpty
-                                ? Text(
-                                    'No tienes cuentas registradas',
-                                    style: AppTextStyles.body2(context,
-                                        color: AppColors.muted),
-                                  )
-                                : DropdownButtonFormField<BankAccount>(
-                                    initialValue: _selectedAccount,
-                                    items: _accounts.map((acc) {
-                                      return DropdownMenuItem<BankAccount>(
-                                        value: acc,
-                                        child: Text("${acc.bankEntity.code} · ${acc.name}",
-                                            style:
-                                                AppTextStyles.body1(context)),
-                                      );
-                                    }).toList(),
-                                    onChanged: (acc) =>
-                                        setState(() => _selectedAccount = acc),
-                                    decoration: inputDecoration(
-                                        context, 'Selecciona una cuenta'),
-                                  ),
-                            const SizedBox(height: 16),
-
-                            // Date
-                            _label('Fecha'),
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: _pickDate,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 14),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.event,
-                                        size: 18, color: AppColors.muted),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatDate(_date),
-                                      style: AppTextStyles.subtitle2(context),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Participants header + mode toggle
-                            Row(
-                              children: [
-                                Text('Participantes',
-                                    style: AppTextStyles.h600(context)),
-                                const Spacer(),
-                                _SplitModeToggle(
-                                  isEqual: _equalSplit,
-                                  onChanged: (v) {
-                                    setState(() {
-                                      _equalSplit = v;
-                                      if (_equalSplit) _distributeEqually();
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Participant list
-                            ..._participants.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final p = entry.value;
-                              return _ParticipantRow(
-                                participant: p,
-                                isCustom: !_equalSplit,
-                                onRemove: () => _removeParticipant(index),
-                              );
-                            }),
-
-                            // Add participant button
-                            const SizedBox(height: 8),
-                            OutlinedButton.icon(
-                              onPressed: _allContacts.isEmpty
-                                  ? _goToCreateContact
-                                  : _openContactsPicker,
-                              icon: const Icon(Icons.person_add_alt_1,
-                                  color: AppColors.primary),
-                              label: Text(
-                                _allContacts.isEmpty
-                                    ? 'Crear contacto'
-                                    : 'Agregar participante',
-                                style: AppTextStyles.body1(context,
-                                    color: AppColors.primary),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: AppColors.primary),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
+                          ),
+                          SplitStepAccount(
+                            entities: _entities,
+                            selectedEntity: _selectedEntity,
+                            selectedAccount: _selectedAccount,
+                            viewKey: _entityViewKey,
+                            goingForward: _entityForward,
+                            accountsFor: _accountsFor,
+                            onEntityTap: _onEntityTap,
+                            onAccountTap: _onAccountTap,
+                            onBack: _backFromEntityAccounts,
+                            onAddAccount: _navigateToAccountForm,
+                          ),
+                          SplitStepParticipants(
+                            participants: _participants,
+                            equalSplit: _equalSplit,
+                            onAddParticipant: _allContacts.isEmpty
+                                ? _goToCreateContact
+                                : _openContactsPicker,
+                            onRemove: _removeParticipant,
+                            onSplitModeChanged: (v) {
+                              setState(() {
+                                _equalSplit = v;
+                                if (v) _distributeEqually();
+                              });
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-
-                // Submit
-                Container(
-                  padding: EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 12,
-                    bottom:
-                        MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withAlpha(10), blurRadius: 10),
-                    ],
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _isSaving ? null : _submit,
-                      child: _isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : Text(
-                              'Registrar gasto compartido',
-                              style: AppTextStyles.subtitle2(context,
-                                  color: Colors.white),
-                            ),
+                    StepIndicator(
+                      currentStep: _currentStep,
+                      totalSteps: 4,
+                      activeColor: AppColors.primary,
                     ),
-                  ),
+                    _bottomBar(),
+                  ],
                 ),
-              ],
-            ),
+              ),
       ),
     );
   }
 
-  Widget _label(String text) => Text(
-        text,
-        style:
-            AppTextStyles.subtitle2(context, color: AppColors.textSecondary),
-      );
-}
-
-// ── Split mode toggle ─────────────────────────────────────────────────────────
-
-class _SplitModeToggle extends StatelessWidget {
-  final bool isEqual;
-  final ValueChanged<bool> onChanged;
-
-  const _SplitModeToggle({required this.isEqual, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _bottomBar() {
+    final isLastStep = _currentStep == 3;
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ToggleChip(
-            label: 'Igual',
-            active: isEqual,
-            isLeft: true,
-            onTap: () => onChanged(true),
-          ),
-          _ToggleChip(
-            label: 'Personalizado',
-            active: !isEqual,
-            isLeft: false,
-            onTap: () => onChanged(false),
-          ),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10),
         ],
       ),
-    );
-  }
-}
-
-class _ToggleChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final bool isLeft;
-  final VoidCallback onTap;
-
-  const _ToggleChip({
-    required this.label,
-    required this.active,
-    required this.isLeft,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.horizontal(
-            left: isLeft ? const Radius.circular(7) : Radius.zero,
-            right: !isLeft ? const Radius.circular(7) : Radius.zero,
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _prevStep,
+              child: Text("Atrás",
+                  style: AppTextStyles.subtitle2(context,
+                      color: AppColors.primary)),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.caption(context,
-              color: active ? Colors.white : AppColors.textSecondary),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Participant row ───────────────────────────────────────────────────────────
-
-class _ParticipantRow extends StatelessWidget {
-  final _Participant participant;
-  final bool isCustom;
-  final VoidCallback onRemove;
-
-  const _ParticipantRow({
-    required this.participant,
-    required this.isCustom,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            // Avatar
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.secondary,
-                borderRadius: BorderRadius.circular(10),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: Center(
-                child: Text(
-                  participant.contact.name.isNotEmpty
-                      ? participant.contact.name[0].toUpperCase()
-                      : '?',
-                  style: AppTextStyles.body2(context,
-                      color: AppColors.primary),
-                ),
-              ),
+              onPressed: _isSaving ? null : (isLastStep ? _submit : _nextStep),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      isLastStep ? "Registrar gasto compartido" : "Siguiente",
+                      style: AppTextStyles.subtitle2(context,
+                          color: Colors.white),
+                    ),
             ),
-            const SizedBox(width: 10),
-
-            // Name
-            Expanded(
-              child: Text(
-                participant.contact.name,
-                style: AppTextStyles.subtitle2(context),
-              ),
-            ),
-
-            // Amount field (always shown, readonly when equal mode)
-            SizedBox(
-              width: 90,
-              child: TextFormField(
-                controller: participant.amountController,
-                enabled: isCustom,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 8),
-                  hintText: '0.00',
-                  hintStyle: AppTextStyles.caption(context,
-                      color: AppColors.muted),
-                  filled: true,
-                  fillColor: isCustom
-                      ? AppColors.surface
-                      : AppColors.surfaceVariant,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        const BorderSide(color: AppColors.border),
-                  ),
-                  disabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        const BorderSide(color: AppColors.primary),
-                  ),
-                ),
-                style: AppTextStyles.body1(context),
-              ),
-            ),
-            const SizedBox(width: 4),
-
-            // Remove
-            GestureDetector(
-              onTap: onRemove,
-              child: const Icon(Icons.close,
-                  size: 18, color: AppColors.muted),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
