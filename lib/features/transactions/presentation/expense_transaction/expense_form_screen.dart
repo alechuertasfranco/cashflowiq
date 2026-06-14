@@ -2,33 +2,46 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
+import 'package:cashflowiq/features/profile/presentation/bank_accounts/form_account_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/credit_cards/form_credit_card_screen.dart';
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
+import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/expense_step_amount.dart';
+import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/expense_step_categories.dart';
+import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/expense_step_indicator.dart';
+import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/expense_step_payment.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
+import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:cashflowiq/shared/models/credit_card.dart';
 import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:flutter/material.dart';
 
-enum _PaymentSource { bankAccount, creditCard }
-
 class ExpenseFormScreen extends StatefulWidget {
   final List<Category> categories;
   final Transaction? prefill;
   final bool editMode;
+  /// Called after a new category is created so the parent can reload the list.
+  final VoidCallback? onCategoryAdded;
 
-  const ExpenseFormScreen({super.key, required this.categories, this.prefill, this.editMode = false});
+  const ExpenseFormScreen({
+    super.key,
+    required this.categories,
+    this.prefill,
+    this.editMode = false,
+    this.onCategoryAdded,
+  });
 
   @override
   State<ExpenseFormScreen> createState() => _ExpenseFormScreenState();
 }
 
 class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _pageController = PageController();
 
   final _accountService = BankAccountService();
   final _creditCardService = CreditCardService();
@@ -38,12 +51,23 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   List<CreditCard> _creditCards = [];
   bool _isLoadingSources = true;
 
+  // ── Step 2: category (two-level) ─────────────────────────────────────────
+  Category? _selectedParentCategory;
   Category? _selectedCategory;
+  String _categoryViewKey = 'parents';
+  bool _categoryForward = true;
+
+  // ── Step 3: payment source (two-level) ───────────────────────────────────
+  BankEntity? _selectedEntity;
   BankAccount? _selectedAccount;
   CreditCard? _selectedCreditCard;
-  _PaymentSource _paymentSource = _PaymentSource.bankAccount;
+  String _entityViewKey = 'entities';
+  bool _entityForward = true;
+
   DateTime _selectedDate = DateTime.now();
   bool _isSaving = false;
+  int _currentStep = 0;
+  String? _amountError;
 
   @override
   void initState() {
@@ -54,11 +78,22 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
       _descriptionController.text = p.description ?? '';
       _selectedDate = p.date;
-      _selectedCategory = _selectableCategories
-          .where((e) => e.$1.id == p.categoryId)
-          .map((e) => e.$1)
-          .firstOrNull;
-      if (p.creditCardId != null) _paymentSource = _PaymentSource.creditCard;
+      for (final cat in widget.categories) {
+        if (cat.id == p.categoryId) {
+          _selectedParentCategory = cat;
+          _selectedCategory = cat;
+          break;
+        }
+        for (final child in cat.children) {
+          if (child.id == p.categoryId) {
+            _selectedParentCategory = cat;
+            _selectedCategory = child;
+            _categoryViewKey = 'children_${cat.id}';
+            break;
+          }
+        }
+        if (_selectedCategory != null) break;
+      }
     }
     _loadSources();
   }
@@ -67,8 +102,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
+
+  // ── Data loading ──────────────────────────────────────────────────────────
 
   Future<void> _loadSources() async {
     try {
@@ -83,13 +121,13 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         if (widget.prefill != null) {
           final p = widget.prefill!;
           if (p.creditCardId != null) {
-            _selectedCreditCard = _creditCards
-                .where((c) => c.id == p.creditCardId)
-                .firstOrNull;
+            _selectedCreditCard = _creditCards.where((c) => c.id == p.creditCardId).firstOrNull;
+            _selectedEntity = _selectedCreditCard?.bankEntity;
+            if (_selectedEntity != null) _entityViewKey = 'accounts_${_selectedEntity!.id}';
           } else if (p.accountId != null) {
-            _selectedAccount = _accounts
-                .where((a) => a.id == p.accountId)
-                .firstOrNull;
+            _selectedAccount = _accounts.where((a) => a.id == p.accountId).firstOrNull;
+            _selectedEntity = _selectedAccount?.bankEntity;
+            if (_selectedEntity != null) _entityViewKey = 'accounts_${_selectedEntity!.id}';
           }
         }
       });
@@ -97,6 +135,26 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       setState(() => _isLoadingSources = false);
     }
   }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  List<BankEntity> get _entities {
+    final seen = <String>{};
+    final result = <BankEntity>[];
+    for (final a in _accounts) {
+      if (seen.add(a.bankEntity.id)) result.add(a.bankEntity);
+    }
+    for (final c in _creditCards) {
+      if (seen.add(c.bankEntity.id)) result.add(c.bankEntity);
+    }
+    return result;
+  }
+
+  List<BankAccount> _accountsFor(BankEntity entity) =>
+      _accounts.where((a) => a.bankEntity.id == entity.id).toList();
+
+  List<CreditCard> _cardsFor(BankEntity entity) =>
+      _creditCards.where((c) => c.bankEntity.id == entity.id).toList();
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -108,22 +166,164 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
-  String _formatDate(DateTime date) =>
-      "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+  // ── Navigation ─────────────────────────────────────────────────────────────
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  bool _validateStep1() {
+    final text = _amountController.text.trim();
+    if (text.isEmpty) { setState(() => _amountError = "Ingresa un monto"); return false; }
+    final parsed = double.tryParse(text);
+    if (parsed == null) { setState(() => _amountError = "Monto inválido"); return false; }
+    if (parsed <= 0) { setState(() => _amountError = "El monto debe ser mayor a 0"); return false; }
+    setState(() => _amountError = null);
+    return true;
+  }
 
-    final usingCard = _paymentSource == _PaymentSource.creditCard;
-    if (usingCard && _selectedCreditCard == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Selecciona una tarjeta de crédito")),
-      );
+  void _goToStep(int step) {
+    setState(() => _currentStep = step);
+    _pageController.animateToPage(
+      step,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _nextStep() {
+    if (_currentStep == 0) {
+      if (_validateStep1()) _goToStep(1);
+    } else if (_currentStep == 1) {
+      if (_selectedCategory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Selecciona una categoría")),
+        );
+        return;
+      }
+      _goToStep(2);
+    }
+  }
+
+  void _prevStep() {
+    if (_currentStep == 1 &&
+        _selectedParentCategory != null &&
+        _selectedParentCategory!.children.isNotEmpty) {
+      _backFromCategoryChildren();
       return;
     }
+    if (_currentStep == 2 && _selectedEntity != null) {
+      _backFromEntityAccounts();
+      return;
+    }
+    if (_currentStep > 0) {
+      _goToStep(_currentStep - 1);
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  void _backFromCategoryChildren() {
+    setState(() {
+      _selectedParentCategory = null;
+      _selectedCategory = null;
+      _categoryForward = false;
+      _categoryViewKey = 'parents';
+    });
+  }
+
+  void _backFromEntityAccounts() {
+    setState(() {
+      _selectedEntity = null;
+      _entityForward = false;
+      _entityViewKey = 'entities';
+    });
+  }
+
+  // ── Step 2 callbacks ──────────────────────────────────────────────────────
+
+  void _onParentCategoryTap(Category category) {
+    if (category.children.isNotEmpty) {
+      setState(() {
+        _selectedParentCategory = category;
+        _selectedCategory = null;
+        _categoryForward = true;
+        _categoryViewKey = 'children_${category.id}';
+      });
+    } else {
+      setState(() {
+        _selectedParentCategory = category;
+        _selectedCategory = category;
+      });
+    }
+  }
+
+  void _onChildCategoryTap(Category category) {
+    setState(() => _selectedCategory = category);
+  }
+
+  // ── Step 3 callbacks ──────────────────────────────────────────────────────
+
+  void _onEntityTap(BankEntity entity) {
+    setState(() {
+      if (_selectedEntity?.id != entity.id) {
+        _selectedAccount = null;
+        _selectedCreditCard = null;
+      }
+      _selectedEntity = entity;
+      _entityForward = true;
+      _entityViewKey = 'accounts_${entity.id}';
+    });
+  }
+
+  void _onAccountTap(BankAccount account) {
+    setState(() {
+      _selectedAccount = account;
+      _selectedCreditCard = null;
+    });
+  }
+
+  void _onCardTap(CreditCard card) {
+    setState(() {
+      _selectedCreditCard = card;
+      _selectedAccount = null;
+    });
+  }
+
+  // ── Navigation to creation forms ──────────────────────────────────────────
+
+  Future<void> _navigateToCategoryForm({Category? parent}) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FormCategoriesScreen(
+          initialType: CategoryType.expense,
+          parent: parent,
+        ),
+      ),
+    );
+    if (result == true) widget.onCategoryAdded?.call();
+  }
+
+  Future<void> _navigateToAccountForm() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const FormAccountScreen()),
+    );
+    if (result == true && mounted) await _loadSources();
+  }
+
+  Future<void> _navigateToCreditCardForm() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const FormCreditCardScreen()),
+    );
+    if (result == true && mounted) await _loadSources();
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+
+  Future<void> _submit() async {
+    final usingCard = _selectedCreditCard != null;
     if (!usingCard && _selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Selecciona una cuenta de origen")),
+        const SnackBar(content: Text("Selecciona una cuenta o tarjeta")),
       );
       return;
     }
@@ -166,284 +366,125 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     }
   }
 
-  List<(Category, String)> get _selectableCategories {
-    final result = <(Category, String)>[];
-    for (final cat in widget.categories) {
-      if (cat.children.isEmpty) {
-        result.add((cat, cat.name));
-      } else {
-        for (final child in cat.children) {
-          result.add((child, '${cat.name} › ${child.name}'));
-        }
-      }
-    }
-    return result;
-  }
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingSources) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (_isLoadingSources) return const Center(child: CircularProgressIndicator());
 
-    return Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    _label("Monto"),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: inputDecoration(context, "0.00"),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return "Ingresa un monto";
-                        final parsed = double.tryParse(v);
-                        if (parsed == null) return "Monto inválido";
-                        if (parsed <= 0) return "El monto debe ser mayor a 0";
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    _label("Fecha"),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _pickDate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.calendar_today, size: 18, color: AppColors.muted),
-                            const SizedBox(width: 8),
-                            Text(_formatDate(_selectedDate), style: AppTextStyles.subtitle2(context)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    _label("Categoría"),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<Category>(
-                      initialValue: _selectedCategory,
-                      items: _selectableCategories.map((entry) {
-                        return DropdownMenuItem<Category>(
-                          value: entry.$1,
-                          child: Text(entry.$2, style: AppTextStyles.body1(context)),
-                        );
-                      }).toList(),
-                      onChanged: (cat) => setState(() => _selectedCategory = cat),
-                      decoration: inputDecoration(context, "Selecciona una categoría"),
-                      validator: (v) => v == null ? "Selecciona una categoría" : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    _label("Fuente de pago"),
-                    const SizedBox(height: 8),
-                    _paymentSourceToggle(),
-                    const SizedBox(height: 12),
-                    _paymentSourceDropdown(),
-                    const SizedBox(height: 16),
-
-                    _label("Descripción (opcional)"),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: inputDecoration(context, "Ej: Supermercado"),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+    return PopScope(
+      canPop: _currentStep == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _prevStep();
+      },
+      child: Column(
+        children: [
+          ExpenseStepIndicator(currentStep: _currentStep, totalSteps: 3),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                ExpenseStepAmount(
+                  amountController: _amountController,
+                  descriptionController: _descriptionController,
+                  selectedDate: _selectedDate,
+                  amountError: _amountError,
+                  onDateTap: _pickDate,
+                  onAmountChanged: () {
+                    if (_amountError != null) setState(() => _amountError = null);
+                  },
                 ),
-              ),
+                ExpenseStepCategories(
+                  categories: widget.categories,
+                  selectedParentCategory: _selectedParentCategory,
+                  selectedCategory: _selectedCategory,
+                  viewKey: _categoryViewKey,
+                  goingForward: _categoryForward,
+                  onParentTap: _onParentCategoryTap,
+                  onChildTap: _onChildCategoryTap,
+                  onBack: _backFromCategoryChildren,
+                  onAddCategory: () => _navigateToCategoryForm(),
+                  onAddSubcategory: () => _navigateToCategoryForm(
+                    parent: _selectedParentCategory,
+                  ),
+                ),
+                ExpenseStepPayment(
+                  entities: _entities,
+                  selectedEntity: _selectedEntity,
+                  selectedAccount: _selectedAccount,
+                  selectedCreditCard: _selectedCreditCard,
+                  viewKey: _entityViewKey,
+                  goingForward: _entityForward,
+                  accountsFor: _accountsFor,
+                  cardsFor: _cardsFor,
+                  onEntityTap: _onEntityTap,
+                  onAccountTap: _onAccountTap,
+                  onCardTap: _onCardTap,
+                  onBack: _backFromEntityAccounts,
+                  onAddAccount: _navigateToAccountForm,
+                  onAddCreditCard: _navigateToCreditCardForm,
+                ),
+              ],
             ),
           ),
-        ),
-
-        Container(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 12,
-            bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: _isSaving ? null : _submit,
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(
-                          widget.editMode ? "Guardar cambios" : "Registrar gasto",
-                          style: AppTextStyles.subtitle2(context, color: Colors.white),
-                        ),
-                ),
-              ),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    "Cancelar",
-                    style: AppTextStyles.subtitle2(context, color: AppColors.error),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+          _bottomBar(),
+        ],
+      ),
     );
   }
 
-  Widget _paymentSourceToggle() {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () => setState(() {
-              _paymentSource = _PaymentSource.bankAccount;
-              _selectedCreditCard = null;
-            }),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: _paymentSource == _PaymentSource.bankAccount
-                    ? AppColors.error
-                    : AppColors.surface,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-                border: Border.all(color: AppColors.border),
+  Widget _bottomBar() {
+    final isLastStep = _currentStep == 2;
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: const BorderSide(color: AppColors.error),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Center(
-                child: Text(
-                  "Cuenta bancaria",
-                  style: AppTextStyles.body2(
-                    context,
-                    color: _paymentSource == _PaymentSource.bankAccount
-                        ? Colors.white
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ),
+              onPressed: _prevStep,
+              child: Text("Atrás", style: AppTextStyles.subtitle2(context, color: AppColors.error)),
             ),
           ),
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => setState(() {
-              _paymentSource = _PaymentSource.creditCard;
-              _selectedAccount = null;
-            }),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: _paymentSource == _PaymentSource.creditCard
-                    ? AppColors.error
-                    : AppColors.surface,
-                borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
-                border: Border.all(color: AppColors.border),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Center(
-                child: Text(
-                  "Tarjeta de crédito",
-                  style: AppTextStyles.body2(
-                    context,
-                    color: _paymentSource == _PaymentSource.creditCard
-                        ? Colors.white
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ),
+              onPressed: _isSaving ? null : (isLastStep ? _submit : _nextStep),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      isLastStep
+                          ? (widget.editMode ? "Guardar cambios" : "Guardar gasto")
+                          : "Siguiente",
+                      style: AppTextStyles.subtitle2(context, color: Colors.white),
+                    ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
-
-  Widget _paymentSourceDropdown() {
-    if (_paymentSource == _PaymentSource.bankAccount) {
-      if (_accounts.isEmpty) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(
-            "No tienes cuentas bancarias registradas",
-            style: AppTextStyles.body2(context, color: AppColors.muted),
-          ),
-        );
-      }
-      return DropdownButtonFormField<BankAccount>(
-        initialValue: _selectedAccount,
-        items: _accounts.map((acc) {
-          return DropdownMenuItem<BankAccount>(
-            value: acc,
-            child: Text("${acc.bankEntity.code} · ${acc.name}", style: AppTextStyles.body1(context)),
-          );
-        }).toList(),
-        onChanged: (acc) => setState(() => _selectedAccount = acc),
-        decoration: inputDecoration(context, "Selecciona una cuenta"),
-        validator: (v) => v == null ? "Selecciona una cuenta" : null,
-      );
-    }
-
-    if (_creditCards.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Text(
-          "No tienes tarjetas de crédito registradas",
-          style: AppTextStyles.body2(context, color: AppColors.muted),
-        ),
-      );
-    }
-    return DropdownButtonFormField<CreditCard>(
-      initialValue: _selectedCreditCard,
-      items: _creditCards.map((card) {
-        return DropdownMenuItem<CreditCard>(
-          value: card,
-          child: Text("${card.bankEntity.code} · ${card.name}", style: AppTextStyles.body1(context)),
-        );
-      }).toList(),
-      onChanged: (card) => setState(() => _selectedCreditCard = card),
-      decoration: inputDecoration(context, "Selecciona una tarjeta"),
-      validator: (v) => v == null ? "Selecciona una tarjeta" : null,
-    );
-  }
-
-  Widget _label(String text) =>
-      Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
 }

@@ -86,6 +86,14 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Widget _form() {
-    return ExpenseFormScreen(categories: categories, prefill: widget.prefill, editMode: widget.editMode);
+    return ExpenseFormScreen(
+      categories: categories,
+      prefill: widget.prefill,
+      editMode: widget.editMode,
+      onCategoryAdded: () {
+        setState(() => isLoading = true);
+        load();
+      },
+    );
   }
 }
