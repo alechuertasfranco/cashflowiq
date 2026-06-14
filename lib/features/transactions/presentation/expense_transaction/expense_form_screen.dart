@@ -10,7 +10,7 @@ import 'package:cashflowiq/features/profile/presentation/credit_cards/form_credi
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
 import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/expense_step_amount.dart';
 import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/expense_step_categories.dart';
-import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/expense_step_indicator.dart';
+import 'package:cashflowiq/core/widgets/step_indicator.dart';
 import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/expense_step_payment.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
@@ -379,7 +379,6 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       },
       child: Column(
         children: [
-          ExpenseStepIndicator(currentStep: _currentStep, totalSteps: 3),
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -428,6 +427,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
               ],
             ),
           ),
+          StepIndicator(currentStep: _currentStep, totalSteps: 3),
           _bottomBar(),
         ],
       ),

@@ -1,13 +1,13 @@
-// lib/features/transactions/presentation/expense_transaction/widgets/expense_step_indicator.dart
+// lib/core/widgets/step_indicator.dart
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
-class ExpenseStepIndicator extends StatelessWidget {
+class StepIndicator extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
 
-  const ExpenseStepIndicator({
+  const StepIndicator({
     super.key,
     required this.currentStep,
     required this.totalSteps,
@@ -16,7 +16,7 @@ class ExpenseStepIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(totalSteps, (i) {
