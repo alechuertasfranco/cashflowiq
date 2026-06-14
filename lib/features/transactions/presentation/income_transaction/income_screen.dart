@@ -86,6 +86,14 @@ class _IncomeScreenState extends State<IncomeScreen> {
   }
 
   Widget _form() {
-    return IncomeFormScreen(categories: categories, prefill: widget.prefill, editMode: widget.editMode);
+    return IncomeFormScreen(
+      categories: categories,
+      prefill: widget.prefill,
+      editMode: widget.editMode,
+      onCategoryAdded: () {
+        setState(() => isLoading = true);
+        load();
+      },
+    );
   }
 }

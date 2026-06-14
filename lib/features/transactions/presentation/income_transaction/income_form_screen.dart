@@ -2,10 +2,16 @@
 
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/core/widgets/step_indicator.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
+import 'package:cashflowiq/features/profile/presentation/bank_accounts/form_account_screen.dart';
+import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
+import 'package:cashflowiq/features/transactions/presentation/income_transaction/widgets/income_step_account.dart';
+import 'package:cashflowiq/features/transactions/presentation/income_transaction/widgets/income_step_amount.dart';
+import 'package:cashflowiq/features/transactions/presentation/income_transaction/widgets/income_step_categories.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
+import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:flutter/material.dart';
@@ -14,28 +20,47 @@ class IncomeFormScreen extends StatefulWidget {
   final List<Category> categories;
   final Transaction? prefill;
   final bool editMode;
+  final VoidCallback? onCategoryAdded;
 
-  const IncomeFormScreen({super.key, required this.categories, this.prefill, this.editMode = false});
+  const IncomeFormScreen({
+    super.key,
+    required this.categories,
+    this.prefill,
+    this.editMode = false,
+    this.onCategoryAdded,
+  });
 
   @override
   State<IncomeFormScreen> createState() => _IncomeFormScreenState();
 }
 
 class _IncomeFormScreenState extends State<IncomeFormScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _pageController = PageController();
 
   final _accountService = BankAccountService();
   final _transactionService = TransactionService();
 
   List<BankAccount> _accounts = [];
-  bool _isLoadingAccounts = true;
+  bool _isLoadingSources = true;
 
+  // ── Step 2: category (two-level) ─────────────────────────────────────────
+  Category? _selectedParentCategory;
   Category? _selectedCategory;
+  String _categoryViewKey = 'parents';
+  bool _categoryForward = true;
+
+  // ── Step 3: account (two-level) ──────────────────────────────────────────
+  BankEntity? _selectedEntity;
   BankAccount? _selectedAccount;
+  String _entityViewKey = 'entities';
+  bool _entityForward = true;
+
   DateTime _selectedDate = DateTime.now();
   bool _isSaving = false;
+  int _currentStep = 0;
+  String? _amountError;
 
   @override
   void initState() {
@@ -46,37 +71,68 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
       _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
       _descriptionController.text = p.description ?? '';
       _selectedDate = p.date;
-      _selectedCategory = _selectableCategories
-          .where((e) => e.$1.id == p.categoryId)
-          .map((e) => e.$1)
-          .firstOrNull;
+      for (final cat in widget.categories) {
+        if (cat.id == p.categoryId) {
+          _selectedParentCategory = cat;
+          _selectedCategory = cat;
+          break;
+        }
+        for (final child in cat.children) {
+          if (child.id == p.categoryId) {
+            _selectedParentCategory = cat;
+            _selectedCategory = child;
+            _categoryViewKey = 'children_${cat.id}';
+            break;
+          }
+        }
+        if (_selectedCategory != null) break;
+      }
     }
-    _loadAccounts();
+    _loadSources();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAccounts() async {
+  // ── Data loading ──────────────────────────────────────────────────────────
+
+  Future<void> _loadSources() async {
     try {
       final accounts = await _accountService.getAccounts();
       setState(() {
         _accounts = accounts;
-        _isLoadingAccounts = false;
+        _isLoadingSources = false;
         if (widget.prefill?.accountId != null) {
           _selectedAccount = accounts
               .where((a) => a.id == widget.prefill!.accountId)
               .firstOrNull;
+          _selectedEntity = _selectedAccount?.bankEntity;
+          if (_selectedEntity != null) _entityViewKey = 'accounts_${_selectedEntity!.id}';
         }
       });
     } catch (_) {
-      setState(() => _isLoadingAccounts = false);
+      setState(() => _isLoadingSources = false);
     }
   }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  List<BankEntity> get _entities {
+    final seen = <String>{};
+    final result = <BankEntity>[];
+    for (final a in _accounts) {
+      if (seen.add(a.bankEntity.id)) result.add(a.bankEntity);
+    }
+    return result;
+  }
+
+  List<BankAccount> _accountsFor(BankEntity entity) =>
+      _accounts.where((a) => a.bankEntity.id == entity.id).toList();
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -88,14 +144,142 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
-  String _formatDate(DateTime date) =>
-      "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  bool _validateStep1() {
+    final text = _amountController.text.trim();
+    if (text.isEmpty) { setState(() => _amountError = "Ingresa un monto"); return false; }
+    final parsed = double.tryParse(text);
+    if (parsed == null) { setState(() => _amountError = "Monto inválido"); return false; }
+    if (parsed <= 0) { setState(() => _amountError = "El monto debe ser mayor a 0"); return false; }
+    setState(() => _amountError = null);
+    return true;
+  }
+
+  void _goToStep(int step) {
+    setState(() => _currentStep = step);
+    _pageController.animateToPage(
+      step,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _nextStep() {
+    if (_currentStep == 0) {
+      if (_validateStep1()) _goToStep(1);
+    } else if (_currentStep == 1) {
+      if (_selectedCategory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Selecciona una categoría")),
+        );
+        return;
+      }
+      _goToStep(2);
+    }
+  }
+
+  void _prevStep() {
+    if (_currentStep == 1 &&
+        _selectedParentCategory != null &&
+        _selectedParentCategory!.children.isNotEmpty) {
+      _backFromCategoryChildren();
+      return;
+    }
+    if (_currentStep == 2 && _selectedEntity != null) {
+      _backFromEntityAccounts();
+      return;
+    }
+    if (_currentStep > 0) {
+      _goToStep(_currentStep - 1);
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  void _backFromCategoryChildren() {
+    setState(() {
+      _selectedParentCategory = null;
+      _selectedCategory = null;
+      _categoryForward = false;
+      _categoryViewKey = 'parents';
+    });
+  }
+
+  void _backFromEntityAccounts() {
+    setState(() {
+      _selectedEntity = null;
+      _entityForward = false;
+      _entityViewKey = 'entities';
+    });
+  }
+
+  // ── Step 2 callbacks ──────────────────────────────────────────────────────
+
+  void _onParentCategoryTap(Category category) {
+    if (category.children.isNotEmpty) {
+      setState(() {
+        _selectedParentCategory = category;
+        _selectedCategory = null;
+        _categoryForward = true;
+        _categoryViewKey = 'children_${category.id}';
+      });
+    } else {
+      setState(() {
+        _selectedParentCategory = category;
+        _selectedCategory = category;
+      });
+    }
+  }
+
+  void _onChildCategoryTap(Category category) {
+    setState(() => _selectedCategory = category);
+  }
+
+  // ── Step 3 callbacks ──────────────────────────────────────────────────────
+
+  void _onEntityTap(BankEntity entity) {
+    setState(() {
+      if (_selectedEntity?.id != entity.id) _selectedAccount = null;
+      _selectedEntity = entity;
+      _entityForward = true;
+      _entityViewKey = 'accounts_${entity.id}';
+    });
+  }
+
+  void _onAccountTap(BankAccount account) {
+    setState(() => _selectedAccount = account);
+  }
+
+  // ── Navigation to creation forms ──────────────────────────────────────────
+
+  Future<void> _navigateToCategoryForm({Category? parent}) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FormCategoriesScreen(
+          initialType: CategoryType.income,
+          parent: parent,
+        ),
+      ),
+    );
+    if (result == true) widget.onCategoryAdded?.call();
+  }
+
+  Future<void> _navigateToAccountForm() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const FormAccountScreen()),
+    );
+    if (result == true && mounted) await _loadSources();
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Selecciona una cuenta destino")),
+        const SnackBar(content: Text("Selecciona una cuenta")),
       );
       return;
     }
@@ -137,186 +321,125 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     }
   }
 
-  List<(Category, String)> get _selectableCategories {
-    final result = <(Category, String)>[];
-    for (final cat in widget.categories) {
-      if (cat.children.isEmpty) {
-        result.add((cat, cat.name));
-      } else {
-        for (final child in cat.children) {
-          result.add((child, '${cat.name} › ${child.name}'));
-        }
-      }
-    }
-    return result;
-  }
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingAccounts) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (_isLoadingSources) return const Center(child: CircularProgressIndicator());
 
-    return Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    _label("Monto"),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: inputDecoration(context, "0.00"),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return "Ingresa un monto";
-                        final parsed = double.tryParse(v);
-                        if (parsed == null) return "Monto inválido";
-                        if (parsed <= 0) return "El monto debe ser mayor a 0";
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    _label("Fecha"),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _pickDate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.calendar_today, size: 18, color: AppColors.muted),
-                            const SizedBox(width: 8),
-                            Text(_formatDate(_selectedDate), style: AppTextStyles.subtitle2(context)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    _label("Categoría"),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<Category>(
-                      initialValue: _selectedCategory,
-                      items: _selectableCategories.map((entry) {
-                        return DropdownMenuItem<Category>(
-                          value: entry.$1,
-                          child: Text(entry.$2, style: AppTextStyles.body1(context)),
-                        );
-                      }).toList(),
-                      onChanged: (cat) => setState(() => _selectedCategory = cat),
-                      decoration: inputDecoration(context, "Selecciona una categoría"),
-                      validator: (v) => v == null ? "Selecciona una categoría" : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    _label("Cuenta destino"),
-                    const SizedBox(height: 8),
-                    _accounts.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
-                              "No tienes cuentas bancarias registradas",
-                              style: AppTextStyles.body2(context, color: AppColors.muted),
-                            ),
-                          )
-                        : DropdownButtonFormField<BankAccount>(
-                            initialValue: _selectedAccount,
-                            items: _accounts.map((acc) {
-                              return DropdownMenuItem<BankAccount>(
-                                value: acc,
-                                child: Text("${acc.bankEntity.code} · ${acc.name}", style: AppTextStyles.body1(context)),
-                              );
-                            }).toList(),
-                            onChanged: (acc) => setState(() => _selectedAccount = acc),
-                            decoration: inputDecoration(context, "Selecciona una cuenta"),
-                            validator: (v) => v == null ? "Selecciona una cuenta" : null,
-                          ),
-                    const SizedBox(height: 16),
-
-                    _label("Descripción (opcional)"),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: inputDecoration(context, "Ej: Pago de cliente"),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+    return PopScope(
+      canPop: _currentStep == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _prevStep();
+      },
+      child: Column(
+        children: [
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                IncomeStepAmount(
+                  amountController: _amountController,
+                  descriptionController: _descriptionController,
+                  selectedDate: _selectedDate,
+                  amountError: _amountError,
+                  onDateTap: _pickDate,
+                  onAmountChanged: () {
+                    if (_amountError != null) setState(() => _amountError = null);
+                  },
                 ),
-              ),
+                IncomeStepCategories(
+                  categories: widget.categories,
+                  selectedParentCategory: _selectedParentCategory,
+                  selectedCategory: _selectedCategory,
+                  viewKey: _categoryViewKey,
+                  goingForward: _categoryForward,
+                  onParentTap: _onParentCategoryTap,
+                  onChildTap: _onChildCategoryTap,
+                  onBack: _backFromCategoryChildren,
+                  onAddCategory: () => _navigateToCategoryForm(),
+                  onAddSubcategory: () => _navigateToCategoryForm(
+                    parent: _selectedParentCategory,
+                  ),
+                ),
+                IncomeStepAccount(
+                  entities: _entities,
+                  selectedEntity: _selectedEntity,
+                  selectedAccount: _selectedAccount,
+                  viewKey: _entityViewKey,
+                  goingForward: _entityForward,
+                  accountsFor: _accountsFor,
+                  onEntityTap: _onEntityTap,
+                  onAccountTap: _onAccountTap,
+                  onBack: _backFromEntityAccounts,
+                  onAddAccount: _navigateToAccountForm,
+                ),
+              ],
             ),
           ),
-        ),
-
-        Container(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 12,
-            bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
+          StepIndicator(
+            currentStep: _currentStep,
+            totalSteps: 3,
+            activeColor: AppColors.primary,
           ),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: _isSaving ? null : _submit,
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(
-                          widget.editMode ? "Guardar cambios" : "Registrar ingreso",
-                          style: AppTextStyles.subtitle2(context, color: Colors.white),
-                        ),
-                ),
-              ),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    "Cancelar",
-                    style: AppTextStyles.subtitle2(context, color: AppColors.primary),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+          _bottomBar(),
+        ],
+      ),
     );
   }
 
-  Widget _label(String text) =>
-      Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
+  Widget _bottomBar() {
+    final isLastStep = _currentStep == 2;
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _prevStep,
+              child: Text("Atrás", style: AppTextStyles.subtitle2(context, color: AppColors.primary)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _isSaving ? null : (isLastStep ? _submit : _nextStep),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      isLastStep
+                          ? (widget.editMode ? "Guardar cambios" : "Guardar ingreso")
+                          : "Siguiente",
+                      style: AppTextStyles.subtitle2(context, color: Colors.white),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
