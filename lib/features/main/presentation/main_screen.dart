@@ -58,19 +58,25 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onTabTapped(0);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
 
-      body: SafeArea(
-        child: PageView(
-          controller: _pageController,
-          physics: const BouncingScrollPhysics(),
-          onPageChanged: (index) => setState(() => _currentIndex = index),
-          children: _screens,
+        body: SafeArea(
+          child: PageView(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: (index) => setState(() => _currentIndex = index),
+            children: _screens,
+          ),
         ),
-      ),
 
-      bottomNavigationBar: CustomBottomBar(currentIndex: _currentIndex, onTap: _onTabTapped),
+        bottomNavigationBar: CustomBottomBar(currentIndex: _currentIndex, onTap: _onTabTapped),
+      ),
     );
   }
 }
