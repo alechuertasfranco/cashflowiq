@@ -493,6 +493,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             child: SwipeToDelete(
               key: ValueKey(tx.id),
               onDelete: () => _delete(tx),
+              showConfirmation: true,
               child: GestureDetector(
                 onTap: () => _openDetail(tx),
                 child: _transactionTile(tx),
