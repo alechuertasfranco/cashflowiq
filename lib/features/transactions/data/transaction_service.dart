@@ -14,6 +14,14 @@ class TransactionService {
     return Transaction.fromJson(data);
   }
 
+  Future<Transaction> updateTransaction(String id, Transaction tx) async {
+    final data = await ApiClient.putJson("/transactions/$id", body: tx.toJson());
+    DataCache.instance.invalidatePrefix('transactions');
+    DataCache.instance.invalidate('dashboard_summary');
+    DataCache.instance.invalidate('recurring_transactions');
+    return Transaction.fromJson(data);
+  }
+
   Future<void> deleteTransaction(String id) async {
     await ApiClient.delete("/transactions/$id");
     DataCache.instance.invalidatePrefix('transactions');

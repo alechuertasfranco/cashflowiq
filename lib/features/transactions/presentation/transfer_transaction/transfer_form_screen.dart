@@ -13,8 +13,9 @@ import 'package:flutter/material.dart';
 class TransferFormScreen extends StatefulWidget {
   final List<BankAccount> accounts;
   final Transaction? prefill;
+  final bool editMode;
 
-  const TransferFormScreen({super.key, required this.accounts, this.prefill});
+  const TransferFormScreen({super.key, required this.accounts, this.prefill, this.editMode = false});
 
   @override
   State<TransferFormScreen> createState() => _TransferFormScreenState();
@@ -46,6 +47,7 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
       final a = p.amount;
       _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
       _descriptionController.text = p.description ?? '';
+      _selectedDate = p.date;
       _fromAccount = widget.accounts.where((a) => a.id == p.accountId).firstOrNull;
       if (p.toCreditCardId != null) {
         _toCard = true;
@@ -123,28 +125,36 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
 
     setState(() => _isSaving = true);
 
+    final tx = Transaction(
+      id: widget.editMode ? widget.prefill!.id : '',
+      type: TransactionType.transfer,
+      amount: double.parse(_amountController.text.trim()),
+      date: _selectedDate,
+      accountId: _fromAccount!.id,
+      toAccountId: _toCard ? null : _toAccount!.id,
+      toCreditCardId: _toCard ? _toCreditCardId : null,
+      description: _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null,
+    );
+
     try {
-      await _transactionService.createTransaction(
-        Transaction(
-          id: '',
-          type: TransactionType.transfer,
-          amount: double.parse(_amountController.text.trim()),
-          date: _selectedDate,
-          accountId: _fromAccount!.id,
-          toAccountId: _toCard ? null : _toAccount!.id,
-          toCreditCardId: _toCard ? _toCreditCardId : null,
-          description: _descriptionController.text.trim().isNotEmpty
-              ? _descriptionController.text.trim()
-              : null,
-        ),
-      );
+      if (widget.editMode) {
+        await _transactionService.updateTransaction(widget.prefill!.id, tx);
+      } else {
+        await _transactionService.createTransaction(tx);
+      }
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint("createTransaction error: $e");
+      debugPrint("transferTransaction error: $e");
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error al registrar la transferencia")),
+        SnackBar(
+          content: Text(widget.editMode
+              ? "Error al actualizar la transferencia"
+              : "Error al registrar la transferencia"),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -277,7 +287,7 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          "Registrar transferencia",
+                          widget.editMode ? "Guardar cambios" : "Registrar transferencia",
                           style: AppTextStyles.subtitle2(context, color: Colors.white),
                         ),
                 ),

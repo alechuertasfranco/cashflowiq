@@ -12,8 +12,9 @@ import 'package:cashflowiq/shared/models/category.dart';
 
 class IncomeScreen extends StatefulWidget {
   final Transaction? prefill;
+  final bool editMode;
 
-  const IncomeScreen({super.key, this.prefill});
+  const IncomeScreen({super.key, this.prefill, this.editMode = false});
 
   @override
   State<IncomeScreen> createState() => _IncomeScreenState();
@@ -60,7 +61,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text("Nuevo ingreso", style: AppTextStyles.h400(context)),
+        title: Text(widget.editMode ? "Editar ingreso" : "Nuevo ingreso", style: AppTextStyles.h400(context)),
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
@@ -85,6 +86,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
   }
 
   Widget _form() {
-    return IncomeFormScreen(categories: categories, prefill: widget.prefill);
+    return IncomeFormScreen(categories: categories, prefill: widget.prefill, editMode: widget.editMode);
   }
 }

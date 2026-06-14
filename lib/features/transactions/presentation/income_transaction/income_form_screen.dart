@@ -13,8 +13,9 @@ import 'package:flutter/material.dart';
 class IncomeFormScreen extends StatefulWidget {
   final List<Category> categories;
   final Transaction? prefill;
+  final bool editMode;
 
-  const IncomeFormScreen({super.key, required this.categories, this.prefill});
+  const IncomeFormScreen({super.key, required this.categories, this.prefill, this.editMode = false});
 
   @override
   State<IncomeFormScreen> createState() => _IncomeFormScreenState();
@@ -44,6 +45,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
       final a = p.amount;
       _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
       _descriptionController.text = p.description ?? '';
+      _selectedDate = p.date;
       _selectedCategory = _selectableCategories
           .where((e) => e.$1.id == p.categoryId)
           .map((e) => e.$1)
@@ -100,27 +102,35 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
     setState(() => _isSaving = true);
 
+    final tx = Transaction(
+      id: widget.editMode ? widget.prefill!.id : '',
+      type: TransactionType.income,
+      amount: double.parse(_amountController.text.trim()),
+      date: _selectedDate,
+      categoryId: _selectedCategory!.id,
+      accountId: _selectedAccount!.id,
+      description: _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null,
+    );
+
     try {
-      await _transactionService.createTransaction(
-        Transaction(
-          id: '',
-          type: TransactionType.income,
-          amount: double.parse(_amountController.text.trim()),
-          date: _selectedDate,
-          categoryId: _selectedCategory!.id,
-          accountId: _selectedAccount!.id,
-          description: _descriptionController.text.trim().isNotEmpty
-              ? _descriptionController.text.trim()
-              : null,
-        ),
-      );
+      if (widget.editMode) {
+        await _transactionService.updateTransaction(widget.prefill!.id, tx);
+      } else {
+        await _transactionService.createTransaction(tx);
+      }
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint("createTransaction error: $e");
+      debugPrint("incomeTransaction error: $e");
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error al registrar el ingreso")),
+        SnackBar(
+          content: Text(widget.editMode
+              ? "Error al actualizar el ingreso"
+              : "Error al registrar el ingreso"),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -281,7 +291,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          "Registrar ingreso",
+                          widget.editMode ? "Guardar cambios" : "Registrar ingreso",
                           style: AppTextStyles.subtitle2(context, color: Colors.white),
                         ),
                 ),

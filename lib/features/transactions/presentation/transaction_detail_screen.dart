@@ -92,6 +92,22 @@ class TransactionDetailScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _edit(BuildContext context) async {
+    final Widget screen = switch (transaction.type) {
+      TransactionType.income => IncomeScreen(prefill: transaction, editMode: true),
+      TransactionType.expense => ExpenseScreen(prefill: transaction, editMode: true),
+      TransactionType.transfer => TransferScreen(prefill: transaction, editMode: true),
+    };
+
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+    );
+    if (result == true && context.mounted) {
+      Navigator.pop(context, true);
+    }
+  }
+
   Future<void> _replicate(BuildContext context) async {
     final Widget screen = switch (transaction.type) {
       TransactionType.income => IncomeScreen(prefill: transaction),
@@ -118,6 +134,11 @@ class TransactionDetailScreen extends StatelessWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+            tooltip: "Editar movimiento",
+            onPressed: () => _edit(context),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: AppColors.error),
             tooltip: "Eliminar movimiento",

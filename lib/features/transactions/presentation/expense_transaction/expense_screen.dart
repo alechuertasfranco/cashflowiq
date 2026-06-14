@@ -12,8 +12,9 @@ import 'package:cashflowiq/shared/models/category.dart';
 
 class ExpenseScreen extends StatefulWidget {
   final Transaction? prefill;
+  final bool editMode;
 
-  const ExpenseScreen({super.key, this.prefill});
+  const ExpenseScreen({super.key, this.prefill, this.editMode = false});
 
   @override
   State<ExpenseScreen> createState() => _ExpenseScreenState();
@@ -60,7 +61,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text("Nuevo gasto", style: AppTextStyles.h400(context)),
+        title: Text(widget.editMode ? "Editar gasto" : "Nuevo gasto", style: AppTextStyles.h400(context)),
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
@@ -85,6 +86,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Widget _form() {
-    return ExpenseFormScreen(categories: categories, prefill: widget.prefill);
+    return ExpenseFormScreen(categories: categories, prefill: widget.prefill, editMode: widget.editMode);
   }
 }

@@ -17,8 +17,9 @@ enum _PaymentSource { bankAccount, creditCard }
 class ExpenseFormScreen extends StatefulWidget {
   final List<Category> categories;
   final Transaction? prefill;
+  final bool editMode;
 
-  const ExpenseFormScreen({super.key, required this.categories, this.prefill});
+  const ExpenseFormScreen({super.key, required this.categories, this.prefill, this.editMode = false});
 
   @override
   State<ExpenseFormScreen> createState() => _ExpenseFormScreenState();
@@ -52,6 +53,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       final a = p.amount;
       _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
       _descriptionController.text = p.description ?? '';
+      _selectedDate = p.date;
       _selectedCategory = _selectableCategories
           .where((e) => e.$1.id == p.categoryId)
           .map((e) => e.$1)
@@ -128,28 +130,36 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
     setState(() => _isSaving = true);
 
+    final tx = Transaction(
+      id: widget.editMode ? widget.prefill!.id : '',
+      type: TransactionType.expense,
+      amount: double.parse(_amountController.text.trim()),
+      date: _selectedDate,
+      categoryId: _selectedCategory!.id,
+      accountId: usingCard ? null : _selectedAccount!.id,
+      creditCardId: usingCard ? _selectedCreditCard!.id : null,
+      description: _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null,
+    );
+
     try {
-      await _transactionService.createTransaction(
-        Transaction(
-          id: '',
-          type: TransactionType.expense,
-          amount: double.parse(_amountController.text.trim()),
-          date: _selectedDate,
-          categoryId: _selectedCategory!.id,
-          accountId: usingCard ? null : _selectedAccount!.id,
-          creditCardId: usingCard ? _selectedCreditCard!.id : null,
-          description: _descriptionController.text.trim().isNotEmpty
-              ? _descriptionController.text.trim()
-              : null,
-        ),
-      );
+      if (widget.editMode) {
+        await _transactionService.updateTransaction(widget.prefill!.id, tx);
+      } else {
+        await _transactionService.createTransaction(tx);
+      }
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint("createTransaction error: $e");
+      debugPrint("expenseTransaction error: $e");
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error al registrar el gasto")),
+        SnackBar(
+          content: Text(widget.editMode
+              ? "Error al actualizar el gasto"
+              : "Error al registrar el gasto"),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -293,7 +303,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          "Registrar gasto",
+                          widget.editMode ? "Guardar cambios" : "Registrar gasto",
                           style: AppTextStyles.subtitle2(context, color: Colors.white),
                         ),
                 ),

@@ -11,8 +11,9 @@ import 'package:cashflowiq/shared/models/bank_account.dart';
 
 class TransferScreen extends StatefulWidget {
   final Transaction? prefill;
+  final bool editMode;
 
-  const TransferScreen({super.key, this.prefill});
+  const TransferScreen({super.key, this.prefill, this.editMode = false});
 
   @override
   State<TransferScreen> createState() => _TransferScreenState();
@@ -47,7 +48,7 @@ class _TransferScreenState extends State<TransferScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text("Nueva transferencia", style: AppTextStyles.h400(context)),
+        title: Text(widget.editMode ? "Editar transferencia" : "Nueva transferencia", style: AppTextStyles.h400(context)),
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
@@ -56,7 +57,7 @@ class _TransferScreenState extends State<TransferScreen> {
             ? const Center(child: CircularProgressIndicator())
             : accounts.isEmpty
             ? _emptyState()
-            : TransferFormScreen(accounts: accounts, prefill: widget.prefill),
+            : TransferFormScreen(accounts: accounts, prefill: widget.prefill, editMode: widget.editMode),
       ),
     );
   }
