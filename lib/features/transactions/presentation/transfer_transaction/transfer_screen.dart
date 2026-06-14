@@ -57,7 +57,7 @@ class _TransferScreenState extends State<TransferScreen> {
             ? const Center(child: CircularProgressIndicator())
             : accounts.isEmpty
             ? _emptyState()
-            : TransferFormScreen(accounts: accounts, prefill: widget.prefill, editMode: widget.editMode),
+            : TransferFormScreen(prefill: widget.prefill, editMode: widget.editMode),
       ),
     );
   }
