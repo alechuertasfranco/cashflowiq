@@ -3,7 +3,7 @@
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/utils/format.dart';
-import 'package:cashflowiq/features/transactions/presentation/expense_transaction/widgets/sub_step_switcher.dart';
+import 'package:cashflowiq/core/widgets/sub_step_switcher.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:flutter/material.dart';
 
