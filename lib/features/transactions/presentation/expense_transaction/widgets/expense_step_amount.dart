@@ -35,15 +35,6 @@ class ExpenseStepAmount extends StatelessWidget {
         children: [
           Text("¿Cuánto gastaste?", style: AppTextStyles.h400(context)),
           const SizedBox(height: 24),
-          TextField(
-            controller: amountController,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: AppTextStyles.h300(context),
-            decoration: inputDecoration(context, "0.00").copyWith(errorText: amountError),
-            onChanged: (_) => onAmountChanged(),
-          ),
-          const SizedBox(height: 24),
           Text(
             "Fecha",
             style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary),
@@ -68,6 +59,15 @@ class ExpenseStepAmount extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: amountController,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: AppTextStyles.h300(context),
+            decoration: inputDecoration(context, "0.00").copyWith(errorText: amountError),
+            onChanged: (_) => onAmountChanged(),
           ),
           const SizedBox(height: 24),
           Text(
