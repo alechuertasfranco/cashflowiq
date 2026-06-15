@@ -9,6 +9,24 @@ import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/credit_card.dart';
 import 'package:flutter/material.dart';
 
+/// A pre-built item for the "Más usado" quick-access row.
+///
+/// Carries display data and a pre-bound [onTap] callback so the row widget
+/// does not need to know about the underlying account/card type.
+class PaymentSourceItem {
+  final IconData icon;
+  final String name;
+  final String entityCode;
+  final VoidCallback onTap;
+
+  const PaymentSourceItem({
+    required this.icon,
+    required this.name,
+    required this.entityCode,
+    required this.onTap,
+  });
+}
+
 class ExpenseStepPayment extends StatelessWidget {
   final List<BankEntity> entities;
   final BankEntity? selectedEntity;
@@ -24,8 +42,7 @@ class ExpenseStepPayment extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onAddAccount;
   final VoidCallback onAddCreditCard;
-  final List<BankAccount> mostUsedAccounts;
-  final List<CreditCard> mostUsedCreditCards;
+  final List<PaymentSourceItem> mostUsedItems;
 
   const ExpenseStepPayment({
     super.key,
@@ -43,8 +60,7 @@ class ExpenseStepPayment extends StatelessWidget {
     required this.onBack,
     required this.onAddAccount,
     required this.onAddCreditCard,
-    this.mostUsedAccounts = const [],
-    this.mostUsedCreditCards = const [],
+    this.mostUsedItems = const [],
   });
 
   @override
@@ -74,8 +90,7 @@ class ExpenseStepPayment extends StatelessWidget {
               onCardTap: onCardTap,
               onAddAccount: onAddAccount,
               onAddCreditCard: onAddCreditCard,
-              mostUsedAccounts: mostUsedAccounts,
-              mostUsedCreditCards: mostUsedCreditCards,
+              mostUsedItems: mostUsedItems,
             ),
     );
   }
@@ -92,8 +107,7 @@ class _EntityListView extends StatelessWidget {
   final void Function(CreditCard) onCardTap;
   final VoidCallback onAddAccount;
   final VoidCallback onAddCreditCard;
-  final List<BankAccount> mostUsedAccounts;
-  final List<CreditCard> mostUsedCreditCards;
+  final List<PaymentSourceItem> mostUsedItems;
 
   const _EntityListView({
     required this.entities,
@@ -104,28 +118,20 @@ class _EntityListView extends StatelessWidget {
     required this.onCardTap,
     required this.onAddAccount,
     required this.onAddCreditCard,
-    this.mostUsedAccounts = const [],
-    this.mostUsedCreditCards = const [],
+    this.mostUsedItems = const [],
   });
 
   @override
   Widget build(BuildContext context) {
-    final showQuickAccess = mostUsedAccounts.isNotEmpty || mostUsedCreditCards.isNotEmpty;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("¿Con qué pagaste?", style: AppTextStyles.h400(context)),
-          if (showQuickAccess) ...[
+          if (mostUsedItems.isNotEmpty) ...[
             const SizedBox(height: 16),
-            _QuickAccessRow(
-              accounts: mostUsedAccounts,
-              cards: mostUsedCreditCards,
-              onAccountTap: onAccountTap,
-              onCardTap: onCardTap,
-            ),
+            _QuickAccessRow(items: mostUsedItems),
           ],
           const SizedBox(height: 20),
           if (entities.isEmpty)
@@ -172,45 +178,12 @@ class _EmptyPaymentHint extends StatelessWidget {
 }
 
 class _QuickAccessRow extends StatelessWidget {
-  final List<BankAccount> accounts;
-  final List<CreditCard> cards;
-  final void Function(BankAccount) onAccountTap;
-  final void Function(CreditCard) onCardTap;
+  final List<PaymentSourceItem> items;
 
-  const _QuickAccessRow({
-    required this.accounts,
-    required this.cards,
-    required this.onAccountTap,
-    required this.onCardTap,
-  });
+  const _QuickAccessRow({required this.items});
 
   @override
   Widget build(BuildContext context) {
-    const maxSlots = 3;
-    final items = <Widget>[];
-    var ai = 0;
-    var ci = 0;
-    while (items.length < maxSlots && (ai < accounts.length || ci < cards.length)) {
-      if (ai < accounts.length) {
-        final a = accounts[ai++];
-        items.add(_QuickAccessCard(
-          icon: Icons.account_balance,
-          name: a.name,
-          entityCode: a.bankEntity.code,
-          onTap: () => onAccountTap(a),
-        ));
-      }
-      if (items.length < maxSlots && ci < cards.length) {
-        final c = cards[ci++];
-        items.add(_QuickAccessCard(
-          icon: Icons.credit_card,
-          name: c.name,
-          entityCode: c.bankEntity.code,
-          onTap: () => onCardTap(c),
-        ));
-      }
-    }
-
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -225,6 +198,12 @@ class _QuickAccessRow extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: items
+                .map((item) => _QuickAccessCard(
+                      icon: item.icon,
+                      name: item.name,
+                      entityCode: item.entityCode,
+                      onTap: item.onTap,
+                    ))
                 .expand((w) => [w, const SizedBox(width: 8)])
                 .toList()
               ..removeLast(),

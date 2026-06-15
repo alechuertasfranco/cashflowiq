@@ -4,6 +4,7 @@ import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
+import 'package:cashflowiq/features/profile/data/payment_source_service.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_accounts/form_account_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/credit_cards/form_credit_card_screen.dart';
@@ -45,12 +46,12 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   final _accountService = BankAccountService();
   final _creditCardService = CreditCardService();
+  final _paymentSourceService = PaymentSourceService();
   final _transactionService = TransactionService();
 
   List<BankAccount> _accounts = [];
   List<CreditCard> _creditCards = [];
-  List<BankAccount> _mostUsedAccounts = [];
-  List<CreditCard> _mostUsedCreditCards = [];
+  List<PaymentSourceItem> _mostUsedItems = [];
   bool _isLoadingSources = true;
 
   // ── Step 2: category (two-level) ─────────────────────────────────────────
@@ -115,14 +116,47 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       final results = await Future.wait([
         _accountService.getAccounts(),
         _creditCardService.getCreditCards(),
-        _accountService.getMostUsedAccounts(),
-        _creditCardService.getMostUsedCreditCards(),
+        _paymentSourceService.getMostUsedSources(),
       ]);
+      final accounts = results[0] as List<BankAccount>;
+      final creditCards = results[1] as List<CreditCard>;
+      final rawSources = results[2] as List<Map<String, dynamic>>;
+
+      final mostUsedItems = <PaymentSourceItem>[];
+      for (final src in rawSources) {
+        final type = src['type'] as String;
+        final id = src['id'].toString();
+        final name = src['name'] as String;
+        final entityCode = src['bank_entity']['code'] as String;
+        if (type == 'account') {
+          final matches = accounts.where((a) => a.id == id);
+          if (matches.isNotEmpty) {
+            final account = matches.first;
+            mostUsedItems.add(PaymentSourceItem(
+              icon: Icons.account_balance,
+              name: name,
+              entityCode: entityCode,
+              onTap: () => _onAccountTap(account),
+            ));
+          }
+        } else {
+          final matches = creditCards.where((c) => c.id == id);
+          if (matches.isNotEmpty) {
+            final card = matches.first;
+            mostUsedItems.add(PaymentSourceItem(
+              icon: Icons.credit_card,
+              name: name,
+              entityCode: entityCode,
+              onTap: () => _onCardTap(card),
+            ));
+          }
+        }
+      }
+
       setState(() {
-        _accounts = results[0] as List<BankAccount>;
-        _creditCards = results[1] as List<CreditCard>;
-        _mostUsedAccounts = results[2] as List<BankAccount>;
-        _mostUsedCreditCards = results[3] as List<CreditCard>;
+        _accounts = accounts;
+        _creditCards = creditCards;
+        _mostUsedItems = mostUsedItems;
         _isLoadingSources = false;
         if (widget.prefill != null) {
           final p = widget.prefill!;
@@ -429,8 +463,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                   onBack: _backFromEntityAccounts,
                   onAddAccount: _navigateToAccountForm,
                   onAddCreditCard: _navigateToCreditCardForm,
-                  mostUsedAccounts: _mostUsedAccounts,
-                  mostUsedCreditCards: _mostUsedCreditCards,
+                  mostUsedItems: _mostUsedItems,
                 ),
               ],
             ),
