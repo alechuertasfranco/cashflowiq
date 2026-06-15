@@ -4,7 +4,7 @@ import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/features/dashboard/data/dashboard_summary.dart';
-import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card.dart';
+import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/currency_utils.dart';
 import 'package:cashflowiq/features/transactions/presentation/transactions_screen.dart';
 import 'package:flutter/material.dart';
 

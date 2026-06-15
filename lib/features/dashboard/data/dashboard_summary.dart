@@ -30,6 +30,8 @@ class DashboardSummary {
   final double totalIncome;
   final double totalExpense;
   final double netBalance;
+  final double allTimeIncome;
+  final double allTimeExpense;
   final List<AccountBalance> accounts;
   final int? mostActiveAccountId;
   final String? mostActiveAccountName;
@@ -39,6 +41,8 @@ class DashboardSummary {
     required this.totalIncome,
     required this.totalExpense,
     required this.netBalance,
+    required this.allTimeIncome,
+    required this.allTimeExpense,
     required this.accounts,
     this.mostActiveAccountId,
     this.mostActiveAccountName,
@@ -51,6 +55,8 @@ class DashboardSummary {
       totalIncome: double.parse(json['total_income'].toString()),
       totalExpense: double.parse(json['total_expense'].toString()),
       netBalance: double.parse(json['net_balance'].toString()),
+      allTimeIncome: double.parse(json['all_time_income'].toString()),
+      allTimeExpense: double.parse(json['all_time_expense'].toString()),
       accounts: rawAccounts
           .map((a) => AccountBalance.fromJson(a as Map<String, dynamic>))
           .toList(),

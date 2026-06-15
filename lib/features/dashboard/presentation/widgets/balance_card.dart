@@ -1,30 +1,17 @@
-// lib/features/dashboard/presentation/widgets/balance_card.dart
-
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/features/dashboard/data/dashboard_summary.dart';
+import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/balance_total_page.dart';
+import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/currency_utils.dart';
+import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/monthly_flow_page.dart';
+import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/page_dots.dart';
 import 'package:flutter/material.dart';
 
-String dashboardCurrencySymbol(String code) {
-  const map = {
-    'PEN': 'S/',
-    'USD': '\$',
-    'EUR': '€',
-    'GBP': '£',
-    'CLP': '\$',
-    'COP': '\$',
-    'MXN': '\$',
-    'BRL': 'R\$',
-  };
-  return map[code] ?? code;
-}
-
-class DashboardBalanceCard extends StatelessWidget {
+class DashboardBalanceCard extends StatefulWidget {
   final List<AccountBalance> accounts;
   final double netBalance;
   final double totalIncome;
   final double totalExpense;
+  final double allTimeIncome;
+  final double allTimeExpense;
 
   const DashboardBalanceCard({
     super.key,
@@ -32,121 +19,85 @@ class DashboardBalanceCard extends StatelessWidget {
     required this.netBalance,
     required this.totalIncome,
     required this.totalExpense,
+    required this.allTimeIncome,
+    required this.allTimeExpense,
   });
+
+  @override
+  State<DashboardBalanceCard> createState() => _DashboardBalanceCardState();
+}
+
+class _DashboardBalanceCardState extends State<DashboardBalanceCard> {
+  final _pageController = PageController(initialPage: 0);
+  int _currentPage = 0;
 
   Map<String, double> _balancesByCurrency() {
     final map = <String, double>{};
-    for (final a in accounts) {
+    for (final a in widget.accounts) {
       map[a.currencyCode] = (map[a.currencyCode] ?? 0) + a.balance;
     }
     return map;
   }
 
+  String? get _dominantCurrency {
+    final byCurrency = _balancesByCurrency();
+    if (byCurrency.isEmpty) return null;
+    return byCurrency.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+  }
+
+  double get _totalBalance {
+    final byCurrency = _balancesByCurrency();
+    if (byCurrency.isEmpty) return 0;
+    return byCurrency.entries.reduce((a, b) => a.value >= b.value ? a : b).value;
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final byCurrency = _balancesByCurrency();
-    final displayCode = byCurrency.isEmpty
-        ? null
-        : byCurrency.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+    final displayCode = _dominantCurrency;
     final symbol = displayCode != null ? dashboardCurrencySymbol(displayCode) : '';
+    final hasAccounts = widget.accounts.isNotEmpty;
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Text('Flujo del mes', style: AppTextStyles.caption(context)),
-                const Spacer(),
-                if (displayCode != null) CurrencyBadge(code: displayCode),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            if (byCurrency.isEmpty)
-              Text(
-                'Sin cuentas registradas',
-                style: AppTextStyles.body1(context, color: AppColors.muted),
-              )
-            else
-              AmountText(
-                symbol: symbol,
-                amount: netBalance,
-                style: AppTextStyles.h100(context),
-                color: netBalance >= 0 ? AppColors.textPrimary : AppColors.error,
-              ),
-
-            if (byCurrency.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Row(
+            SizedBox(
+              height: 148,
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (i) => setState(() => _currentPage = i),
                 children: [
-                  Expanded(
-                    child: _StatChip(
-                      label: 'Ingresos',
-                      symbol: symbol,
-                      amount: totalIncome,
-                      sign: '+',
-                      color: AppColors.success,
-                    ),
+                  MonthlyFlowPage(
+                    symbol: symbol,
+                    displayCode: displayCode,
+                    hasAccounts: hasAccounts,
+                    netBalance: widget.netBalance,
+                    totalIncome: widget.totalIncome,
+                    totalExpense: widget.totalExpense,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _StatChip(
-                      label: 'Gastos',
-                      symbol: symbol,
-                      amount: totalExpense,
-                      sign: '-',
-                      color: AppColors.error,
-                    ),
+                  BalanceTotalPage(
+                    symbol: symbol,
+                    displayCode: displayCode,
+                    hasAccounts: hasAccounts,
+                    totalBalance: _totalBalance,
+                    allTimeIncome: widget.allTimeIncome,
+                    allTimeExpense: widget.allTimeExpense,
                   ),
                 ],
               ),
-            ],
+            ),
+            const SizedBox(height: 8),
+            PageDots(count: 2, current: _currentPage),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final String label;
-  final String symbol;
-  final double amount;
-  final String sign;
-  final Color color;
-
-  const _StatChip({
-    required this.label,
-    required this.symbol,
-    required this.amount,
-    required this.sign,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: AppTextStyles.caption(context, color: color)),
-          const SizedBox(height: 4),
-          AmountText(
-            symbol: symbol,
-            amount: amount,
-            sign: sign,
-            style: AppTextStyles.body2(context),
-            color: color,
-          ),
-        ],
       ),
     );
   }

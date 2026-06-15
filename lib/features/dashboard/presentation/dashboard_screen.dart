@@ -103,6 +103,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           netBalance: summary.netBalance,
           totalIncome: summary.totalIncome,
           totalExpense: summary.totalExpense,
+          allTimeIncome: summary.allTimeIncome,
+          allTimeExpense: summary.allTimeExpense,
         ),
         const SizedBox(height: 20),
         DashboardInsightCard(
