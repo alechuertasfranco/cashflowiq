@@ -134,8 +134,10 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             final account = matches.first;
             mostUsedItems.add(PaymentSourceItem(
               icon: Icons.account_balance,
+              id: id,
               name: name,
               entityCode: entityCode,
+              isAccount: true,
               onTap: () => _onAccountTap(account),
             ));
           }
@@ -145,8 +147,10 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
             final card = matches.first;
             mostUsedItems.add(PaymentSourceItem(
               icon: Icons.credit_card,
+              id: id,
               name: name,
               entityCode: entityCode,
+              isAccount: false,
               onTap: () => _onCardTap(card),
             ));
           }

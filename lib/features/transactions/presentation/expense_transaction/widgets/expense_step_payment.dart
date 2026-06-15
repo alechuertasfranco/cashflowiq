@@ -15,14 +15,18 @@ import 'package:flutter/material.dart';
 /// does not need to know about the underlying account/card type.
 class PaymentSourceItem {
   final IconData icon;
+  final String id;
   final String name;
   final String entityCode;
+  final bool isAccount;
   final VoidCallback onTap;
 
   const PaymentSourceItem({
     required this.icon,
+    required this.id,
     required this.name,
     required this.entityCode,
+    required this.isAccount,
     required this.onTap,
   });
 }
@@ -91,6 +95,8 @@ class ExpenseStepPayment extends StatelessWidget {
               onAddAccount: onAddAccount,
               onAddCreditCard: onAddCreditCard,
               mostUsedItems: mostUsedItems,
+              selectedAccount: selectedAccount,
+              selectedCreditCard: selectedCreditCard,
             ),
     );
   }
@@ -108,6 +114,8 @@ class _EntityListView extends StatelessWidget {
   final VoidCallback onAddAccount;
   final VoidCallback onAddCreditCard;
   final List<PaymentSourceItem> mostUsedItems;
+  final BankAccount? selectedAccount;
+  final CreditCard? selectedCreditCard;
 
   const _EntityListView({
     required this.entities,
@@ -119,6 +127,8 @@ class _EntityListView extends StatelessWidget {
     required this.onAddAccount,
     required this.onAddCreditCard,
     this.mostUsedItems = const [],
+    this.selectedAccount,
+    this.selectedCreditCard,
   });
 
   @override
@@ -131,7 +141,11 @@ class _EntityListView extends StatelessWidget {
           Text("¿Con qué pagaste?", style: AppTextStyles.h400(context)),
           if (mostUsedItems.isNotEmpty) ...[
             const SizedBox(height: 16),
-            _QuickAccessRow(items: mostUsedItems),
+            _QuickAccessRow(
+              items: mostUsedItems,
+              selectedAccount: selectedAccount,
+              selectedCreditCard: selectedCreditCard,
+            ),
           ],
           const SizedBox(height: 20),
           if (entities.isEmpty)
@@ -179,8 +193,14 @@ class _EmptyPaymentHint extends StatelessWidget {
 
 class _QuickAccessRow extends StatelessWidget {
   final List<PaymentSourceItem> items;
+  final BankAccount? selectedAccount;
+  final CreditCard? selectedCreditCard;
 
-  const _QuickAccessRow({required this.items});
+  const _QuickAccessRow({
+    required this.items,
+    required this.selectedAccount,
+    required this.selectedCreditCard,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -198,12 +218,17 @@ class _QuickAccessRow extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: items
-                .map((item) => _QuickAccessCard(
-                      icon: item.icon,
-                      name: item.name,
-                      entityCode: item.entityCode,
-                      onTap: item.onTap,
-                    ))
+                .map((item) {
+                  final isSelected = item.isAccount
+                      ? selectedAccount?.id == item.id
+                      : selectedCreditCard?.id == item.id;
+                  return _QuickAccessCard(
+                    icon: item.icon,
+                    name: item.name,
+                    isSelected: isSelected,
+                    onTap: item.onTap,
+                  );
+                })
                 .expand((w) => [w, const SizedBox(width: 8)])
                 .toList()
               ..removeLast(),
@@ -217,13 +242,13 @@ class _QuickAccessRow extends StatelessWidget {
 class _QuickAccessCard extends StatelessWidget {
   final IconData icon;
   final String name;
-  final String entityCode;
+  final bool isSelected;
   final VoidCallback onTap;
 
   const _QuickAccessCard({
     required this.icon,
     required this.name,
-    required this.entityCode,
+    required this.isSelected,
     required this.onTap,
   });
 
@@ -232,29 +257,25 @@ class _QuickAccessCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: isSelected ? AppColors.error.withAlpha(20) : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: isSelected ? AppColors.error : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              entityCode,
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w500, color: AppColors.muted),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 16, color: AppColors.muted),
-                const SizedBox(width: 6),
-                Text(name, style: AppTextStyles.caption(context, color: AppColors.textPrimary)),
-              ],
-            ),
+            Icon(icon, size: 16, color: isSelected ? AppColors.error : AppColors.muted),
+            const SizedBox(width: 6),
+            Text(name, style: AppTextStyles.caption(context, color: AppColors.textPrimary)),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.check, size: 14, color: AppColors.error),
+            ],
           ],
         ),
       ),
