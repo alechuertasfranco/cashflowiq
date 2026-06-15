@@ -104,3 +104,73 @@ class EntityReport {
     );
   }
 }
+
+class MonthlyTrendPoint {
+  final int year;
+  final int month;
+  final String currencyCode;
+  final String currencySymbol;
+  final double totalIncome;
+  final double totalExpense;
+  final double net;
+
+  const MonthlyTrendPoint({
+    required this.year,
+    required this.month,
+    required this.currencyCode,
+    required this.currencySymbol,
+    required this.totalIncome,
+    required this.totalExpense,
+    required this.net,
+  });
+
+  factory MonthlyTrendPoint.fromJson(Map<String, dynamic> json) {
+    return MonthlyTrendPoint(
+      year: json['year'] as int,
+      month: json['month'] as int,
+      currencyCode: json['currency_code'] as String? ?? '',
+      currencySymbol: json['currency_symbol'] as String? ?? '',
+      totalIncome: double.parse(json['total_income'].toString()),
+      totalExpense: double.parse(json['total_expense'].toString()),
+      net: double.parse(json['net'].toString()),
+    );
+  }
+}
+
+class BudgetVsActualItem {
+  final int categoryId;
+  final String categoryName;
+  final int? parentCategoryId;
+  final String? parentCategoryName;
+  final String currencyCode;
+  final String currencySymbol;
+  final double budgetAmount;
+  final double spentAmount;
+  final double percentageUsed;
+
+  const BudgetVsActualItem({
+    required this.categoryId,
+    required this.categoryName,
+    this.parentCategoryId,
+    this.parentCategoryName,
+    required this.currencyCode,
+    required this.currencySymbol,
+    required this.budgetAmount,
+    required this.spentAmount,
+    required this.percentageUsed,
+  });
+
+  factory BudgetVsActualItem.fromJson(Map<String, dynamic> json) {
+    return BudgetVsActualItem(
+      categoryId: json['category_id'] as int,
+      categoryName: json['category_name'] as String,
+      parentCategoryId: json['parent_category_id'] as int?,
+      parentCategoryName: json['parent_category_name'] as String?,
+      currencyCode: json['currency_code'] as String? ?? '',
+      currencySymbol: json['currency_symbol'] as String? ?? '',
+      budgetAmount: double.parse(json['budget_amount'].toString()),
+      spentAmount: double.parse(json['spent_amount'].toString()),
+      percentageUsed: double.parse(json['percentage_used'].toString()),
+    );
+  }
+}

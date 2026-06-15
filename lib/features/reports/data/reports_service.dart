@@ -58,4 +58,37 @@ class ReportsService {
     DataCache.instance.set(key, result);
     return result;
   }
+
+  Future<List<MonthlyTrendPoint>> getMonthlyTrend({int months = 6}) async {
+    final key = 'reports_monthly_trend_$months';
+    final cached = DataCache.instance.get<List<MonthlyTrendPoint>>(key);
+    if (cached != null) return cached;
+
+    final json = await ApiClient.getJson('/reports/monthly-trend?months=$months');
+    final rawList = json as List<dynamic>;
+    final result = rawList
+        .map((item) => MonthlyTrendPoint.fromJson(item as Map<String, dynamic>))
+        .toList();
+    DataCache.instance.set(key, result);
+    return result;
+  }
+
+  Future<List<BudgetVsActualItem>> getBudgetVsActual({
+    required int year,
+    required int month,
+  }) async {
+    final key = 'reports_budget_vs_actual_${year}_$month';
+    final cached = DataCache.instance.get<List<BudgetVsActualItem>>(key);
+    if (cached != null) return cached;
+
+    final json = await ApiClient.getJson(
+      '/reports/budget-vs-actual?year=$year&month=$month',
+    );
+    final rawList = json as List<dynamic>;
+    final result = rawList
+        .map((item) => BudgetVsActualItem.fromJson(item as Map<String, dynamic>))
+        .toList();
+    DataCache.instance.set(key, result);
+    return result;
+  }
 }
