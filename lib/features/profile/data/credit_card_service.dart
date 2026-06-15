@@ -5,6 +5,13 @@ import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/shared/models/credit_card.dart';
 
 class CreditCardService {
+  /// 🏆 GET MOST-USED CREDIT CARDS
+  Future<List<CreditCard>> getMostUsedCreditCards({int limit = 3}) async {
+    final response = await ApiClient.getJson("/credit-cards/most-used?limit=$limit");
+    if (response is! List) throw Exception("Invalid response format: expected List");
+    return response.map<CreditCard>((json) => CreditCard.fromJson(json)).toList();
+  }
+
   /// 📥 GET CREDIT CARDS
   Future<List<CreditCard>> getCreditCards() async {
     try {

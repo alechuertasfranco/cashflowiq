@@ -5,6 +5,12 @@ import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 
 class BankAccountService {
+  // 🏆 GET MOST-USED ACCOUNTS
+  Future<List<BankAccount>> getMostUsedAccounts({int limit = 3}) async {
+    final List data = await ApiClient.getJson("/bank-accounts/most-used?limit=$limit");
+    return data.map((json) => BankAccount.fromJson(json)).toList();
+  }
+
   // 📥 GET ACCOUNTS
   Future<List<BankAccount>> getAccounts() async {
     try {

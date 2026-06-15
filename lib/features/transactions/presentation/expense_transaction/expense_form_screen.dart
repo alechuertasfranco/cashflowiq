@@ -49,6 +49,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
   List<BankAccount> _accounts = [];
   List<CreditCard> _creditCards = [];
+  List<BankAccount> _mostUsedAccounts = [];
+  List<CreditCard> _mostUsedCreditCards = [];
   bool _isLoadingSources = true;
 
   // ── Step 2: category (two-level) ─────────────────────────────────────────
@@ -113,10 +115,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       final results = await Future.wait([
         _accountService.getAccounts(),
         _creditCardService.getCreditCards(),
+        _accountService.getMostUsedAccounts(),
+        _creditCardService.getMostUsedCreditCards(),
       ]);
       setState(() {
         _accounts = results[0] as List<BankAccount>;
         _creditCards = results[1] as List<CreditCard>;
+        _mostUsedAccounts = results[2] as List<BankAccount>;
+        _mostUsedCreditCards = results[3] as List<CreditCard>;
         _isLoadingSources = false;
         if (widget.prefill != null) {
           final p = widget.prefill!;
@@ -423,6 +429,8 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                   onBack: _backFromEntityAccounts,
                   onAddAccount: _navigateToAccountForm,
                   onAddCreditCard: _navigateToCreditCardForm,
+                  mostUsedAccounts: _mostUsedAccounts,
+                  mostUsedCreditCards: _mostUsedCreditCards,
                 ),
               ],
             ),

@@ -24,6 +24,8 @@ class ExpenseStepPayment extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onAddAccount;
   final VoidCallback onAddCreditCard;
+  final List<BankAccount> mostUsedAccounts;
+  final List<CreditCard> mostUsedCreditCards;
 
   const ExpenseStepPayment({
     super.key,
@@ -41,6 +43,8 @@ class ExpenseStepPayment extends StatelessWidget {
     required this.onBack,
     required this.onAddAccount,
     required this.onAddCreditCard,
+    this.mostUsedAccounts = const [],
+    this.mostUsedCreditCards = const [],
   });
 
   @override
@@ -66,8 +70,12 @@ class ExpenseStepPayment extends StatelessWidget {
               accountsFor: accountsFor,
               cardsFor: cardsFor,
               onEntityTap: onEntityTap,
+              onAccountTap: onAccountTap,
+              onCardTap: onCardTap,
               onAddAccount: onAddAccount,
               onAddCreditCard: onAddCreditCard,
+              mostUsedAccounts: mostUsedAccounts,
+              mostUsedCreditCards: mostUsedCreditCards,
             ),
     );
   }
@@ -80,26 +88,45 @@ class _EntityListView extends StatelessWidget {
   final List<BankAccount> Function(BankEntity) accountsFor;
   final List<CreditCard> Function(BankEntity) cardsFor;
   final void Function(BankEntity) onEntityTap;
+  final void Function(BankAccount) onAccountTap;
+  final void Function(CreditCard) onCardTap;
   final VoidCallback onAddAccount;
   final VoidCallback onAddCreditCard;
+  final List<BankAccount> mostUsedAccounts;
+  final List<CreditCard> mostUsedCreditCards;
 
   const _EntityListView({
     required this.entities,
     required this.accountsFor,
     required this.cardsFor,
     required this.onEntityTap,
+    required this.onAccountTap,
+    required this.onCardTap,
     required this.onAddAccount,
     required this.onAddCreditCard,
+    this.mostUsedAccounts = const [],
+    this.mostUsedCreditCards = const [],
   });
 
   @override
   Widget build(BuildContext context) {
+    final showQuickAccess = mostUsedAccounts.isNotEmpty || mostUsedCreditCards.isNotEmpty;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("¿Con qué pagaste?", style: AppTextStyles.h400(context)),
+          if (showQuickAccess) ...[
+            const SizedBox(height: 16),
+            _QuickAccessRow(
+              accounts: mostUsedAccounts,
+              cards: mostUsedCreditCards,
+              onAccountTap: onAccountTap,
+              onCardTap: onCardTap,
+            ),
+          ],
           const SizedBox(height: 20),
           if (entities.isEmpty)
             _EmptyPaymentHint(onAddAccount: onAddAccount, onAddCreditCard: onAddCreditCard)
@@ -140,6 +167,118 @@ class _EmptyPaymentHint extends StatelessWidget {
         const SizedBox(height: 16),
         _AddRow(onAddAccount: onAddAccount, onAddCreditCard: onAddCreditCard),
       ],
+    );
+  }
+}
+
+class _QuickAccessRow extends StatelessWidget {
+  final List<BankAccount> accounts;
+  final List<CreditCard> cards;
+  final void Function(BankAccount) onAccountTap;
+  final void Function(CreditCard) onCardTap;
+
+  const _QuickAccessRow({
+    required this.accounts,
+    required this.cards,
+    required this.onAccountTap,
+    required this.onCardTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const maxSlots = 3;
+    final items = <Widget>[];
+    var ai = 0;
+    var ci = 0;
+    while (items.length < maxSlots && (ai < accounts.length || ci < cards.length)) {
+      if (ai < accounts.length) {
+        final a = accounts[ai++];
+        items.add(_QuickAccessCard(
+          icon: Icons.account_balance,
+          name: a.name,
+          entityCode: a.bankEntity.code,
+          onTap: () => onAccountTap(a),
+        ));
+      }
+      if (items.length < maxSlots && ci < cards.length) {
+        final c = cards[ci++];
+        items.add(_QuickAccessCard(
+          icon: Icons.credit_card,
+          name: c.name,
+          entityCode: c.bankEntity.code,
+          onTap: () => onCardTap(c),
+        ));
+      }
+    }
+
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Más usado",
+          style: AppTextStyles.caption(context, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: items
+                .expand((w) => [w, const SizedBox(width: 8)])
+                .toList()
+              ..removeLast(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickAccessCard extends StatelessWidget {
+  final IconData icon;
+  final String name;
+  final String entityCode;
+  final VoidCallback onTap;
+
+  const _QuickAccessCard({
+    required this.icon,
+    required this.name,
+    required this.entityCode,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              entityCode,
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w500, color: AppColors.muted),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: AppColors.muted),
+                const SizedBox(width: 6),
+                Text(name, style: AppTextStyles.caption(context, color: AppColors.textPrimary)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
