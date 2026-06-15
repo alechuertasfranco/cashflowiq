@@ -117,7 +117,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mostActiveAccountTxCount: summary.mostActiveAccountTxCount,
         ),
         const SizedBox(height: 20),
-        DashboardAccountsList(accounts: summary.accounts),
+        DashboardAccountsList(
+          accounts: summary.accounts,
+          creditCards: summary.creditCards,
+        ),
       ],
     );
   }

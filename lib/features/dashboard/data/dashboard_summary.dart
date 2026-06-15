@@ -26,6 +26,47 @@ class AccountBalance {
   }
 }
 
+class CreditCardBalance {
+  final int id;
+  final String name;
+  final String brand;
+  final String currencyCode;
+  final String bankEntityCode;
+  final double creditLimit;
+  final double usedAmount;
+  final int closingDay;
+  final int dueDay;
+
+  const CreditCardBalance({
+    required this.id,
+    required this.name,
+    required this.brand,
+    required this.currencyCode,
+    required this.bankEntityCode,
+    required this.creditLimit,
+    required this.usedAmount,
+    required this.closingDay,
+    required this.dueDay,
+  });
+
+  factory CreditCardBalance.fromJson(Map<String, dynamic> json) {
+    return CreditCardBalance(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      brand: json['brand'] as String,
+      currencyCode: json['currency_code'] as String,
+      bankEntityCode: json['bank_entity_code'] as String,
+      creditLimit: double.parse(json['credit_limit'].toString()),
+      usedAmount: double.parse(json['used_amount'].toString()),
+      closingDay: json['closing_day'] as int,
+      dueDay: json['due_day'] as int,
+    );
+  }
+
+  double get availableCredit => creditLimit - usedAmount;
+  double get utilizationRatio => creditLimit > 0 ? usedAmount / creditLimit : 0;
+}
+
 class DashboardSummary {
   final double totalIncome;
   final double totalExpense;
@@ -33,6 +74,7 @@ class DashboardSummary {
   final double allTimeIncome;
   final double allTimeExpense;
   final List<AccountBalance> accounts;
+  final List<CreditCardBalance> creditCards;
   final int? mostActiveAccountId;
   final String? mostActiveAccountName;
   final int mostActiveAccountTxCount;
@@ -44,6 +86,7 @@ class DashboardSummary {
     required this.allTimeIncome,
     required this.allTimeExpense,
     required this.accounts,
+    this.creditCards = const [],
     this.mostActiveAccountId,
     this.mostActiveAccountName,
     this.mostActiveAccountTxCount = 0,
@@ -51,6 +94,7 @@ class DashboardSummary {
 
   factory DashboardSummary.fromJson(Map<String, dynamic> json) {
     final rawAccounts = json['accounts'] as List<dynamic>? ?? [];
+    final rawCards = json['credit_cards'] as List<dynamic>? ?? [];
     return DashboardSummary(
       totalIncome: double.parse(json['total_income'].toString()),
       totalExpense: double.parse(json['total_expense'].toString()),
@@ -59,6 +103,9 @@ class DashboardSummary {
       allTimeExpense: double.parse(json['all_time_expense'].toString()),
       accounts: rawAccounts
           .map((a) => AccountBalance.fromJson(a as Map<String, dynamic>))
+          .toList(),
+      creditCards: rawCards
+          .map((c) => CreditCardBalance.fromJson(c as Map<String, dynamic>))
           .toList(),
       mostActiveAccountId: json['most_active_account_id'] as int?,
       mostActiveAccountName: json['most_active_account_name'] as String?,
