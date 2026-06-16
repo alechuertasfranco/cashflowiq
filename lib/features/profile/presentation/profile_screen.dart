@@ -6,6 +6,7 @@ import 'package:cashflowiq/features/profile/presentation/categories/categories_s
 import 'package:cashflowiq/features/profile/presentation/credit_cards/credit_cards_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/investment_fund/investment_funds_screen.dart';
 import 'package:cashflowiq/features/splits/screens/contacts_screen.dart';
+import 'package:cashflowiq/features/splits/screens/splits_screen.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -126,6 +127,12 @@ class ProfileScreen extends StatelessWidget {
                     title: "Mis contactos",
                     subtitle: "Gestiona contactos para gastos compartidos",
                     onTap: () => _go(context, const ContactsScreen()),
+                  ),
+                  _MenuItem(
+                    icon: Icons.handshake_outlined,
+                    title: "Gastos compartidos",
+                    subtitle: "Revisa deudas pendientes y liquidadas",
+                    onTap: () => _go(context, const SplitsScreen()),
                   ),
                 ],
               ),

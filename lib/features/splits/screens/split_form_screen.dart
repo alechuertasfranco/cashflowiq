@@ -3,10 +3,10 @@ import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/widgets/base_transaction_form_screen.dart';
 import 'package:cashflowiq/core/widgets/form_step_amount.dart';
+import 'package:cashflowiq/core/widgets/form_step_category.dart';
+import 'package:cashflowiq/core/widgets/form_step_payment_source.dart';
 import 'package:cashflowiq/features/splits/screens/contacts_screen.dart';
 import 'package:cashflowiq/features/splits/screens/split_form_controller.dart';
-import 'package:cashflowiq/features/splits/screens/widgets/split_step_account.dart';
-import 'package:cashflowiq/features/splits/screens/widgets/split_step_categories.dart';
 import 'package:cashflowiq/features/splits/screens/widgets/split_step_participants.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:cashflowiq/shared/models/contact.dart';
@@ -195,7 +195,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                 onAmountChanged: controller.clearAmountError,
                 onDescriptionChanged: controller.clearDescriptionError,
               ),
-              SplitStepCategories(
+              FormStepCategory(
                 categories: controller.expenseCategories,
                 selectedParentCategory: controller.selectedParentCategory,
                 selectedCategory: controller.selectedCategory,
@@ -213,8 +213,9 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                   initialType: CategoryType.expense,
                   parent: controller.selectedParentCategory,
                 ),
+                emptyMessage: 'Aún no tienes categorías de gasto.',
               ),
-              SplitStepAccount(
+              FormStepPaymentSource(
                 entities: controller.accountOnlyEntities,
                 selectedEntity: controller.selectedEntity,
                 selectedAccount: controller.selectedAccount,
@@ -228,6 +229,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                   context,
                   onReload: controller.loadSources,
                 ),
+                title: '¿Con qué cuenta pagaste?',
               ),
               SplitStepParticipants(
                 participants: controller.participants,

@@ -5,6 +5,17 @@ import 'package:flutter/foundation.dart';
 
 class ReportDataLoader extends ChangeNotifier {
   final ReportsService _service = ReportsService();
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
 
   late int year;
   late int month;
@@ -63,7 +74,7 @@ class ReportDataLoader extends ChangeNotifier {
 
     isLoading = true;
     errorMessage = null;
-    notifyListeners();
+    _notify();
 
     try {
       final results = await Future.wait([
@@ -88,7 +99,7 @@ class ReportDataLoader extends ChangeNotifier {
       errorMessage = 'Error al cargar los reportes';
     }
 
-    notifyListeners();
+    _notify();
   }
 
   void previousMonth() {
@@ -114,6 +125,6 @@ class ReportDataLoader extends ChangeNotifier {
 
   void setCategoryType(String type) {
     categoryType = type;
-    notifyListeners();
+    _notify();
   }
 }
