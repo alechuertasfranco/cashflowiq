@@ -1,17 +1,10 @@
-// lib/features/transactions/presentation/income_transaction/income_form_screen.dart
-
+import 'package:cashflowiq/core/controllers/base_transaction_form_controller.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/step_indicator.dart';
-import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
-import 'package:cashflowiq/features/profile/presentation/bank_accounts/form_account_screen.dart';
-import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
+import 'package:cashflowiq/core/widgets/base_transaction_form_screen.dart';
+import 'package:cashflowiq/core/widgets/form_step_amount.dart';
+import 'package:cashflowiq/core/widgets/form_step_category.dart';
+import 'package:cashflowiq/core/widgets/form_step_payment_source.dart';
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
-import 'package:cashflowiq/features/transactions/presentation/income_transaction/widgets/income_step_account.dart';
-import 'package:cashflowiq/features/transactions/presentation/income_transaction/widgets/income_step_amount.dart';
-import 'package:cashflowiq/features/transactions/presentation/income_transaction/widgets/income_step_categories.dart';
-import 'package:cashflowiq/shared/models/bank_account.dart';
-import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:flutter/material.dart';
@@ -35,266 +28,73 @@ class IncomeFormScreen extends StatefulWidget {
 }
 
 class _IncomeFormScreenState extends State<IncomeFormScreen> {
-  final _amountController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _pageController = PageController();
-
-  final _accountService = BankAccountService();
+  final controller = BaseTransactionFormController();
   final _transactionService = TransactionService();
-
-  List<BankAccount> _accounts = [];
-  bool _isLoadingSources = true;
-
-  // ── Step 2: category (two-level) ─────────────────────────────────────────
-  Category? _selectedParentCategory;
-  Category? _selectedCategory;
-  String _categoryViewKey = 'parents';
-  bool _categoryForward = true;
-
-  // ── Step 3: account (two-level) ──────────────────────────────────────────
-  BankEntity? _selectedEntity;
-  BankAccount? _selectedAccount;
-  String _entityViewKey = 'entities';
-  bool _entityForward = true;
-
-  DateTime _selectedDate = DateTime.now();
-  bool _isSaving = false;
-  int _currentStep = 0;
-  String? _amountError;
 
   @override
   void initState() {
     super.initState();
     if (widget.prefill != null) {
       final p = widget.prefill!;
-      final a = p.amount;
-      _amountController.text = a % 1 == 0 ? a.toInt().toString() : a.toString();
-      _descriptionController.text = p.description ?? '';
-      _selectedDate = p.date;
-      for (final cat in widget.categories) {
-        if (cat.id == p.categoryId) {
-          _selectedParentCategory = cat;
-          _selectedCategory = cat;
-          break;
-        }
-        for (final child in cat.children) {
-          if (child.id == p.categoryId) {
-            _selectedParentCategory = cat;
-            _selectedCategory = child;
-            _categoryViewKey = 'children_${cat.id}';
-            break;
-          }
-        }
-        if (_selectedCategory != null) break;
-      }
+      controller.applyPrefill(
+        amount: p.amount,
+        description: p.description,
+        date: p.date,
+        categories: widget.categories,
+        categoryId: p.categoryId,
+      );
     }
-    _loadSources();
+    controller.loadAccountsOnly().then((_) {
+      if (widget.prefill != null && mounted) {
+        controller.applyAccountPrefill(
+          accounts: controller.accounts,
+          creditCards: const [],
+          accountId: widget.prefill!.accountId,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
-    _amountController.dispose();
-    _descriptionController.dispose();
-    _pageController.dispose();
+    controller.dispose();
     super.dispose();
   }
 
-  // ── Data loading ──────────────────────────────────────────────────────────
-
-  Future<void> _loadSources() async {
-    try {
-      final accounts = await _accountService.getAccounts();
-      setState(() {
-        _accounts = accounts;
-        _isLoadingSources = false;
-        if (widget.prefill?.accountId != null) {
-          _selectedAccount = accounts
-              .where((a) => a.id == widget.prefill!.accountId)
-              .firstOrNull;
-          _selectedEntity = _selectedAccount?.bankEntity;
-          if (_selectedEntity != null) _entityViewKey = 'accounts_${_selectedEntity!.id}';
-        }
-      });
-    } catch (_) {
-      setState(() => _isLoadingSources = false);
-    }
-  }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  List<BankEntity> get _entities {
-    final seen = <String>{};
-    final result = <BankEntity>[];
-    for (final a in _accounts) {
-      if (seen.add(a.bankEntity.id)) result.add(a.bankEntity);
-    }
-    return result;
-  }
-
-  List<BankAccount> _accountsFor(BankEntity entity) =>
-      _accounts.where((a) => a.bankEntity.id == entity.id).toList();
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) setState(() => _selectedDate = picked);
-  }
-
-  // ── Navigation ────────────────────────────────────────────────────────────
-
-  bool _validateStep1() {
-    final text = _amountController.text.trim();
-    if (text.isEmpty) { setState(() => _amountError = "Ingresa un monto"); return false; }
-    final parsed = double.tryParse(text);
-    if (parsed == null) { setState(() => _amountError = "Monto inválido"); return false; }
-    if (parsed <= 0) { setState(() => _amountError = "El monto debe ser mayor a 0"); return false; }
-    setState(() => _amountError = null);
-    return true;
-  }
-
-  void _goToStep(int step) {
-    setState(() => _currentStep = step);
-    _pageController.animateToPage(
-      step,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
   void _nextStep() {
-    if (_currentStep == 0) {
-      if (_validateStep1()) _goToStep(1);
-    } else if (_currentStep == 1) {
-      if (_selectedCategory == null) {
+    if (controller.currentStep == 0) {
+      if (!controller.validateAmount()) return;
+      controller.goToStep(1);
+    } else if (controller.currentStep == 1) {
+      if (controller.selectedCategory == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Selecciona una categoría")),
         );
         return;
       }
-      _goToStep(2);
+      controller.goToStep(2);
     }
   }
-
-  void _prevStep() {
-    if (_currentStep == 1 &&
-        _selectedParentCategory != null &&
-        _selectedParentCategory!.children.isNotEmpty) {
-      _backFromCategoryChildren();
-      return;
-    }
-    if (_currentStep == 2 && _selectedEntity != null) {
-      _backFromEntityAccounts();
-      return;
-    }
-    if (_currentStep > 0) {
-      _goToStep(_currentStep - 1);
-    } else {
-      Navigator.pop(context);
-    }
-  }
-
-  void _backFromCategoryChildren() {
-    setState(() {
-      _selectedParentCategory = null;
-      _selectedCategory = null;
-      _categoryForward = false;
-      _categoryViewKey = 'parents';
-    });
-  }
-
-  void _backFromEntityAccounts() {
-    setState(() {
-      _selectedEntity = null;
-      _entityForward = false;
-      _entityViewKey = 'entities';
-    });
-  }
-
-  // ── Step 2 callbacks ──────────────────────────────────────────────────────
-
-  void _onParentCategoryTap(Category category) {
-    if (category.children.isNotEmpty) {
-      setState(() {
-        _selectedParentCategory = category;
-        _selectedCategory = null;
-        _categoryForward = true;
-        _categoryViewKey = 'children_${category.id}';
-      });
-    } else {
-      setState(() {
-        _selectedParentCategory = category;
-        _selectedCategory = category;
-      });
-    }
-  }
-
-  void _onChildCategoryTap(Category category) {
-    setState(() => _selectedCategory = category);
-  }
-
-  // ── Step 3 callbacks ──────────────────────────────────────────────────────
-
-  void _onEntityTap(BankEntity entity) {
-    setState(() {
-      if (_selectedEntity?.id != entity.id) _selectedAccount = null;
-      _selectedEntity = entity;
-      _entityForward = true;
-      _entityViewKey = 'accounts_${entity.id}';
-    });
-  }
-
-  void _onAccountTap(BankAccount account) {
-    setState(() => _selectedAccount = account);
-  }
-
-  // ── Navigation to creation forms ──────────────────────────────────────────
-
-  Future<void> _navigateToCategoryForm({Category? parent}) async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => FormCategoriesScreen(
-          initialType: CategoryType.income,
-          parent: parent,
-        ),
-      ),
-    );
-    if (result == true) widget.onCategoryAdded?.call();
-  }
-
-  Future<void> _navigateToAccountForm() async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const FormAccountScreen()),
-    );
-    if (result == true && mounted) await _loadSources();
-  }
-
-  // ── Submit ────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
-    if (_selectedAccount == null) {
+    if (controller.selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Selecciona una cuenta")),
       );
       return;
     }
 
-    setState(() => _isSaving = true);
+    controller.setSaving(true);
 
     final tx = Transaction(
       id: widget.editMode ? widget.prefill!.id : '',
       type: TransactionType.income,
-      amount: double.parse(_amountController.text.trim()),
-      date: _selectedDate,
-      categoryId: _selectedCategory!.id,
-      accountId: _selectedAccount!.id,
-      description: _descriptionController.text.trim().isNotEmpty
-          ? _descriptionController.text.trim()
+      amount: double.parse(controller.amountController.text.trim()),
+      date: controller.selectedDate,
+      categoryId: controller.selectedCategory!.id,
+      accountId: controller.selectedAccount!.id,
+      description: controller.descriptionController.text.trim().isNotEmpty
+          ? controller.descriptionController.text.trim()
           : null,
     );
 
@@ -317,125 +117,70 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      controller.setSaving(false);
     }
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingSources) return const Center(child: CircularProgressIndicator());
-
-    return PopScope(
-      canPop: _currentStep == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _prevStep();
-      },
-      child: Column(
-        children: [
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                IncomeStepAmount(
-                  amountController: _amountController,
-                  descriptionController: _descriptionController,
-                  selectedDate: _selectedDate,
-                  amountError: _amountError,
-                  onDateTap: _pickDate,
-                  onAmountChanged: () {
-                    if (_amountError != null) setState(() => _amountError = null);
-                  },
-                ),
-                IncomeStepCategories(
-                  categories: widget.categories,
-                  selectedParentCategory: _selectedParentCategory,
-                  selectedCategory: _selectedCategory,
-                  viewKey: _categoryViewKey,
-                  goingForward: _categoryForward,
-                  onParentTap: _onParentCategoryTap,
-                  onChildTap: _onChildCategoryTap,
-                  onBack: _backFromCategoryChildren,
-                  onAddCategory: () => _navigateToCategoryForm(),
-                  onAddSubcategory: () => _navigateToCategoryForm(
-                    parent: _selectedParentCategory,
-                  ),
-                ),
-                IncomeStepAccount(
-                  entities: _entities,
-                  selectedEntity: _selectedEntity,
-                  selectedAccount: _selectedAccount,
-                  viewKey: _entityViewKey,
-                  goingForward: _entityForward,
-                  accountsFor: _accountsFor,
-                  onEntityTap: _onEntityTap,
-                  onAccountTap: _onAccountTap,
-                  onBack: _backFromEntityAccounts,
-                  onAddAccount: _navigateToAccountForm,
-                ),
-              ],
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) => BaseTransactionFormScreen(
+        controller: controller,
+        totalSteps: 3,
+        submitLabel: widget.editMode ? "Guardar cambios" : "Guardar ingreso",
+        accentColor: AppColors.primary,
+        onNextStep: _nextStep,
+        onSubmit: _submit,
+        steps: [
+          FormStepAmount(
+            title: '¿Cuánto recibiste?',
+            dateAccentColor: AppColors.primary,
+            descriptionHint: 'Ej: Pago de cliente',
+            amountController: controller.amountController,
+            descriptionController: controller.descriptionController,
+            selectedDate: controller.selectedDate,
+            amountError: controller.amountError,
+            onDateTap: () => controller.pickDate(context),
+            onAmountChanged: controller.clearAmountError,
+          ),
+          FormStepCategory(
+            title: '¿De qué fue?',
+            emptyMessage: 'Aún no tienes categorías de ingreso.',
+            categories: widget.categories,
+            selectedParentCategory: controller.selectedParentCategory,
+            selectedCategory: controller.selectedCategory,
+            viewKey: controller.categoryViewKey,
+            goingForward: controller.categoryForward,
+            onParentTap: controller.onParentCategoryTap,
+            onChildTap: controller.onChildCategoryTap,
+            onBack: controller.backFromCategoryChildren,
+            onAddCategory: () => controller.navigateToCategoryForm(
+              context,
+              initialType: CategoryType.income,
+              onCategoryAdded: widget.onCategoryAdded,
+            ),
+            onAddSubcategory: () => controller.navigateToCategoryForm(
+              context,
+              initialType: CategoryType.income,
+              parent: controller.selectedParentCategory,
+              onCategoryAdded: widget.onCategoryAdded,
             ),
           ),
-          StepIndicator(
-            currentStep: _currentStep,
-            totalSteps: 3,
-            activeColor: AppColors.primary,
-          ),
-          _bottomBar(),
-        ],
-      ),
-    );
-  }
-
-  Widget _bottomBar() {
-    final isLastStep = _currentStep == 2;
-    return Container(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: _prevStep,
-              child: Text("Atrás", style: AppTextStyles.subtitle2(context, color: AppColors.primary)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: _isSaving ? null : (isLastStep ? _submit : _nextStep),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(
-                      isLastStep
-                          ? (widget.editMode ? "Guardar cambios" : "Guardar ingreso")
-                          : "Siguiente",
-                      style: AppTextStyles.subtitle2(context, color: Colors.white),
-                    ),
+          FormStepPaymentSource(
+            title: '¿A qué cuenta?',
+            entities: controller.uniqueEntities,
+            selectedEntity: controller.selectedEntity,
+            selectedAccount: controller.selectedAccount,
+            viewKey: controller.entityViewKey,
+            goingForward: controller.entityForward,
+            accountsFor: controller.accountsFor,
+            onEntityTap: controller.onEntityTap,
+            onAccountTap: controller.onAccountTap,
+            onBack: controller.backFromEntityAccounts,
+            onAddAccount: () => controller.navigateToAccountForm(
+              context,
+              onReload: controller.loadAccountsOnly,
             ),
           ),
         ],

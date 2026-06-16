@@ -1,5 +1,3 @@
-// lib/features/transactions/presentation/income_transaction/widgets/income_step_categories.dart
-
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/utils/format.dart';
@@ -7,7 +5,7 @@ import 'package:cashflowiq/core/widgets/sub_step_switcher.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:flutter/material.dart';
 
-class IncomeStepCategories extends StatelessWidget {
+class FormStepCategory extends StatelessWidget {
   final List<Category> categories;
   final Category? selectedParentCategory;
   final Category? selectedCategory;
@@ -19,7 +17,11 @@ class IncomeStepCategories extends StatelessWidget {
   final VoidCallback onAddCategory;
   final VoidCallback onAddSubcategory;
 
-  const IncomeStepCategories({
+  final String title;
+  final String emptyMessage;
+  final Color accentColor;
+
+  const FormStepCategory({
     super.key,
     required this.categories,
     required this.selectedParentCategory,
@@ -31,6 +33,9 @@ class IncomeStepCategories extends StatelessWidget {
     required this.onBack,
     required this.onAddCategory,
     required this.onAddSubcategory,
+    this.title = '¿En qué categoría?',
+    this.emptyMessage = 'Aún no tienes categorías.',
+    this.accentColor = AppColors.primary,
   });
 
   bool get _showingChildren =>
@@ -45,6 +50,7 @@ class IncomeStepCategories extends StatelessWidget {
           ? _ChildCategoryView(
               parent: selectedParentCategory!,
               selectedCategory: selectedCategory,
+              accentColor: accentColor,
               onChildTap: onChildTap,
               onBack: onBack,
               onAddSubcategory: onAddSubcategory,
@@ -53,6 +59,9 @@ class IncomeStepCategories extends StatelessWidget {
               categories: categories,
               selectedParentCategory: selectedParentCategory,
               selectedCategory: selectedCategory,
+              title: title,
+              emptyMessage: emptyMessage,
+              accentColor: accentColor,
               onParentTap: onParentTap,
               onAddCategory: onAddCategory,
             ),
@@ -60,12 +69,15 @@ class IncomeStepCategories extends StatelessWidget {
   }
 }
 
-// ── Parent grid ──────────────────────────────────────────────────────────────
+// ── Parent grid ───────────────────────────────────────────────────────────────
 
 class _ParentCategoryView extends StatelessWidget {
   final List<Category> categories;
   final Category? selectedParentCategory;
   final Category? selectedCategory;
+  final String title;
+  final String emptyMessage;
+  final Color accentColor;
   final void Function(Category) onParentTap;
   final VoidCallback onAddCategory;
 
@@ -73,6 +85,9 @@ class _ParentCategoryView extends StatelessWidget {
     required this.categories,
     required this.selectedParentCategory,
     required this.selectedCategory,
+    required this.title,
+    required this.emptyMessage,
+    required this.accentColor,
     required this.onParentTap,
     required this.onAddCategory,
   });
@@ -86,15 +101,16 @@ class _ParentCategoryView extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text("¿De qué fue?", style: AppTextStyles.h400(context))),
-              _AddButton(label: "Nueva categoría", onTap: onAddCategory),
+              Expanded(child: Text(title, style: AppTextStyles.h400(context))),
+              _AddButton(label: 'Nueva categoría', accentColor: accentColor, onTap: onAddCategory),
             ],
           ),
           const SizedBox(height: 20),
           if (categories.isEmpty)
             _EmptyHint(
-              message: "Aún no tienes categorías de ingreso.",
-              buttonLabel: "Crear categoría",
+              message: emptyMessage,
+              buttonLabel: 'Crear categoría',
+              accentColor: accentColor,
               onTap: onAddCategory,
             )
           else
@@ -190,6 +206,7 @@ class _ParentCategoryTile extends StatelessWidget {
 class _ChildCategoryView extends StatelessWidget {
   final Category parent;
   final Category? selectedCategory;
+  final Color accentColor;
   final void Function(Category) onChildTap;
   final VoidCallback onBack;
   final VoidCallback onAddSubcategory;
@@ -197,6 +214,7 @@ class _ChildCategoryView extends StatelessWidget {
   const _ChildCategoryView({
     required this.parent,
     required this.selectedCategory,
+    required this.accentColor,
     required this.onChildTap,
     required this.onBack,
     required this.onAddSubcategory,
@@ -214,9 +232,9 @@ class _ChildCategoryView extends StatelessWidget {
           TextButton.icon(
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_ios_new, size: 13),
-            label: const Text("Categorías"),
+            label: const Text('Categorías'),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
+              foregroundColor: accentColor,
               padding: EdgeInsets.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               minimumSize: Size.zero,
@@ -228,19 +246,20 @@ class _ChildCategoryView extends StatelessWidget {
               Icon(parseIcon(parent.icon), size: 20, color: parentColor),
               const SizedBox(width: 8),
               Expanded(child: Text(parent.name, style: AppTextStyles.h400(context))),
-              _AddButton(label: "Nueva subcategoría", onTap: onAddSubcategory),
+              _AddButton(label: 'Nueva subcategoría', accentColor: accentColor, onTap: onAddSubcategory),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            "Selecciona una subcategoría",
+            'Selecciona una subcategoría',
             style: AppTextStyles.body2(context, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
           if (parent.children.isEmpty)
             _EmptyHint(
-              message: "Esta categoría aún no tiene subcategorías.",
-              buttonLabel: "Crear subcategoría",
+              message: 'Esta categoría aún no tiene subcategorías.',
+              buttonLabel: 'Crear subcategoría',
+              accentColor: accentColor,
               onTap: onAddSubcategory,
             )
           else
@@ -321,13 +340,14 @@ class _LeafCategoryTile extends StatelessWidget {
   }
 }
 
-// ── Shared widgets ────────────────────────────────────────────────────────────
+// ── Shared helpers ────────────────────────────────────────────────────────────
 
 class _AddButton extends StatelessWidget {
   final String label;
+  final Color accentColor;
   final VoidCallback onTap;
 
-  const _AddButton({required this.label, required this.onTap});
+  const _AddButton({required this.label, required this.accentColor, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +356,7 @@ class _AddButton extends StatelessWidget {
       icon: const Icon(Icons.add, size: 15),
       label: Text(label),
       style: TextButton.styleFrom(
-        foregroundColor: AppColors.primary,
+        foregroundColor: accentColor,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         minimumSize: Size.zero,
@@ -349,11 +369,13 @@ class _AddButton extends StatelessWidget {
 class _EmptyHint extends StatelessWidget {
   final String message;
   final String buttonLabel;
+  final Color accentColor;
   final VoidCallback onTap;
 
   const _EmptyHint({
     required this.message,
     required this.buttonLabel,
+    required this.accentColor,
     required this.onTap,
   });
 
@@ -369,8 +391,8 @@ class _EmptyHint extends StatelessWidget {
           icon: const Icon(Icons.add, size: 16),
           label: Text(buttonLabel),
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
+            foregroundColor: accentColor,
+            side: BorderSide(color: accentColor),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
