@@ -3,9 +3,9 @@ import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/features/splits/data/contact_service.dart';
 import 'package:cashflowiq/features/splits/screens/widgets/split_step_participants.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
-import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:cashflowiq/shared/models/contact.dart';
+import 'package:cashflowiq/shared/models/credit_card.dart';
 import 'package:flutter/material.dart';
 
 /// Extends [BaseTransactionFormController] with split-expense-specific state.
@@ -30,19 +30,30 @@ class SplitFormController extends BaseTransactionFormController {
   final List<SplitParticipant> participants = [];
   bool equalSplit = true;
 
+  /// When true, the payer counts as one more share of the cost.
+  /// Affects only the equal-split divisor — it never produces a
+  /// [TransactionSplit] of its own.
+  bool includeSelf = false;
+
   SplitFormController() {
     amountController.addListener(_onAmountChanged);
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────────
 
-  List<BankEntity> get accountOnlyEntities {
-    final seen = <String>{};
-    final result = <BankEntity>[];
-    for (final a in accounts) {
-      if (seen.add(a.bankEntity.id)) result.add(a.bankEntity);
+  /// The payer's own share, shown for reference only.
+  double get selfShare {
+    if (!includeSelf) return 0;
+    final total = double.tryParse(amountController.text.trim()) ?? 0;
+    if (equalSplit) {
+      final divisor = participants.length + 1;
+      return divisor > 0 ? total / divisor : 0;
     }
-    return result;
+    final assigned = participants.fold<double>(
+      0,
+      (sum, p) => sum + (double.tryParse(p.amountController.text.trim()) ?? 0),
+    );
+    return total - assigned;
   }
 
   // ── Data loading override ─────────────────────────────────────────────────────
@@ -53,11 +64,13 @@ class SplitFormController extends BaseTransactionFormController {
       final results = await Future.wait([
         _categoryService.getCategoriesWithChildren(type: CategoryType.expense),
         accountService.getAccounts(),
+        creditCardService.getCreditCards(),
         _contactService.fetchAll(),
       ]);
       expenseCategories = results[0] as List<Category>;
       accounts = results[1] as List<BankAccount>;
-      allContacts = results[2] as List<Contact>;
+      creditCards = results[2] as List<CreditCard>;
+      allContacts = results[3] as List<Contact>;
       isLoadingSources = false;
       notifyListeners();
     } catch (_) {
@@ -74,12 +87,19 @@ class SplitFormController extends BaseTransactionFormController {
   }
 
   void _distributeEqually() {
-    if (participants.isEmpty) return;
+    final divisor = participants.length + (includeSelf ? 1 : 0);
+    if (divisor == 0) return;
     final total = double.tryParse(amountController.text.trim()) ?? 0;
-    final share = total / participants.length;
+    final share = total / divisor;
     for (final p in participants) {
       p.amountController.text = share > 0 ? share.toStringAsFixed(2) : '';
     }
+  }
+
+  void onIncludeSelfChanged(bool value) {
+    includeSelf = value;
+    if (equalSplit) _distributeEqually();
+    notifyListeners();
   }
 
   // ── Step 0 validation ─────────────────────────────────────────────────────────
@@ -119,7 +139,10 @@ class SplitFormController extends BaseTransactionFormController {
   // ── Participant management ────────────────────────────────────────────────────
 
   void addParticipant(Contact contact) {
-    participants.add(SplitParticipant(contact: contact));
+    final p = SplitParticipant(contact: contact);
+    // Keep selfShare's "remainder" display live while typing custom amounts.
+    p.amountController.addListener(notifyListeners);
+    participants.add(p);
     if (equalSplit) _distributeEqually();
     notifyListeners();
   }

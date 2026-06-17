@@ -5,7 +5,9 @@ import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/splits/data/split_service.dart';
+import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/transaction_split.dart';
 import 'package:flutter/material.dart';
 
@@ -20,6 +22,7 @@ class _SplitsScreenState extends State<SplitsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final _service = SplitService();
+  final _accountService = BankAccountService();
 
   List<TransactionSplit> _pending = [];
   List<TransactionSplit> _settled = [];
@@ -76,9 +79,12 @@ class _SplitsScreenState extends State<SplitsScreen>
   }
 
   Future<void> _settle(TransactionSplit split) async {
+    final account = await _pickDestinationAccount();
+    if (account == null || !mounted) return;
+
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await _service.settle(split.id, split.amount);
+      await _service.settle(split.id, split.amount, account.id);
       await _loadPending();
       await _loadSettled();
       if (!mounted) return;
@@ -92,6 +98,85 @@ class _SplitsScreenState extends State<SplitsScreen>
         const SnackBar(content: Text('Error al liquidar la deuda')),
       );
     }
+  }
+
+  Future<BankAccount?> _pickDestinationAccount() async {
+    List<BankAccount> accounts;
+    try {
+      accounts = await _accountService.getAccounts();
+    } catch (e) {
+      debugPrint('Error loading accounts: $e');
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al cargar las cuentas')),
+      );
+      return null;
+    }
+
+    if (accounts.isEmpty) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aún no tienes cuentas bancarias registradas')),
+      );
+      return null;
+    }
+
+    if (!mounted) return null;
+    return showModalBottomSheet<BankAccount>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, scrollController) => SafeArea(
+          top: false,
+          child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('¿A qué cuenta te pagó?', style: AppTextStyles.h400(ctx)),
+            ),
+            Expanded(
+              child: ListView.separated(
+                controller: scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: accounts.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (_, index) {
+                  final a = accounts[index];
+                  return ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    tileColor: AppColors.surface,
+                    leading: const Icon(Icons.account_balance, color: AppColors.primary),
+                    title: Text(a.name, style: AppTextStyles.subtitle1(context)),
+                    subtitle: Text(a.bankEntity.name),
+                    onTap: () => Navigator.pop(ctx, a),
+                  );
+                },
+              ),
+            ),
+          ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override

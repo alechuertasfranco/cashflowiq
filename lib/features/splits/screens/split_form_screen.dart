@@ -51,6 +51,14 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
       return;
     }
 
+    final usingCard = controller.selectedCreditCard != null;
+    if (!usingCard && controller.selectedAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona una cuenta o tarjeta')),
+      );
+      return;
+    }
+
     for (final p in controller.participants) {
       final v = double.tryParse(p.amountController.text.trim());
       if (v == null || v <= 0) {
@@ -76,7 +84,9 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
       'date': controller.selectedDate.toIso8601String().split('T').first,
       if (controller.selectedCategory != null)
         'category_id': int.tryParse(controller.selectedCategory!.id),
-      if (controller.selectedAccount != null)
+      if (usingCard)
+        'credit_card_id': int.tryParse(controller.selectedCreditCard!.id)
+      else if (controller.selectedAccount != null)
         'account_id': int.tryParse(controller.selectedAccount!.id),
       'splits': splits,
     };
@@ -97,56 +107,97 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
   }
 
   Future<void> _openContactsPicker() async {
-    final alreadyAdded = controller.participants.map((p) => p.contact.id).toSet();
-    final available =
-        controller.allContacts.where((c) => !alreadyAdded.contains(c.id)).toList();
-
-    if (available.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Todos los contactos ya fueron agregados')),
-      );
-      return;
-    }
-
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (_, scrollController) => Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final alreadyAdded =
+              controller.participants.map((p) => p.contact.id).toSet();
+          final available = controller.allContacts
+              .where((c) => !alreadyAdded.contains(c.id))
+              .toList();
+
+          return DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.4,
+            maxChildSize: 0.9,
+            expand: false,
+            builder: (_, scrollController) => SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text('Seleccionar participante',
+                              style: AppTextStyles.h400(ctx)),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _goToCreateContact();
+                          },
+                          icon: const Icon(Icons.person_add_alt_1, size: 18),
+                          label: const Text('Nuevo'),
+                          style:
+                              TextButton.styleFrom(foregroundColor: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: RefreshIndicator(
+                      color: AppColors.primary,
+                      onRefresh: () async {
+                        await controller.reloadContacts();
+                        setSheetState(() {});
+                      },
+                      child: available.isEmpty
+                          ? ListView(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              children: [
+                                const SizedBox(height: 80),
+                                Center(
+                                  child: Text(
+                                    controller.allContacts.isEmpty
+                                        ? 'Aún no tienes contactos'
+                                        : 'Todos los contactos ya fueron agregados',
+                                    style: AppTextStyles.body2(ctx,
+                                        color: AppColors.muted),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : _ContactPickerList(
+                              contacts: available,
+                              scrollController: scrollController,
+                              onSelected: (Contact c) {
+                                Navigator.pop(ctx);
+                                controller.addParticipant(c);
+                              },
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Seleccionar participante', style: AppTextStyles.h400(ctx)),
-            ),
-            Expanded(
-              child: _ContactPickerList(
-                contacts: available,
-                scrollController: scrollController,
-                onSelected: (Contact c) {
-                  Navigator.pop(ctx);
-                  controller.addParticipant(c);
-                },
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -157,6 +208,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
       MaterialPageRoute(builder: (_) => const ContactsScreen()),
     );
     await controller.reloadContacts();
+    if (!mounted) return;
     if (controller.allContacts.isNotEmpty) _openContactsPicker();
   }
 
@@ -216,29 +268,37 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                 emptyMessage: 'Aún no tienes categorías de gasto.',
               ),
               FormStepPaymentSource(
-                entities: controller.accountOnlyEntities,
+                entities: controller.uniqueEntities,
                 selectedEntity: controller.selectedEntity,
                 selectedAccount: controller.selectedAccount,
+                selectedCreditCard: controller.selectedCreditCard,
                 viewKey: controller.entityViewKey,
                 goingForward: controller.entityForward,
                 accountsFor: controller.accountsFor,
+                cardsFor: controller.cardsFor,
                 onEntityTap: controller.onEntityTap,
                 onAccountTap: controller.onAccountTap,
+                onCardTap: controller.onCardTap,
                 onBack: controller.backFromEntityAccounts,
                 onAddAccount: () => controller.navigateToAccountForm(
                   context,
                   onReload: controller.loadSources,
                 ),
-                title: '¿Con qué cuenta pagaste?',
+                onAddCreditCard: () => controller.navigateToCreditCardForm(
+                  context,
+                  onReload: controller.loadSources,
+                ),
+                title: '¿Con qué pagaste?',
               ),
               SplitStepParticipants(
                 participants: controller.participants,
                 equalSplit: controller.equalSplit,
-                onAddParticipant: controller.allContacts.isEmpty
-                    ? _goToCreateContact
-                    : _openContactsPicker,
+                includeSelf: controller.includeSelf,
+                selfShare: controller.selfShare,
+                onAddParticipant: _openContactsPicker,
                 onRemove: controller.removeParticipant,
                 onSplitModeChanged: controller.onSplitModeChanged,
+                onIncludeSelfChanged: controller.onIncludeSelfChanged,
               ),
             ],
           ),

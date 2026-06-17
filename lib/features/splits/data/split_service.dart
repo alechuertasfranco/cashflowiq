@@ -29,12 +29,13 @@ class SplitService {
     return result;
   }
 
-  Future<TransactionSplit> settle(int splitId, double amount) async {
+  Future<TransactionSplit> settle(int splitId, double amount, String toAccountId) async {
     final json = await ApiClient.postJson(
       '/split-settlements/$splitId',
-      body: {'amount': amount},
+      body: {'amount': amount, 'to_account_id': int.parse(toAccountId)},
     );
     DataCache.instance.invalidatePrefix('splits');
+    DataCache.instance.invalidate('accounts');
     return TransactionSplit.fromJson(json);
   }
 }

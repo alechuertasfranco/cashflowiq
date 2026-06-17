@@ -158,16 +158,26 @@ class _ContactsScreenState extends State<ContactsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        final selected = <int>{};
+        final selected = <String>{};
+        var query = '';
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
+            final filtered = query.isEmpty
+                ? available
+                : available
+                    .where((pc) =>
+                        pc.displayName.toLowerCase().contains(query.toLowerCase()))
+                    .toList();
+
             return DraggableScrollableSheet(
               initialChildSize: 0.6,
               minChildSize: 0.4,
               maxChildSize: 0.9,
               expand: false,
               builder: (_, scrollController) {
-                return Column(
+                return SafeArea(
+                  top: false,
+                  child: Column(
                   children: [
                     const SizedBox(height: 12),
                     Container(
@@ -179,78 +189,117 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Text(
                         'Importar contactos',
                         style: AppTextStyles.h400(ctx),
                       ),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: TextField(
+                        onChanged: (v) => setSheetState(() => query = v),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: 'Buscar contacto',
+                          hintStyle:
+                              AppTextStyles.body2(ctx, color: AppColors.muted),
+                          prefixIcon: const Icon(Icons.search,
+                              color: AppColors.muted, size: 20),
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary),
+                          ),
+                        ),
+                        style: AppTextStyles.body1(ctx),
+                      ),
+                    ),
                     Expanded(
-                      child: ListView.separated(
-                        controller: scrollController,
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: available.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (_, index) {
-                          final pc = available[index];
-                          final phone = pc.phones.isNotEmpty
-                              ? pc.phones.first.number
-                              : null;
-                          final isSelected = selected.contains(index);
-                          return ListTile(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side:
-                                  const BorderSide(color: AppColors.border),
-                            ),
-                            tileColor: AppColors.surface,
-                            leading: CircleAvatar(
-                              backgroundColor: AppColors.secondary,
+                      child: filtered.isEmpty
+                          ? Center(
                               child: Text(
-                                pc.displayName.isNotEmpty
-                                    ? pc.displayName[0].toUpperCase()
-                                    : '?',
-                                style: TextStyle(color: AppColors.primary),
+                                'Sin resultados',
+                                style: AppTextStyles.body2(ctx,
+                                    color: AppColors.muted),
                               ),
-                            ),
-                            title: Text(
-                              pc.displayName,
-                              style: AppTextStyles.subtitle1(ctx),
-                            ),
-                            subtitle: phone != null
-                                ? Text(
-                                    phone,
-                                    style: AppTextStyles.caption(ctx,
-                                        color: AppColors.textSecondary),
-                                  )
-                                : null,
-                            trailing: Checkbox(
-                              value: isSelected,
-                              activeColor: AppColors.primary,
-                              onChanged: (val) {
-                                setSheetState(() {
-                                  if (val == true) {
-                                    selected.add(index);
-                                  } else {
-                                    selected.remove(index);
-                                  }
-                                });
+                            )
+                          : ListView.separated(
+                              controller: scrollController,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: filtered.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (_, index) {
+                                final pc = filtered[index];
+                                final phone = pc.phones.isNotEmpty
+                                    ? pc.phones.first.number
+                                    : null;
+                                final isSelected = selected.contains(pc.id);
+                                return ListTile(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: const BorderSide(
+                                        color: AppColors.border),
+                                  ),
+                                  tileColor: AppColors.surface,
+                                  leading: CircleAvatar(
+                                    backgroundColor: AppColors.secondary,
+                                    child: Text(
+                                      pc.displayName.isNotEmpty
+                                          ? pc.displayName[0].toUpperCase()
+                                          : '?',
+                                      style:
+                                          TextStyle(color: AppColors.primary),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    pc.displayName,
+                                    style: AppTextStyles.subtitle1(ctx),
+                                  ),
+                                  subtitle: phone != null
+                                      ? Text(
+                                          phone,
+                                          style: AppTextStyles.caption(ctx,
+                                              color: AppColors.textSecondary),
+                                        )
+                                      : null,
+                                  trailing: Checkbox(
+                                    value: isSelected,
+                                    activeColor: AppColors.primary,
+                                    onChanged: (val) {
+                                      setSheetState(() {
+                                        if (val == true) {
+                                          selected.add(pc.id);
+                                        } else {
+                                          selected.remove(pc.id);
+                                        }
+                                      });
+                                    },
+                                  ),
+                                  onTap: () {
+                                    setSheetState(() {
+                                      if (isSelected) {
+                                        selected.remove(pc.id);
+                                      } else {
+                                        selected.add(pc.id);
+                                      }
+                                    });
+                                  },
+                                );
                               },
                             ),
-                            onTap: () {
-                              setSheetState(() {
-                                if (isSelected) {
-                                  selected.remove(index);
-                                } else {
-                                  selected.add(index);
-                                }
-                              });
-                            },
-                          );
-                        },
-                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -267,7 +316,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
                               ? null
                               : () async {
                                   Navigator.pop(ctx);
-                                  await _saveImported(available, selected);
+                                  final toImport = available
+                                      .where((pc) => selected.contains(pc.id))
+                                      .toList();
+                                  await _saveImported(toImport);
                                 },
                           child: Text(
                             'Importar seleccionados',
@@ -278,6 +330,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       ),
                     ),
                   ],
+                  ),
                 );
               },
             );
@@ -287,14 +340,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
     );
   }
 
-  Future<void> _saveImported(
-      List<fc.Contact> available, Set<int> selectedIndices) async {
+  Future<void> _saveImported(List<fc.Contact> contactsToImport) async {
     final messenger = ScaffoldMessenger.of(context);
     int saved = 0;
     int failed = 0;
 
-    for (final index in selectedIndices) {
-      final pc = available[index];
+    for (final pc in contactsToImport) {
       final phone =
           pc.phones.isNotEmpty ? pc.phones.first.number : null;
       final email =
