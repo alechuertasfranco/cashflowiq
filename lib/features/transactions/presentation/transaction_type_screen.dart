@@ -5,6 +5,7 @@ import 'package:cashflowiq/features/transactions/presentation/expense_transactio
 import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/recurring/recurring_transactions_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/transfer_transaction/transfer_screen.dart';
+import 'package:cashflowiq/features/voucher/presentation/voucher_scan_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/theme/app_text_styles.dart';
@@ -74,6 +75,13 @@ class TransactionTypeScreen extends StatelessWidget {
                       icon: Icons.group,
                       color: AppColors.primary,
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SplitFormScreen())),
+                    ),
+                    TransactionTypeCard(
+                      title: "Voucher",
+                      description: "Escanear comprobante",
+                      icon: Icons.document_scanner,
+                      color: AppColors.accent,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoucherScanScreen())),
                     ),
                   ],
                 ),
