@@ -33,8 +33,13 @@ class FormStepAmount extends StatelessWidget {
     this.onDescriptionChanged,
   });
 
-  String _formatDate(DateTime date) =>
-      "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+  String _formatDate(DateTime date) {
+    final d = date.day.toString().padLeft(2, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final h = date.hour.toString().padLeft(2, '0');
+    final min = date.minute.toString().padLeft(2, '0');
+    return "$d/$m/${date.year}  $h:$min";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +64,7 @@ class FormStepAmount extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Fecha",
+        Text("Fecha y hora",
             style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
         const SizedBox(height: 8),
         GestureDetector(

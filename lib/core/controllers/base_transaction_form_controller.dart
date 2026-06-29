@@ -225,10 +225,22 @@ class BaseTransactionFormController extends ChangeNotifier {
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (picked != null) {
-      selectedDate = picked;
-      notifyListeners();
-    }
+    if (picked == null) return;
+    if (!context.mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(selectedDate),
+    );
+
+    selectedDate = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      pickedTime?.hour ?? selectedDate.hour,
+      pickedTime?.minute ?? selectedDate.minute,
+    );
+    notifyListeners();
   }
 
   // ── Category navigation ─────────────────────────────────────────────────────

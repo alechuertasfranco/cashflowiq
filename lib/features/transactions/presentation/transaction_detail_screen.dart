@@ -52,8 +52,13 @@ class TransactionDetailScreen extends StatelessWidget {
         TransactionType.transfer => null,
       };
 
-  String _fmtDate(DateTime d) =>
-      "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
+  String _fmtDate(DateTime d) {
+    final day = d.day.toString().padLeft(2, '0');
+    final month = d.month.toString().padLeft(2, '0');
+    final h = d.hour.toString().padLeft(2, '0');
+    final min = d.minute.toString().padLeft(2, '0');
+    return "$day/$month/${d.year}  $h:$min";
+  }
 
   Future<void> _delete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -190,7 +195,7 @@ class TransactionDetailScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          _row(context, Icons.calendar_today_outlined, "Fecha",
+                          _row(context, Icons.calendar_today_outlined, "Fecha y hora",
                               _fmtDate(transaction.date)),
                           if (categoryName != null) ...[
                             _divider(),
