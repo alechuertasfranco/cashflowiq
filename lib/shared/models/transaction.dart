@@ -93,4 +93,21 @@ class Transaction {
       "is_fixed": isFixed,
     };
   }
+
+  Transaction copyWith({DateTime? date}) => Transaction(
+        id: id,
+        type: type,
+        amount: amount,
+        date: date ?? this.date,
+        description: description,
+        categoryId: categoryId,
+        accountId: accountId,
+        creditCardId: creditCardId,
+        toAccountId: toAccountId,
+        toCreditCardId: toCreditCardId,
+        isRecurring: isRecurring,
+        isFixed: isFixed,
+        currencyCode: currencyCode,
+        currencySymbol: currencySymbol,
+      );
 }

@@ -280,6 +280,61 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String _fmtDate(DateTime d) =>
       "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
 
+  String _fmtTime(DateTime d) =>
+      "${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}";
+
+  Future<void> _onReorderGroup(List<Transaction> txs, int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) newIndex--;
+    if (oldIndex == newIndex) return;
+
+    final reordered = [...txs];
+    final moved = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, moved);
+
+    // Times sorted newest-first (matches display order: position 0 = highest time)
+    final existingTimes = txs.map((t) => t.date).toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    // All at the same time? (e.g., legacy transactions at 00:00)
+    final allSame = existingTimes.every(
+      (t) => t.difference(existingTimes.first).inSeconds.abs() < 2,
+    );
+
+    final List<Transaction> toUpdate = [];
+
+    if (allSame) {
+      // Generate evenly-spaced times within the day: position 0 → 23:59, 1 → 23:58, ...
+      final base = DateTime(existingTimes.first.year, existingTimes.first.month, existingTimes.first.day);
+      for (int i = 0; i < reordered.length; i++) {
+        final newDate = base.add(Duration(minutes: (23 * 60 + 59) - i));
+        toUpdate.add(reordered[i].copyWith(date: newDate));
+      }
+    } else {
+      // Redistribute the existing times across the new display order
+      for (int i = 0; i < reordered.length; i++) {
+        final newDate = existingTimes[i];
+        if (reordered[i].date != newDate) {
+          toUpdate.add(reordered[i].copyWith(date: newDate));
+        }
+      }
+    }
+
+    setState(() {
+      for (final tx in toUpdate) {
+        final idx = _transactions.indexWhere((t) => t.id == tx.id);
+        if (idx != -1) _transactions[idx] = tx;
+      }
+    });
+
+    for (final tx in toUpdate) {
+      try {
+        await _txService.updateTransaction(tx.id, tx);
+      } catch (e) {
+        debugPrint('Reorder persist error: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasAccountFilter = _entityFilter != null || _accountFilter != null;
@@ -487,19 +542,30 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           padding: const EdgeInsets.only(top: 12, bottom: 6),
           child: Text(date, style: AppTextStyles.caption(context, color: AppColors.textSecondary)),
         ),
-        ...txs.map(
-          (tx) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SwipeToDelete(
-              key: ValueKey(tx.id),
-              onDelete: () => _delete(tx),
-              showConfirmation: true,
-              child: GestureDetector(
-                onTap: () => _openDetail(tx),
-                child: _transactionTile(tx),
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: false,
+          padding: EdgeInsets.zero,
+          onReorder: (oldIndex, newIndex) => _onReorderGroup(txs, oldIndex, newIndex),
+          children: [
+            for (int i = 0; i < txs.length; i++)
+              Padding(
+                key: ValueKey(txs[i].id),
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ReorderableDelayedDragStartListener(
+                  index: i,
+                  child: SwipeToDelete(
+                    onDelete: () => _delete(txs[i]),
+                    showConfirmation: true,
+                    child: GestureDetector(
+                      onTap: () => _openDetail(txs[i]),
+                      child: _transactionTile(txs[i]),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
+          ],
         ),
       ],
     );
@@ -547,12 +613,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          AmountText(
-            symbol: tx.currencySymbol,
-            amount: tx.amount,
-            sign: sign.isEmpty ? null : sign,
-            style: AppTextStyles.subtitle2(context),
-            color: color,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              AmountText(
+                symbol: tx.currencySymbol,
+                amount: tx.amount,
+                sign: sign.isEmpty ? null : sign,
+                style: AppTextStyles.subtitle2(context),
+                color: color,
+              ),
+              Text(
+                _fmtTime(tx.date),
+                style: AppTextStyles.caption(context, color: AppColors.muted),
+              ),
+            ],
           ),
         ],
       ),
