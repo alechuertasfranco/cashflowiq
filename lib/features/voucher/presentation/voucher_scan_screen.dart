@@ -13,7 +13,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class VoucherScanScreen extends StatefulWidget {
-  const VoucherScanScreen({super.key});
+  final File? initialImage;
+
+  const VoucherScanScreen({super.key, this.initialImage});
 
   @override
   State<VoucherScanScreen> createState() => _VoucherScanScreenState();
@@ -41,6 +43,9 @@ class _VoucherScanScreenState extends State<VoucherScanScreen> {
   void initState() {
     super.initState();
     _loadServices();
+    if (widget.initialImage != null) {
+      _image = widget.initialImage;
+    }
   }
 
   @override

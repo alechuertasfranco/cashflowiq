@@ -1,5 +1,6 @@
 // lib/features/main/presentation/main_screen.dart
 
+import 'dart:io';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/features/main/presentation/widgets/custom_bottom_bar.dart';
@@ -8,7 +9,9 @@ import 'package:cashflowiq/features/profile/presentation/profile_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/transaction_type_screen.dart';
 import 'package:cashflowiq/features/reports/presentation/reports_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/transactions_screen.dart';
+import 'package:cashflowiq/features/voucher/presentation/voucher_scan_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,6 +21,8 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
+  static const _sharingChannel = MethodChannel('cashflowiq/sharing');
+
   int _currentIndex = 0;
   late final PageController _pageController;
 
@@ -34,6 +39,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.initState();
     _pageController = PageController();
     WidgetsBinding.instance.addObserver(this);
+
+    // Check if app was launched or foregrounded via a share intent
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkSharedImage());
+  }
+
+  Future<void> _checkSharedImage() async {
+    try {
+      final path = await _sharingChannel.invokeMethod<String>('getSharedImage');
+      if (path != null && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VoucherScanScreen(initialImage: File(path)),
+          ),
+        );
+      }
+    } catch (_) {}
   }
 
   @override
@@ -47,6 +69,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       DataCache.instance.clear();
+      _checkSharedImage();
     }
   }
 
