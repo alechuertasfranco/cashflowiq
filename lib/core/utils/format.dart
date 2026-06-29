@@ -39,5 +39,5 @@ IconData parseIcon(String? icon) {
   final code = int.tryParse(icon);
   if (code == null) return Icons.category;
 
-  return IconData(code, fontFamily: 'MaterialIcons');
+  return IconData(code, fontFamily: 'MaterialIcons', matchTextDirection: false);
 }
