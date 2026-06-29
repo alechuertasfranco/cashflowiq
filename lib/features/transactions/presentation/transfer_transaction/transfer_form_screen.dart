@@ -169,6 +169,7 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
             onEntityTap: controller.onEntityTap,
             onAccountTap: controller.onAccountTap,
             onBack: controller.backFromEntityAccounts,
+            mostUsedItems: controller.mostUsedItems.where((i) => i.isAccount).toList(),
             onAddAccount: () => controller.navigateToAccountForm(context),
           ),
           FormStepPaymentSource(
@@ -187,6 +188,9 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
             onAccountTap: controller.onToAccountTap,
             onCardTap: controller.onToCardTap,
             onBack: controller.backFromToAccounts,
+            mostUsedItems: controller.destinationType == 'account'
+                ? controller.mostUsedItemsTo.where((i) => i.isAccount).toList()
+                : controller.mostUsedItemsTo.where((i) => !i.isAccount).toList(),
             onAddAccount: () => controller.navigateToAccountForm(context),
             onAddCreditCard: () => controller.navigateToCreditCardForm(context),
             sourceType: controller.destinationType,

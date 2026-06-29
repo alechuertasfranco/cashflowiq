@@ -2,6 +2,7 @@ import 'package:cashflowiq/core/controllers/base_transaction_form_controller.dar
 import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/credit_card.dart';
+import 'package:cashflowiq/shared/models/payment_source_item.dart';
 import 'package:flutter/material.dart';
 
 /// Extends [BaseTransactionFormController] with transfer-specific state:
@@ -34,6 +35,36 @@ class TransferFormController extends BaseTransactionFormController {
       if (seen.add(c.bankEntity.id)) result.add(c.bankEntity);
     }
     return result;
+  }
+
+  // ── Most-used items for the TO destination ──────────────────────────────────
+
+  List<PaymentSourceItem> get mostUsedItemsTo {
+    return mostUsedItems.map((item) {
+      if (item.isAccount) {
+        final account = accounts.where((a) => a.id == item.id).firstOrNull;
+        if (account == null) return item;
+        return PaymentSourceItem(
+          icon: item.icon,
+          id: item.id,
+          name: item.name,
+          entityCode: item.entityCode,
+          isAccount: true,
+          onTap: () => onToAccountTap(account),
+        );
+      } else {
+        final card = creditCards.where((c) => c.id == item.id).firstOrNull;
+        if (card == null) return item;
+        return PaymentSourceItem(
+          icon: item.icon,
+          id: item.id,
+          name: item.name,
+          entityCode: item.entityCode,
+          isAccount: false,
+          onTap: () => onToCardTap(card),
+        );
+      }
+    }).toList();
   }
 
   // ── TO navigation ────────────────────────────────────────────────────────────

@@ -44,7 +44,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         categoryId: p.categoryId,
       );
     }
-    controller.loadAccountsOnly().then((_) {
+    controller.loadSources().then((_) {
       if (widget.prefill != null && mounted) {
         controller.applyAccountPrefill(
           accounts: controller.accounts,
@@ -178,9 +178,10 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
             onEntityTap: controller.onEntityTap,
             onAccountTap: controller.onAccountTap,
             onBack: controller.backFromEntityAccounts,
+            mostUsedItems: controller.mostUsedItems.where((i) => i.isAccount).toList(),
             onAddAccount: () => controller.navigateToAccountForm(
               context,
-              onReload: controller.loadAccountsOnly,
+              onReload: controller.loadSources,
             ),
           ),
         ],

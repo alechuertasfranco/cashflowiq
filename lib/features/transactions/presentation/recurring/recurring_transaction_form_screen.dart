@@ -205,6 +205,9 @@ class _RecurringTransactionFormScreenState
                 onAccountTap: controller.onAccountTap,
                 onCardTap: controller.type == 'EXPENSE' ? controller.onCardTap : null,
                 onBack: controller.backFromEntityAccounts,
+                mostUsedItems: (controller.type == 'INCOME' || controller.paymentSourceStr == 'account')
+                    ? controller.mostUsedItems.where((i) => i.isAccount).toList()
+                    : controller.mostUsedItems.where((i) => !i.isAccount).toList(),
                 onAddAccount: () => controller.navigateToAccountForm(
                   context,
                   onReload: controller.loadSources,
