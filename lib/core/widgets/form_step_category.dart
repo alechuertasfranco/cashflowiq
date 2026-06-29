@@ -38,8 +38,7 @@ class FormStepCategory extends StatelessWidget {
     this.accentColor = AppColors.primary,
   });
 
-  bool get _showingChildren =>
-      selectedParentCategory != null && selectedParentCategory!.children.isNotEmpty;
+  bool get _showingChildren => selectedParentCategory != null && selectedParentCategory!.children.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -143,11 +142,7 @@ class _ParentCategoryTile extends StatelessWidget {
   final bool isHighlighted;
   final VoidCallback onTap;
 
-  const _ParentCategoryTile({
-    required this.category,
-    required this.isHighlighted,
-    required this.onTap,
-  });
+  const _ParentCategoryTile({required this.category, required this.isHighlighted, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -161,14 +156,11 @@ class _ParentCategoryTile extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isHighlighted ? color : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isHighlighted ? color : AppColors.border,
-            width: isHighlighted ? 2 : 1,
-          ),
+          border: Border.all(color: isHighlighted ? color : AppColors.border, width: isHighlighted ? 2 : 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -188,10 +180,7 @@ class _ParentCategoryTile extends StatelessWidget {
                     style: AppTextStyles.caption(context, color: contentColor),
                   ),
                 ),
-                if (hasChildren) ...[
-                  const SizedBox(width: 2),
-                  Icon(Icons.chevron_right, size: 12, color: iconColor),
-                ],
+                if (hasChildren) ...[const SizedBox(width: 2), Icon(Icons.chevron_right, size: 12, color: iconColor)],
               ],
             ),
           ],
@@ -250,10 +239,7 @@ class _ChildCategoryView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            'Selecciona una subcategoría',
-            style: AppTextStyles.body2(context, color: AppColors.textSecondary),
-          ),
+          Text('Selecciona una subcategoría', style: AppTextStyles.body2(context, color: AppColors.textSecondary)),
           const SizedBox(height: 20),
           if (parent.children.isEmpty)
             _EmptyHint(
@@ -290,11 +276,7 @@ class _LeafCategoryTile extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _LeafCategoryTile({
-    required this.category,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _LeafCategoryTile({required this.category, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -309,19 +291,12 @@ class _LeafCategoryTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? color : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? color : AppColors.border,
-            width: isSelected ? 2 : 1,
-          ),
+          border: Border.all(color: isSelected ? color : AppColors.border, width: isSelected ? 2 : 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 26,
-              color: isSelected ? getContrastColor(color) : color,
-            ),
+            Icon(icon, size: 26, color: isSelected ? getContrastColor(color) : color),
             const SizedBox(height: 6),
             Text(
               category.name,
@@ -372,12 +347,7 @@ class _EmptyHint extends StatelessWidget {
   final Color accentColor;
   final VoidCallback onTap;
 
-  const _EmptyHint({
-    required this.message,
-    required this.buttonLabel,
-    required this.accentColor,
-    required this.onTap,
-  });
+  const _EmptyHint({required this.message, required this.buttonLabel, required this.accentColor, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
