@@ -113,90 +113,15 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) {
-          final alreadyAdded =
-              controller.participants.map((p) => p.contact.id).toSet();
-          final available = controller.allContacts
-              .where((c) => !alreadyAdded.contains(c.id))
-              .toList();
-
-          return DraggableScrollableSheet(
-            initialChildSize: 0.6,
-            minChildSize: 0.4,
-            maxChildSize: 0.9,
-            expand: false,
-            builder: (_, scrollController) => SafeArea(
-              top: false,
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text('Seleccionar participante',
-                              style: AppTextStyles.h400(ctx)),
-                        ),
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _goToCreateContact();
-                          },
-                          icon: const Icon(Icons.person_add_alt_1, size: 18),
-                          label: const Text('Nuevo'),
-                          style:
-                              TextButton.styleFrom(foregroundColor: AppColors.primary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: RefreshIndicator(
-                      color: AppColors.primary,
-                      onRefresh: () async {
-                        await controller.reloadContacts();
-                        setSheetState(() {});
-                      },
-                      child: available.isEmpty
-                          ? ListView(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              children: [
-                                const SizedBox(height: 80),
-                                Center(
-                                  child: Text(
-                                    controller.allContacts.isEmpty
-                                        ? 'Aún no tienes contactos'
-                                        : 'Todos los contactos ya fueron agregados',
-                                    style: AppTextStyles.body2(ctx,
-                                        color: AppColors.muted),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : _ContactPickerList(
-                              contacts: available,
-                              scrollController: scrollController,
-                              onSelected: (Contact c) {
-                                Navigator.pop(ctx);
-                                controller.addParticipant(c);
-                              },
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+      builder: (ctx) => _ContactPickerSheet(
+        controller: controller,
+        onCreateNew: () {
+          Navigator.pop(ctx);
+          _goToCreateContact();
+        },
+        onSelected: (Contact c) {
+          Navigator.pop(ctx);
+          controller.addParticipant(c);
         },
       ),
     );
@@ -308,50 +233,183 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
   }
 }
 
-// ── Contact picker list (extracted to avoid rebuilding the bottom sheet) ─────
+// ── Contact picker bottom sheet ───────────────────────────────────────────────
 
-class _ContactPickerList extends StatelessWidget {
-  final List<Contact> contacts;
-  final ScrollController scrollController;
+/// Owns search + refresh state as real State fields (not builder-local
+/// closures) so keyboard-driven rebuilds of the modal don't reset the query.
+class _ContactPickerSheet extends StatefulWidget {
+  final SplitFormController controller;
+  final VoidCallback onCreateNew;
   final void Function(Contact) onSelected;
 
-  const _ContactPickerList({
-    required this.contacts,
-    required this.scrollController,
+  const _ContactPickerSheet({
+    required this.controller,
+    required this.onCreateNew,
     required this.onSelected,
   });
 
   @override
+  State<_ContactPickerSheet> createState() => _ContactPickerSheetState();
+}
+
+class _ContactPickerSheetState extends State<_ContactPickerSheet> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Contact> get _available {
+    final alreadyAdded =
+        widget.controller.participants.map((p) => p.contact.id).toSet();
+    final base =
+        widget.controller.allContacts.where((c) => !alreadyAdded.contains(c.id));
+    if (_query.isEmpty) return base.toList();
+    final q = _query.toLowerCase();
+    return base.where((c) => c.name.toLowerCase().contains(q)).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      controller: scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: contacts.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
-      itemBuilder: (_, index) {
-        final c = contacts[index];
-        final subtitle = [
-          if (c.email != null && c.email!.isNotEmpty) c.email!,
-          if (c.phone != null && c.phone!.isNotEmpty) c.phone!,
-        ].join(' · ');
-        return ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.border),
-          ),
-          tileColor: AppColors.surface,
-          leading: CircleAvatar(
-            backgroundColor: AppColors.secondary,
-            child: Text(
-              c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-              style: const TextStyle(color: AppColors.primary),
+    final available = _available;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, scrollController) => SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          title: Text(c.name, style: AppTextStyles.subtitle1(context)),
-          subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
-          onTap: () => onSelected(c),
-        );
-      },
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Seleccionar participante',
+                        style: AppTextStyles.h400(context)),
+                  ),
+                  TextButton.icon(
+                    onPressed: widget.onCreateNew,
+                    icon: const Icon(Icons.person_add_alt_1, size: 18),
+                    label: const Text('Nuevo'),
+                    style:
+                        TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
+            if (widget.controller.allContacts.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _query = v),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: 'Buscar contacto',
+                    hintStyle:
+                        AppTextStyles.body2(context, color: AppColors.muted),
+                    prefixIcon: const Icon(Icons.search,
+                        color: AppColors.muted, size: 20),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                  style: AppTextStyles.body1(context),
+                ),
+              ),
+            Expanded(
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async {
+                  await widget.controller.reloadContacts();
+                  if (mounted) setState(() {});
+                },
+                child: available.isEmpty
+                    ? ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          const SizedBox(height: 80),
+                          Center(
+                            child: Text(
+                              widget.controller.allContacts.isEmpty
+                                  ? 'Aún no tienes contactos'
+                                  : _query.isEmpty
+                                      ? 'Todos los contactos ya fueron agregados'
+                                      : 'Sin resultados',
+                              style: AppTextStyles.body2(context,
+                                  color: AppColors.muted),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: available.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (_, index) {
+                          final c = available[index];
+                          final subtitle = [
+                            if (c.email != null && c.email!.isNotEmpty)
+                              c.email!,
+                            if (c.phone != null && c.phone!.isNotEmpty)
+                              c.phone!,
+                          ].join(' · ');
+                          return ListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: AppColors.border),
+                            ),
+                            tileColor: AppColors.surface,
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.secondary,
+                              child: Text(
+                                c.name.isNotEmpty
+                                    ? c.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(color: AppColors.primary),
+                              ),
+                            ),
+                            title:
+                                Text(c.name, style: AppTextStyles.subtitle1(context)),
+                            subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
+                            onTap: () => widget.onSelected(c),
+                          );
+                        },
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

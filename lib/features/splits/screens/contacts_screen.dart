@@ -151,193 +151,19 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   Future<void> _showImportBottomSheet(
       List<fc.Contact> available) async {
-    await showModalBottomSheet(
+    final selected = await showModalBottomSheet<Set<String>>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) {
-        final selected = <String>{};
-        var query = '';
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            final filtered = query.isEmpty
-                ? available
-                : available
-                    .where((pc) =>
-                        pc.displayName.toLowerCase().contains(query.toLowerCase()))
-                    .toList();
-
-            return DraggableScrollableSheet(
-              initialChildSize: 0.6,
-              minChildSize: 0.4,
-              maxChildSize: 0.9,
-              expand: false,
-              builder: (_, scrollController) {
-                return SafeArea(
-                  top: false,
-                  child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text(
-                        'Importar contactos',
-                        style: AppTextStyles.h400(ctx),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: TextField(
-                        onChanged: (v) => setSheetState(() => query = v),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          hintText: 'Buscar contacto',
-                          hintStyle:
-                              AppTextStyles.body2(ctx, color: AppColors.muted),
-                          prefixIcon: const Icon(Icons.search,
-                              color: AppColors.muted, size: 20),
-                          filled: true,
-                          fillColor: AppColors.surface,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.border),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.border),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primary),
-                          ),
-                        ),
-                        style: AppTextStyles.body1(ctx),
-                      ),
-                    ),
-                    Expanded(
-                      child: filtered.isEmpty
-                          ? Center(
-                              child: Text(
-                                'Sin resultados',
-                                style: AppTextStyles.body2(ctx,
-                                    color: AppColors.muted),
-                              ),
-                            )
-                          : ListView.separated(
-                              controller: scrollController,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: filtered.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (_, index) {
-                                final pc = filtered[index];
-                                final phone = pc.phones.isNotEmpty
-                                    ? pc.phones.first.number
-                                    : null;
-                                final isSelected = selected.contains(pc.id);
-                                return ListTile(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: const BorderSide(
-                                        color: AppColors.border),
-                                  ),
-                                  tileColor: AppColors.surface,
-                                  leading: CircleAvatar(
-                                    backgroundColor: AppColors.secondary,
-                                    child: Text(
-                                      pc.displayName.isNotEmpty
-                                          ? pc.displayName[0].toUpperCase()
-                                          : '?',
-                                      style:
-                                          TextStyle(color: AppColors.primary),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    pc.displayName,
-                                    style: AppTextStyles.subtitle1(ctx),
-                                  ),
-                                  subtitle: phone != null
-                                      ? Text(
-                                          phone,
-                                          style: AppTextStyles.caption(ctx,
-                                              color: AppColors.textSecondary),
-                                        )
-                                      : null,
-                                  trailing: Checkbox(
-                                    value: isSelected,
-                                    activeColor: AppColors.primary,
-                                    onChanged: (val) {
-                                      setSheetState(() {
-                                        if (val == true) {
-                                          selected.add(pc.id);
-                                        } else {
-                                          selected.remove(pc.id);
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  onTap: () {
-                                    setSheetState(() {
-                                      if (isSelected) {
-                                        selected.remove(pc.id);
-                                      } else {
-                                        selected.add(pc.id);
-                                      }
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: selected.isEmpty
-                              ? null
-                              : () async {
-                                  Navigator.pop(ctx);
-                                  final toImport = available
-                                      .where((pc) => selected.contains(pc.id))
-                                      .toList();
-                                  await _saveImported(toImport);
-                                },
-                          child: Text(
-                            'Importar seleccionados',
-                            style: AppTextStyles.subtitle2(ctx,
-                                color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
+      builder: (ctx) => _ImportContactsSheet(available: available),
     );
+
+    if (selected == null || selected.isEmpty) return;
+    final toImport =
+        available.where((pc) => selected.contains(pc.id)).toList();
+    await _saveImported(toImport);
   }
 
   Future<void> _saveImported(List<fc.Contact> contactsToImport) async {
@@ -532,6 +358,199 @@ class _BalanceBadge extends StatelessWidget {
         textAlign: TextAlign.center,
         style: AppTextStyles.caption(context, color: AppColors.successStrong),
       ),
+    );
+  }
+}
+
+// ── Import-from-phone bottom sheet ────────────────────────────────────────────
+
+/// Owns search + selection state as real State fields (not builder-local
+/// closures) so keyboard-driven rebuilds of the modal don't reset them.
+class _ImportContactsSheet extends StatefulWidget {
+  final List<fc.Contact> available;
+
+  const _ImportContactsSheet({required this.available});
+
+  @override
+  State<_ImportContactsSheet> createState() => _ImportContactsSheetState();
+}
+
+class _ImportContactsSheetState extends State<_ImportContactsSheet> {
+  final _searchController = TextEditingController();
+  final Set<String> _selected = {};
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _query.isEmpty
+        ? widget.available
+        : widget.available
+            .where((pc) =>
+                pc.displayName.toLowerCase().contains(_query.toLowerCase()))
+            .toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, scrollController) {
+        return SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  'Importar contactos',
+                  style: AppTextStyles.h400(context),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _query = v),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: 'Buscar contacto',
+                    hintStyle:
+                        AppTextStyles.body2(context, color: AppColors.muted),
+                    prefixIcon: const Icon(Icons.search,
+                        color: AppColors.muted, size: 20),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                  style: AppTextStyles.body1(context),
+                ),
+              ),
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Sin resultados',
+                          style: AppTextStyles.body2(context,
+                              color: AppColors.muted),
+                        ),
+                      )
+                    : ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: filtered.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (_, index) {
+                          final pc = filtered[index];
+                          final phone = pc.phones.isNotEmpty
+                              ? pc.phones.first.number
+                              : null;
+                          final isSelected = _selected.contains(pc.id);
+                          return ListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: AppColors.border),
+                            ),
+                            tileColor: AppColors.surface,
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.secondary,
+                              child: Text(
+                                pc.displayName.isNotEmpty
+                                    ? pc.displayName[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(color: AppColors.primary),
+                              ),
+                            ),
+                            title: Text(
+                              pc.displayName,
+                              style: AppTextStyles.subtitle1(context),
+                            ),
+                            subtitle: phone != null
+                                ? Text(
+                                    phone,
+                                    style: AppTextStyles.caption(context,
+                                        color: AppColors.textSecondary),
+                                  )
+                                : null,
+                            trailing: Checkbox(
+                              value: isSelected,
+                              activeColor: AppColors.primary,
+                              onChanged: (val) {
+                                setState(() {
+                                  if (val == true) {
+                                    _selected.add(pc.id);
+                                  } else {
+                                    _selected.remove(pc.id);
+                                  }
+                                });
+                              },
+                            ),
+                            onTap: () {
+                              setState(() {
+                                if (isSelected) {
+                                  _selected.remove(pc.id);
+                                } else {
+                                  _selected.add(pc.id);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _selected.isEmpty
+                        ? null
+                        : () => Navigator.pop(context, _selected),
+                    child: Text(
+                      'Importar seleccionados',
+                      style:
+                          AppTextStyles.subtitle2(context, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
