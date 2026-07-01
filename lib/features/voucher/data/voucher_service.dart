@@ -94,25 +94,32 @@ class VoucherService {
 
   // ─────────────────────────────────────────────
   // Generic: best-effort extraction for any receipt
+  //
+  // Also covers bank/card transaction confirmations (e.g. Google Pay),
+  // which write amounts as "PEN51.80" (code glued to the number, no
+  // symbol) and dates in English with no year, e.g.
+  // "Completed . Tuesday, Jun 30 at 7:49 PM".
   // ─────────────────────────────────────────────
   VoucherResult _parseGeneric(String text) {
     final lines = _lines(text);
 
-    double? amount = _extractSoles(text);
-    String? currencyCode = amount != null ? 'PEN' : null;
-
-    if (amount == null) {
-      final m = RegExp(r'\$\s*(\d+(?:[.,]\d{1,2})?)').firstMatch(text);
-      if (m != null) {
-        amount = double.tryParse(m.group(1)!.replaceAll(',', '.'));
-        currencyCode = 'USD';
-      }
+    final amountMatch = _genericAmountRegex.firstMatch(text);
+    double? amount;
+    String? currencyCode;
+    if (amountMatch != null) {
+      amount = double.tryParse(amountMatch.group(2)!.replaceAll(',', '.'));
+      final token = amountMatch.group(1)!;
+      currencyCode = token == 'S/' ? 'PEN' : (token == r'$' ? 'USD' : token);
     }
 
-    final date = _extractSpanishDate(text) ?? _extractIsoDate(text);
+    final date = _extractSpanishDate(text) ??
+        _extractIsoDate(text) ??
+        _extractEnglishDate(text);
 
     final skipPattern = RegExp(r'^S/|^\$|\d+[.,]\d{2}$|\d{1,2}[\s/\-]\w+[\s/\-]\d{4}|^\d+$');
-    final description = lines.firstWhere(
+    String? description =
+        _lineBeforeAmountMatch(lines, amountMatch?.group(0));
+    description ??= lines.firstWhere(
       (l) => l.length > 3 && !skipPattern.hasMatch(l),
       orElse: () => '',
     );
@@ -149,6 +156,23 @@ class VoucherService {
     return null;
   }
 
+  // Matches "S/ 6", "$ 12.34" and bank-style codes glued to the amount
+  // like "PEN51.80" or "USD12.00".
+  static final _genericAmountRegex = RegExp(
+    r'(S/|\$|PEN|USD|EUR|GBP|MXN|ARS|CLP|COP|BRL|CAD|JPY)\s*(\d+(?:[.,]\d{1,3})?)',
+  );
+
+  // Bank/card confirmations often place the merchant name on the line
+  // right above the amount, e.g. "VD+*CARBON DORADO" \n "PEN51.80".
+  String? _lineBeforeAmountMatch(List<String> lines, String? matchedText) {
+    if (matchedText == null) return null;
+    final idx = lines.indexWhere((l) => l.contains(matchedText));
+    if (idx <= 0) return null;
+    final candidate = lines[idx - 1];
+    if (candidate.length <= 3 || RegExp(r'^\d').hasMatch(candidate)) return null;
+    return candidate;
+  }
+
   static final _spanishDateRegex = RegExp(
     r'(\d{1,2})\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)\.?\s+(\d{4})',
     caseSensitive: false,
@@ -166,6 +190,28 @@ class VoucherService {
   String? _extractIsoDate(String text) {
     final m = RegExp(r'\d{4}-\d{2}-\d{2}').firstMatch(text);
     return m?.group(0);
+  }
+
+  static const _englishMonthMap = {
+    'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+    'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+    'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12',
+  };
+
+  // Bank confirmations often show an English month + day with no year,
+  // e.g. "Completed . Tuesday, Jun 30 at 7:49 PM" — assume the current year.
+  static final _englishDateRegex = RegExp(
+    r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2})\b',
+    caseSensitive: false,
+  );
+
+  String? _extractEnglishDate(String text) {
+    final m = _englishDateRegex.firstMatch(text);
+    if (m == null) return null;
+    final month = _englishMonthMap[m.group(1)!.toLowerCase()] ?? '01';
+    final day = m.group(2)!.padLeft(2, '0');
+    final year = DateTime.now().year.toString();
+    return '$year-$month-$day';
   }
 
   // Concept for Yape: lines between the date line and "CÓDIGO DE SEGURIDAD",
