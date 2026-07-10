@@ -23,12 +23,22 @@ class _SplitsScreenState extends State<SplitsScreen>
   late final TabController _tabController;
   final _service = SplitService();
   final _accountService = BankAccountService();
+  final _searchController = TextEditingController();
 
   List<TransactionSplit> _pending = [];
   List<TransactionSplit> _settled = [];
+  String _query = '';
 
   bool _isLoadingPending = true;
   bool _isLoadingSettled = true;
+
+  List<TransactionSplit> _filter(List<TransactionSplit> splits) {
+    if (_query.isEmpty) return splits;
+    final q = _query.toLowerCase();
+    return splits
+        .where((s) => s.contact.name.toLowerCase().contains(q))
+        .toList();
+  }
 
   @override
   void initState() {
@@ -41,6 +51,7 @@ class _SplitsScreenState extends State<SplitsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -116,7 +127,9 @@ class _SplitsScreenState extends State<SplitsScreen>
     if (accounts.isEmpty) {
       if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aún no tienes cuentas bancarias registradas')),
+        const SnackBar(
+          content: Text('Aún no tienes cuentas bancarias registradas'),
+        ),
       );
       return null;
     }
@@ -136,43 +149,53 @@ class _SplitsScreenState extends State<SplitsScreen>
         builder: (_, scrollController) => SafeArea(
           top: false,
           child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('¿A qué cuenta te pagó?', style: AppTextStyles.h400(ctx)),
-            ),
-            Expanded(
-              child: ListView.separated(
-                controller: scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: accounts.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (_, index) {
-                  final a = accounts[index];
-                  return ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                    tileColor: AppColors.surface,
-                    leading: const Icon(Icons.account_balance, color: AppColors.primary),
-                    title: Text(a.name, style: AppTextStyles.subtitle1(context)),
-                    subtitle: Text(a.bankEntity.name),
-                    onTap: () => Navigator.pop(ctx, a),
-                  );
-                },
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  '¿A qué cuenta te pagó?',
+                  style: AppTextStyles.h400(ctx),
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: accounts.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
+                  itemBuilder: (_, index) {
+                    final a = accounts[index];
+                    return ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      tileColor: AppColors.surface,
+                      leading: const Icon(
+                        Icons.account_balance,
+                        color: AppColors.primary,
+                      ),
+                      title: Text(
+                        a.name,
+                        style: AppTextStyles.subtitle1(context),
+                      ),
+                      subtitle: Text(a.bankEntity.name),
+                      onTap: () => Navigator.pop(ctx, a),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -200,31 +223,92 @@ class _SplitsScreenState extends State<SplitsScreen>
         ),
       ),
       body: SafeArea(
-        child: TabBarView(
-        controller: _tabController,
-        children: [
-          _SplitList(
-            splits: _pending,
-            isLoading: _isLoadingPending,
-            showSettleButton: true,
-            onRefresh: () => _loadPending(invalidate: true),
-            onSettle: _settle,
-            emptyTitle: 'Sin deudas pendientes',
-            emptyDescription:
-                'Cuando registres un gasto compartido, los pendientes aparecerán aquí',
-          ),
-          _SplitList(
-            splits: _settled,
-            isLoading: _isLoadingSettled,
-            showSettleButton: false,
-            onRefresh: () => _loadSettled(invalidate: true),
-            onSettle: null,
-            emptyTitle: 'Sin deudas liquidadas',
-            emptyDescription:
-                'Las deudas que hayas marcado como pagadas aparecerán aquí',
-          ),
-        ],
-      ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (v) => setState(() => _query = v),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: 'Buscar por contacto',
+                  hintStyle: AppTextStyles.body2(
+                    context,
+                    color: AppColors.muted,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.muted,
+                    size: 20,
+                  ),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppColors.muted,
+                            size: 18,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary),
+                  ),
+                ),
+                style: AppTextStyles.body1(context),
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _SplitList(
+                    splits: _filter(_pending),
+                    isLoading: _isLoadingPending,
+                    showSettleButton: true,
+                    onRefresh: () => _loadPending(invalidate: true),
+                    onSettle: _settle,
+                    emptyTitle: _query.isEmpty
+                        ? 'Sin deudas pendientes'
+                        : 'Sin resultados',
+                    emptyDescription: _query.isEmpty
+                        ? 'Cuando registres un gasto compartido, los pendientes aparecerán aquí'
+                        : 'Ningún contacto pendiente coincide con "$_query"',
+                  ),
+                  _SplitList(
+                    splits: _filter(_settled),
+                    isLoading: _isLoadingSettled,
+                    showSettleButton: false,
+                    onRefresh: () => _loadSettled(invalidate: true),
+                    onSettle: null,
+                    emptyTitle: _query.isEmpty
+                        ? 'Sin deudas liquidadas'
+                        : 'Sin resultados',
+                    emptyDescription: _query.isEmpty
+                        ? 'Las deudas que hayas marcado como pagadas aparecerán aquí'
+                        : 'Ningún contacto liquidado coincide con "$_query"',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -278,8 +362,7 @@ class _SplitList extends StatelessWidget {
           return _SplitCard(
             split: split,
             showSettleButton: showSettleButton,
-            onSettle:
-                onSettle != null ? () => onSettle!(split) : null,
+            onSettle: onSettle != null ? () => onSettle!(split) : null,
           );
         },
       ),
@@ -326,7 +409,9 @@ class _SplitCard extends StatelessWidget {
             ),
             child: Icon(
               split.isSettled ? Icons.check_circle_outline : Icons.person,
-              color: split.isSettled ? AppColors.successStrong : AppColors.error,
+              color: split.isSettled
+                  ? AppColors.successStrong
+                  : AppColors.error,
               size: 22,
             ),
           ),
@@ -337,15 +422,14 @@ class _SplitCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  split.contact.name,
-                  style: AppTextStyles.h600(context),
-                ),
+                Text(split.contact.name, style: AppTextStyles.h600(context)),
                 const SizedBox(height: 2),
                 Text(
                   _formatDate(split.createdAt),
-                  style: AppTextStyles.caption(context,
-                      color: AppColors.textSecondary),
+                  style: AppTextStyles.caption(
+                    context,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -359,7 +443,9 @@ class _SplitCard extends StatelessWidget {
                 symbol: split.currencySymbol ?? '',
                 amount: split.amount,
                 style: AppTextStyles.h500(context),
-                color: split.isSettled ? AppColors.successStrong : AppColors.error,
+                color: split.isSettled
+                    ? AppColors.successStrong
+                    : AppColors.error,
               ),
               if (showSettleButton && onSettle != null) ...[
                 const SizedBox(height: 6),
@@ -367,15 +453,19 @@ class _SplitCard extends StatelessWidget {
                   onTap: onSettle,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       'Liquidar',
-                      style: AppTextStyles.caption(context,
-                          color: Colors.white),
+                      style: AppTextStyles.caption(
+                        context,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
