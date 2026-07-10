@@ -175,6 +175,7 @@ class _RecurringTransactionsScreenState
                           index: index,
                           child: SwipeToDelete(
                             onDelete: () => _delete(rule),
+                            showConfirmation: true,
                             child: _RecurringRuleTile(
                               rule: rule,
                               onTap: () => _goToEdit(rule),
