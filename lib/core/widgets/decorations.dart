@@ -1,23 +1,18 @@
 import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
-InputDecoration inputDecoration(BuildContext context, String hint) {
-  return InputDecoration(
-    hintText: hint,
-    hintStyle: context.textSubtitle2(color: context.colorMuted),
-    filled: true,
-    fillColor: context.colorSurface,
-    border: OutlineInputBorder(
-      borderRadius: context.radiusMdRadius,
-      borderSide: BorderSide(color: context.colorBorder),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: context.radiusMdRadius,
-      borderSide: BorderSide(color: context.colorBorder),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: context.radiusMdRadius,
-      borderSide: BorderSide(color: context.colorPrimary, width: 1.5),
-    ),
+/// Minimal, flat container used for tappable "field-like" surfaces across
+/// the app's forms (date triggers, dropdowns, selectable tiles) — a thin
+/// border and a light tint to mark the selected state, no elevation.
+BoxDecoration fieldShellDecoration(
+  BuildContext context, {
+  bool selected = false,
+  Color? accentColor,
+}) {
+  final accent = accentColor ?? context.colorPrimary;
+  return BoxDecoration(
+    color: selected ? accent.withAlpha(16) : context.colorSurface,
+    borderRadius: context.radiusLgRadius,
+    border: Border.all(color: selected ? accent : context.colorBorder),
   );
 }

@@ -53,7 +53,7 @@ class _PressableScaleState extends State<_PressableScale> {
               borderRadius: widget.radius,
               onTap: widget.enabled ? widget.onTap : null,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 decoration: BoxDecoration(border: widget.border, borderRadius: widget.radius),
                 child: Center(child: widget.child),
               ),
@@ -112,11 +112,12 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final background = _enabled ? (color ?? context.colorPrimary) : context.colorMuted.withAlpha(90);
     return _PressableScale(
       enabled: _enabled,
       onTap: onPressed,
       radius: context.radiusMdRadius,
-      background: _enabled ? (color ?? context.colorPrimary) : context.colorMuted.withAlpha(90),
+      background: background,
       child: _labelRow(
         context,
         label: label,

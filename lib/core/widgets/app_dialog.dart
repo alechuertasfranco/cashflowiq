@@ -22,19 +22,23 @@ Future<bool> showAppConfirmDialog(
         content: Text(message, style: context.textBody1(color: context.colorTextSecondary)),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          Expanded(
-            child: SecondaryButton(
-              label: cancelText,
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: PrimaryButton(
-              label: confirmText,
-              color: isDestructive ? context.colorError : null,
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: SecondaryButton(
+                  label: cancelText,
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: PrimaryButton(
+                  label: confirmText,
+                  color: isDestructive ? context.colorError : null,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
           ),
         ],
       );

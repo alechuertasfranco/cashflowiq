@@ -149,7 +149,7 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
         steps: [
           FormStepAmount(
             title: '¿Cuánto transferiste?',
-            dateAccentColor: context.colorPrimary,
+            accentColor: context.colorPrimary,
             descriptionHint: 'Ej: Pago de tarjeta',
             amountController: controller.amountController,
             descriptionController: controller.descriptionController,

@@ -135,7 +135,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         steps: [
           FormStepAmount(
             title: '¿Cuánto recibiste?',
-            dateAccentColor: context.colorPrimary,
+            accentColor: context.colorPrimary,
             descriptionHint: 'Ej: Pago de cliente',
             amountController: controller.amountController,
             descriptionController: controller.descriptionController,

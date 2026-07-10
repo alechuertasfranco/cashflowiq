@@ -168,13 +168,13 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         controller: controller,
         totalSteps: 3,
         submitLabel: widget.editMode ? "Guardar cambios" : "Guardar gasto",
-        accentColor: context.colorError,
+        accentColor: context.colorPrimary,
         onNextStep: _nextStep,
         onSubmit: _submit,
         steps: [
           FormStepAmount(
             title: '¿Cuánto gastaste?',
-            dateAccentColor: context.colorError,
+            accentColor: context.colorPrimary,
             descriptionHint: 'Ej: Supermercado',
             amountController: controller.amountController,
             descriptionController: controller.descriptionController,
@@ -186,7 +186,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           FormStepCategory(
             title: '¿En qué gastaste?',
             emptyMessage: 'Aún no tienes categorías de gasto.',
-            accentColor: context.colorError,
+            accentColor: context.colorPrimary,
             categories: widget.categories,
             selectedParentCategory: controller.selectedParentCategory,
             selectedCategory: controller.selectedCategory,
@@ -201,7 +201,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           ),
           FormStepPaymentSource(
             title: '¿Con qué pagaste?',
-            accentColor: context.colorError,
+            accentColor: context.colorPrimary,
             entities: controller.uniqueEntities,
             selectedEntity: controller.selectedEntity,
             selectedAccount: controller.selectedAccount,

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/decorations.dart';
 
 /// Shared dropdown field: same label-above-field shell as [AppTextField],
 /// a brand-colored chevron instead of the stock Material arrow, and a
@@ -34,18 +35,32 @@ class AppDropdownField<T> extends StatelessWidget {
           Text(label!, style: context.textSubtitle2(color: context.colorMuted)),
           const SizedBox(height: 8),
         ],
-        DropdownButtonFormField<T>(
-          initialValue: value,
-          items: items,
-          onChanged: enabled ? onChanged : null,
-          icon: Icon(Icons.expand_more_rounded, color: context.colorPrimary),
-          dropdownColor: context.colorSurfaceElevated,
-          borderRadius: context.radiusMdRadius,
-          style: context.textSubtitle1(),
-          hint: hintText != null
-              ? Text(hintText!, style: context.textSubtitle2(color: context.colorMuted))
-              : null,
-          decoration: InputDecoration(hintText: hintText),
+        Container(
+          decoration: fieldShellDecoration(context),
+          child: DropdownButtonFormField<T>(
+            initialValue: value,
+            items: items,
+            onChanged: enabled ? onChanged : null,
+            icon: Icon(Icons.expand_more_rounded, color: context.colorPrimary),
+            dropdownColor: context.colorSurfaceElevated,
+            borderRadius: context.radiusLgRadius,
+            style: context.textSubtitle1(),
+            hint: hintText != null
+                ? Text(hintText!, style: context.textSubtitle2(color: context.colorMuted))
+                : null,
+            decoration: InputDecoration(
+              hintText: hintText,
+              filled: true,
+              fillColor: Colors.transparent,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                  borderRadius: context.radiusLgRadius, borderSide: BorderSide.none),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: context.radiusLgRadius, borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: context.radiusLgRadius, borderSide: BorderSide.none),
+            ),
+          ),
         ),
       ],
     );

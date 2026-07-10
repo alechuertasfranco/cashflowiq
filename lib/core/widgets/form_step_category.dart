@@ -1,6 +1,7 @@
 import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/format.dart';
 import 'package:cashflowiq/core/widgets/sub_step_switcher.dart';
+import 'package:cashflowiq/core/widgets/wizard_back_link.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 import 'package:flutter/material.dart';
 
@@ -102,7 +103,7 @@ class _ParentCategoryView extends StatelessWidget {
           Row(
             children: [
               Expanded(child: Text(title, style: context.heading4())),
-              _AddButton(label: 'Nueva categoría', accentColor: accentColor, onTap: onAddCategory),
+              WizardAddLink(label: 'Nueva categoría', accentColor: accentColor, onTap: onAddCategory),
             ],
           ),
           const SizedBox(height: 20),
@@ -161,7 +162,7 @@ class _ParentCategoryTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isHighlighted ? color : context.colorSurface,
           borderRadius: context.radiusLgRadius,
-          border: Border.all(color: isHighlighted ? color : context.colorBorder, width: isHighlighted ? 2 : 1),
+          border: Border.all(color: isHighlighted ? color : context.colorBorder),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -219,24 +220,14 @@ class _ChildCategoryView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextButton.icon(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_ios_new, size: 13),
-            label: const Text('Categorías'),
-            style: TextButton.styleFrom(
-              foregroundColor: accentColor,
-              padding: EdgeInsets.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              minimumSize: Size.zero,
-            ),
-          ),
-          const SizedBox(height: 10),
+          WizardBackLink(label: 'Categorías', accentColor: accentColor, onTap: onBack),
+          const SizedBox(height: 14),
           Row(
             children: [
               Icon(parseIcon(parent.icon), size: 20, color: parentColor),
               const SizedBox(width: 8),
               Expanded(child: Text(parent.name, style: context.heading4())),
-              _AddButton(label: 'Nueva subcategoría', accentColor: accentColor, onTap: onAddSubcategory),
+              WizardAddLink(label: 'Nueva subcategoría', accentColor: accentColor, onTap: onAddSubcategory),
             ],
           ),
           const SizedBox(height: 4),
@@ -292,7 +283,7 @@ class _LeafCategoryTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? color : context.colorSurface,
           borderRadius: context.radiusLgRadius,
-          border: Border.all(color: isSelected ? color : context.colorBorder, width: isSelected ? 2 : 1),
+          border: Border.all(color: isSelected ? color : context.colorBorder),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -317,30 +308,6 @@ class _LeafCategoryTile extends StatelessWidget {
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
-class _AddButton extends StatelessWidget {
-  final String label;
-  final Color accentColor;
-  final VoidCallback onTap;
-
-  const _AddButton({required this.label, required this.accentColor, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onTap,
-      icon: const Icon(Icons.add, size: 15),
-      label: Text(label),
-      style: TextButton.styleFrom(
-        foregroundColor: accentColor,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        minimumSize: Size.zero,
-        textStyle: context.textCaption(),
-      ),
-    );
-  }
-}
-
 class _EmptyHint extends StatelessWidget {
   final String message;
   final String buttonLabel;
@@ -356,14 +323,27 @@ class _EmptyHint extends StatelessWidget {
       children: [
         Text(message, style: context.textBody2(color: context.colorTextSecondary)),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: onTap,
-          icon: const Icon(Icons.add, size: 16),
-          label: Text(buttonLabel),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: accentColor,
-            side: BorderSide(color: accentColor),
-            shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
+        GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: accentColor.withAlpha(10),
+              borderRadius: context.radiusLgRadius,
+              border: Border.all(color: accentColor.withAlpha(70)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, size: 17, color: accentColor),
+                const SizedBox(width: 6),
+                Text(
+                  buttonLabel,
+                  style: context.textBody2(color: accentColor).copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
           ),
         ),
       ],

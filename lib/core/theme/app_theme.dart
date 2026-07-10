@@ -84,7 +84,7 @@ class AppTheme {
           foregroundColor: tokens.onPrimary,
           disabledBackgroundColor: tokens.muted.withAlpha(90),
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius),
         ),
       ),
@@ -92,7 +92,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: tokens.primary,
           side: BorderSide(color: tokens.border),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.mdRadius),
         ),
       ),
@@ -106,7 +106,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: tokens.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: AppRadius.mdRadius,
           borderSide: BorderSide(color: tokens.border),
@@ -117,7 +117,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.mdRadius,
-          borderSide: BorderSide(color: tokens.primary, width: 1.5),
+          borderSide: BorderSide(color: tokens.primary),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.mdRadius,
@@ -193,17 +193,46 @@ class AppTheme {
       datePickerTheme: DatePickerThemeData(
         backgroundColor: tokens.surfaceElevated,
         surfaceTintColor: Colors.transparent,
+        elevation: 0,
         headerBackgroundColor: tokens.primary,
         headerForegroundColor: tokens.onPrimary,
-        todayForegroundColor: WidgetStatePropertyAll(tokens.primary),
-        todayBorder: BorderSide(color: tokens.primary),
+        headerHeadlineStyle: GoogleFonts.sora(fontSize: 28, fontWeight: FontWeight.w700),
+        headerHelpStyle: GoogleFonts.urbanist(fontSize: 13, fontWeight: FontWeight.w600),
+        weekdayStyle: GoogleFonts.urbanist(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: tokens.textSecondary,
+          height: 1,
+        ),
+        // Explicit `height: 1` keeps the digit vertically centered inside the
+        // fixed-size selection circle — Inter's default line-height (from the
+        // app-wide GoogleFonts textTheme) otherwise pushes it off-center.
+        dayStyle: GoogleFonts.urbanist(fontSize: 14, fontWeight: FontWeight.w600, height: 1),
+        yearStyle: GoogleFonts.urbanist(fontSize: 15, fontWeight: FontWeight.w500, height: 1),
+        // `todayForegroundColor` used to be a flat constant, so a selected
+        // "today" rendered primary-on-primary text — invisible against its
+        // own fill. Resolve it by selection state like every other day.
+        todayForegroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? tokens.onPrimary : tokens.primary,
+        ),
+        todayBorder: BorderSide(color: tokens.primary, width: 1.2),
         dayForegroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected) ? tokens.onPrimary : tokens.textPrimary,
         ),
         dayBackgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected) ? tokens.primary : Colors.transparent,
         ),
+        dayOverlayColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.transparent
+              : tokens.primary.withAlpha(20),
+        ),
+        todayBackgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? tokens.primary : Colors.transparent,
+        ),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.lgRadius),
+        cancelButtonStyle: TextButton.styleFrom(foregroundColor: tokens.textSecondary),
+        confirmButtonStyle: TextButton.styleFrom(foregroundColor: tokens.primary),
       ),
     );
   }

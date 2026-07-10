@@ -80,7 +80,7 @@ class BaseTransactionFormScreen extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: context.colorBackground,
-        boxShadow: context.shadowCard,
+        border: Border(top: BorderSide(color: context.colorBorder)),
       ),
       child: Row(
         children: [

@@ -1,6 +1,7 @@
 import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/format.dart';
 import 'package:cashflowiq/core/widgets/sub_step_switcher.dart';
+import 'package:cashflowiq/core/widgets/wizard_back_link.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
 import 'package:cashflowiq/shared/models/credit_card.dart';
@@ -93,6 +94,7 @@ class FormStepPaymentSource extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
               child: _SourceToggle(
                 sourceType: sourceType!,
+                accentColor: resolvedAccentColor,
                 onChanged: onSourceTypeChanged!,
               ),
             ),
@@ -113,7 +115,7 @@ class FormStepPaymentSource extends StatelessWidget {
         children: [
           Text(title, style: context.heading4()),
           if (mostUsedItems.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _QuickAccessRow(
               items: mostUsedItems,
               selectedAccount: selectedAccount,
@@ -168,22 +170,12 @@ class FormStepPaymentSource extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextButton.icon(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_ios_new, size: 13),
-            label: const Text('Entidades'),
-            style: TextButton.styleFrom(
-              foregroundColor: accentColor,
-              padding: EdgeInsets.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              minimumSize: Size.zero,
-            ),
-          ),
-          const SizedBox(height: 10),
+          WizardBackLink(label: 'Entidades', accentColor: accentColor, onTap: onBack),
+          const SizedBox(height: 14),
           Row(
             children: [
-              _EntityBadge(entity: entity, size: 28),
-              const SizedBox(width: 8),
+              _EntityBadge(entity: entity, size: 32),
+              const SizedBox(width: 10),
               Expanded(child: Text(entity.name, style: context.heading4())),
             ],
           ),
@@ -193,7 +185,7 @@ class FormStepPaymentSource extends StatelessWidget {
           // Accounts section
           if (accounts.isNotEmpty && !showCardSection) ...[
             const SizedBox(height: 20),
-            Text('Cuentas bancarias', style: context.textBody2(color: entityColor)),
+            _SectionLabel(label: 'Cuentas bancarias', color: entityColor),
             const SizedBox(height: 10),
             ...accounts.map((a) => _AccountCard(
                   account: a,
@@ -206,7 +198,7 @@ class FormStepPaymentSource extends StatelessWidget {
           // Cards section
           if (cards.isNotEmpty && (showBothSections || showCardSection)) ...[
             const SizedBox(height: 20),
-            Text('Tarjetas de crédito', style: context.textBody2(color: entityColor)),
+            _SectionLabel(label: 'Tarjetas de crédito', color: entityColor),
             const SizedBox(height: 10),
             ...cards.map((c) => _CreditCardCard(
                   card: c,
@@ -230,38 +222,51 @@ class FormStepPaymentSource extends StatelessWidget {
   }
 }
 
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _SectionLabel({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: context.textCaption(color: color).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.6),
+    );
+  }
+}
+
 // ── Source toggle ─────────────────────────────────────────────────────────────
 
 class _SourceToggle extends StatelessWidget {
   final String sourceType;
+  final Color accentColor;
   final void Function(String) onChanged;
 
-  const _SourceToggle({required this.sourceType, required this.onChanged});
+  const _SourceToggle({required this.sourceType, required this.accentColor, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    Widget option(String label, String value, bool left) {
+    Widget option(String label, String value) {
       final selected = sourceType == value;
       return Expanded(
         child: GestureDetector(
           onTap: () => onChanged(value),
           child: AnimatedContainer(
             duration: context.motionFast,
+            curve: context.motionStandard,
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? context.colorPrimary : context.colorSurface,
-              borderRadius: BorderRadius.horizontal(
-                left: Radius.circular(left ? context.radiusMd : 0),
-                right: Radius.circular(left ? 0 : context.radiusMd),
-              ),
-              border: Border.all(color: context.colorBorder),
+              color: selected ? accentColor : Colors.transparent,
+              borderRadius: context.radiusPillRadius,
             ),
             child: Center(
               child: Text(
                 label,
                 style: context.textBody2(
                   color: selected ? context.colorOnPrimary : context.colorTextSecondary,
-                ),
+                ).copyWith(fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -269,11 +274,18 @@ class _SourceToggle extends StatelessWidget {
       );
     }
 
-    return Row(
-      children: [
-        option('Cuenta bancaria', 'account', true),
-        option('Tarjeta de crédito', 'card', false),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: context.colorSurfaceVariant,
+        borderRadius: context.radiusPillRadius,
+      ),
+      child: Row(
+        children: [
+          option('Cuenta bancaria', 'account'),
+          option('Tarjeta de crédito', 'card'),
+        ],
+      ),
     );
   }
 }
@@ -298,27 +310,31 @@ class _QuickAccessRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Más usado', style: context.textCaption(color: context.colorTextSecondary)),
-        const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: items
-                .map((item) {
-                  final isSelected = item.isAccount
-                      ? selectedAccount?.id == item.id
-                      : selectedCreditCard?.id == item.id;
-                  return _QuickAccessCard(
-                    icon: item.icon,
-                    name: item.name,
-                    isSelected: isSelected,
-                    accentColor: accentColor,
-                    onTap: item.onTap,
-                  );
-                })
-                .expand((w) => [w, const SizedBox(width: 8)])
-                .toList()
-              ..removeLast(),
+        Text(
+          'MÁS USADO',
+          style: context
+              .textCaption(color: context.colorTextSecondary)
+              .copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.6),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 84,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 14),
+            itemBuilder: (_, i) {
+              final item = items[i];
+              final isSelected =
+                  item.isAccount ? selectedAccount?.id == item.id : selectedCreditCard?.id == item.id;
+              return _QuickAccessCard(
+                icon: item.icon,
+                name: item.name,
+                isSelected: isSelected,
+                accentColor: accentColor,
+                onTap: item.onTap,
+              );
+            },
           ),
         ),
       ],
@@ -345,26 +361,33 @@ class _QuickAccessCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? accentColor.withAlpha(20) : context.colorSurface,
-          borderRadius: context.radiusMdRadius,
-          border: Border.all(
-            color: isSelected ? accentColor : context.colorBorder,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 66,
+        child: Column(
           children: [
-            Icon(icon, size: 16, color: isSelected ? accentColor : context.colorMuted),
-            const SizedBox(width: 6),
-            Text(name, style: context.textCaption(color: context.colorTextPrimary)),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              Icon(Icons.check, size: 14, color: accentColor),
-            ],
+            AnimatedContainer(
+              duration: context.motionFast,
+              curve: context.motionStandard,
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? accentColor.withAlpha(22) : context.colorSurfaceVariant,
+                border: Border.all(color: isSelected ? accentColor : context.colorBorder),
+              ),
+              child: Icon(icon, size: 20, color: isSelected ? accentColor : context.colorMuted),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: context
+                  .textCaption(color: isSelected ? accentColor : context.colorTextSecondary)
+                  .copyWith(fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500),
+            ),
           ],
         ),
       ),
@@ -403,9 +426,10 @@ class _EntityTile extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: context.colorSurface,
           borderRadius: context.radiusLgRadius,
@@ -425,7 +449,12 @@ class _EntityTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: context.colorMuted, size: 20),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(color: context.colorSurfaceVariant, shape: BoxShape.circle),
+              child: Icon(Icons.chevron_right_rounded, color: context.colorMuted, size: 18),
+            ),
           ],
         ),
       ),
@@ -489,25 +518,32 @@ class _AccountCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: context.motionFast,
+        curve: context.motionStandard,
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withAlpha(20) : context.colorSurface,
+          color: isSelected ? accentColor.withAlpha(14) : context.colorSurface,
           borderRadius: context.radiusLgRadius,
-          border: Border.all(
-            color: isSelected ? accentColor : context.colorBorder,
-            width: isSelected ? 2 : 1,
-          ),
+          border: Border.all(color: isSelected ? accentColor : context.colorBorder),
         ),
         child: Row(
           children: [
-            Icon(Icons.account_balance, size: 20,
-                color: isSelected ? accentColor : context.colorMuted),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: isSelected ? accentColor.withAlpha(30) : context.colorSurfaceVariant,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.account_balance_rounded,
+                  size: 17, color: isSelected ? accentColor : context.colorMuted),
+            ),
             const SizedBox(width: 12),
             Expanded(child: Text(account.name, style: context.textSubtitle2())),
-            if (isSelected) Icon(Icons.check_circle, color: accentColor, size: 20),
+            if (isSelected) Icon(Icons.check_circle_rounded, color: accentColor, size: 20),
           ],
         ),
       ),
@@ -532,25 +568,32 @@ class _CreditCardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: context.motionFast,
+        curve: context.motionStandard,
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withAlpha(20) : context.colorSurface,
+          color: isSelected ? accentColor.withAlpha(14) : context.colorSurface,
           borderRadius: context.radiusLgRadius,
-          border: Border.all(
-            color: isSelected ? accentColor : context.colorBorder,
-            width: isSelected ? 2 : 1,
-          ),
+          border: Border.all(color: isSelected ? accentColor : context.colorBorder),
         ),
         child: Row(
           children: [
-            Icon(Icons.credit_card, size: 20,
-                color: isSelected ? accentColor : context.colorMuted),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: isSelected ? accentColor.withAlpha(30) : context.colorSurfaceVariant,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.credit_card_rounded,
+                  size: 17, color: isSelected ? accentColor : context.colorMuted),
+            ),
             const SizedBox(width: 12),
             Expanded(child: Text(card.name, style: context.textSubtitle2())),
-            if (isSelected) Icon(Icons.check_circle, color: accentColor, size: 20),
+            if (isSelected) Icon(Icons.check_circle_rounded, color: accentColor, size: 20),
           ],
         ),
       ),
@@ -573,9 +616,9 @@ class _EntityBadge extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(size * 0.25)),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(size * 0.32)),
       child: Center(
-        child: Text(label, style: context.textCaption(color: getContrastColor(color))),
+        child: Text(label, style: context.textCaption(color: getContrastColor(color)).copyWith(fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -598,63 +641,66 @@ class _AddRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Accounts-only → single "Agregar cuenta" button
+    // Accounts-only → single "Agregar cuenta" tile
     if (!showCards || (showCards && isCardMode && onAddCreditCard == null)) {
-      return OutlinedButton.icon(
-        onPressed: onAddAccount,
-        icon: const Icon(Icons.add, size: 16),
-        label: const Text('Agregar cuenta'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: accentColor,
-          side: BorderSide(color: accentColor),
-          shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
-        ),
-      );
+      return _AddTile(label: 'Agregar cuenta', accentColor: accentColor, onTap: onAddAccount);
     }
 
     // Cards-only mode (toggle active, card selected)
     if (isCardMode) {
-      return OutlinedButton.icon(
-        onPressed: onAddCreditCard,
-        icon: const Icon(Icons.add, size: 16),
-        label: const Text('Agregar tarjeta'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: accentColor,
-          side: BorderSide(color: accentColor),
-          shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
-        ),
-      );
+      return _AddTile(label: 'Agregar tarjeta', accentColor: accentColor, onTap: onAddCreditCard!);
     }
 
-    // Accounts + cards without toggle (expense) → two buttons
+    // Accounts + cards without toggle (expense) → two tiles
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: onAddAccount,
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('Cuenta'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: accentColor,
-              side: BorderSide(color: accentColor),
-              shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
-            ),
-          ),
+          child: _AddTile(label: 'Cuenta', accentColor: accentColor, onTap: onAddAccount),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: onAddCreditCard,
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('Tarjeta'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: accentColor,
-              side: BorderSide(color: accentColor),
-              shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
-            ),
-          ),
+          child: _AddTile(label: 'Tarjeta', accentColor: accentColor, onTap: onAddCreditCard!),
         ),
       ],
+    );
+  }
+}
+
+class _AddTile extends StatelessWidget {
+  final String label;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _AddTile({required this.label, required this.accentColor, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: accentColor.withAlpha(10),
+          borderRadius: context.radiusLgRadius,
+          border: Border.all(color: accentColor.withAlpha(70)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add_rounded, size: 17, color: accentColor),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: context.textBody2(color: accentColor).copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

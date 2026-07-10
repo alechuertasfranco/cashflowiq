@@ -153,7 +153,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
             steps: [
               FormStepAmount(
                 title: '¿Cuánto fue en total?',
-                dateAccentColor: context.colorPrimary,
+                accentColor: context.colorPrimary,
                 descriptionHint: 'Ej: Cena de cumpleaños',
                 descriptionRequired: true,
                 amountController: controller.amountController,
