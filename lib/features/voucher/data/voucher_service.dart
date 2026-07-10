@@ -59,10 +59,11 @@ class VoucherService {
   // ─────────────────────────────────────────────
   VoucherResult _parseYape(String text) {
     final lines = _lines(text);
+    final time = _extractTime(text) ?? _nowTime();
     return VoucherResult(
       amount: _extractSoles(text),
       description: _extractYapeConcept(lines),
-      date: _extractSpanishDate(text),
+      date: _withTime(_extractSpanishDate(text), time),
       recipient: _lineAfterAmount(lines),
       currencyCode: 'PEN',
     );
@@ -82,11 +83,12 @@ class VoucherService {
       description = lines[conceptIdx + 1];
     }
     description ??= _extractYapeConcept(lines);
+    final time = _extractTime(text) ?? _nowTime();
 
     return VoucherResult(
       amount: _extractSoles(text),
       description: description,
-      date: _extractSpanishDate(text),
+      date: _withTime(_extractSpanishDate(text), time),
       recipient: _lineAfterAmount(lines),
       currencyCode: 'PEN',
     );
@@ -115,6 +117,7 @@ class VoucherService {
     final date = _extractSpanishDate(text) ??
         _extractIsoDate(text) ??
         _extractEnglishDate(text);
+    final time = _extractTime(text) ?? _nowTime();
 
     final skipPattern = RegExp(r'^S/|^\$|\d+[.,]\d{2}$|\d{1,2}[\s/\-]\w+[\s/\-]\d{4}|^\d+$');
     String? description =
@@ -127,7 +130,7 @@ class VoucherService {
     return VoucherResult(
       amount: amount,
       description: description.isEmpty ? null : description,
-      date: date,
+      date: _withTime(date, time),
       recipient: null,
       currencyCode: currencyCode,
     );
@@ -190,6 +193,39 @@ class VoucherService {
   String? _extractIsoDate(String text) {
     final m = RegExp(r'\d{4}-\d{2}-\d{2}').firstMatch(text);
     return m?.group(0);
+  }
+
+  // Matches "03:09 p. m.", "12:33 a. m.", "7:49 PM" — covers both the
+  // Spanish "a. m./p. m." style used by Yape/Plin and plain English AM/PM.
+  static final _timeRegex = RegExp(
+    r'(\d{1,2}):(\d{2})\s*([ap])\.?\s*m\.?',
+    caseSensitive: false,
+  );
+
+  String? _extractTime(String text) {
+    final m = _timeRegex.firstMatch(text);
+    if (m == null) return null;
+    var hour = int.parse(m.group(1)!);
+    final minute = m.group(2)!;
+    final isPm = m.group(3)!.toLowerCase() == 'p';
+    if (isPm && hour != 12) hour += 12;
+    if (!isPm && hour == 12) hour = 0;
+    return '${hour.toString().padLeft(2, '0')}:$minute:00';
+  }
+
+  // Voucher OCR only ever yields a date-only string ("2026-07-09"), which
+  // DateTime.parse silently interprets as midnight — losing the receipt's
+  // actual time. Append the extracted time (or fall back to now's time) so
+  // the resulting transaction date isn't always stamped at 00:00.
+  String? _withTime(String? date, String time) => date == null ? null : '${date}T$time';
+
+  // Fallback when the receipt's time can't be OCR'd — better to stamp the
+  // moment the voucher was scanned than to silently fall back to midnight.
+  String _nowTime() {
+    final now = DateTime.now();
+    return '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}';
   }
 
   static const _englishMonthMap = {
