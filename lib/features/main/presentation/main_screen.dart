@@ -1,8 +1,10 @@
 // lib/features/main/presentation/main_screen.dart
 
 import 'dart:io';
+import 'package:cashflowiq/core/services/update_service.dart';
 import 'package:cashflowiq/core/theme/app_colors.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/update_dialog.dart';
 import 'package:cashflowiq/features/main/presentation/widgets/custom_bottom_bar.dart';
 import 'package:cashflowiq/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/profile_screen.dart';
@@ -42,6 +44,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     // Check if app was launched or foregrounded via a share intent
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkSharedImage());
+
+    // One-shot check for a newer self-hosted APK build. Best-effort - failures are swallowed inside the service.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
+  }
+
+  Future<void> _checkForUpdate() async {
+    final info = await UpdateService.checkForUpdate();
+    if (info != null && mounted) {
+      showUpdateDialog(context, info);
+    }
   }
 
   Future<void> _checkSharedImage() async {
