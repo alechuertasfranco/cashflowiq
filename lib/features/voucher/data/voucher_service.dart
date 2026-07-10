@@ -264,13 +264,23 @@ class VoucherService {
 
     if (dateIdx == -1 || securityIdx <= dateIdx + 1) return null;
 
-    final candidate = lines
+    var candidate = lines
         .sublist(dateIdx + 1, securityIdx)
+        // Drop stray single-character lines — the concept box's icon (a small
+        // document/chat glyph) is frequently misread by ML Kit as a lone
+        // letter (commonly "F") on its own line right before the real text.
+        .where((l) => l.length > 1)
         .where((l) => !timeRegex.hasMatch(l))
-        .where((l) => l != '|' && l != 'l' && l != 'I')
         .where((l) => !RegExp(r'^[\d\s]+$').hasMatch(l))
         .join(' ')
         .trim();
+
+    // Same icon-misread, but glued to the same line as the text instead of
+    // its own line, e.g. "F Bebidas" — strip a leading single-letter token.
+    candidate = candidate.replaceFirst(
+      RegExp(r'^[A-Za-z]\s+(?=[A-ZÁÉÍÓÚÑ])'),
+      '',
+    );
 
     return candidate.isEmpty ? null : candidate;
   }
