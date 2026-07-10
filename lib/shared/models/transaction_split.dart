@@ -29,7 +29,9 @@ class TransactionSplit {
       contact: Contact.fromJson(json['contact'] as Map<String, dynamic>),
       amount: parseToDouble(json['amount']),
       isSettled: json['is_settled'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      // Backend now sends created_at as an explicit UTC ISO string (with
+      // offset) — convert to local so displayed day/time match the device.
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       currencySymbol: json['currency_symbol'] as String?,
     );
   }
