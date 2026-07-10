@@ -66,11 +66,13 @@ class SplitFormController extends BaseTransactionFormController {
         accountService.getAccounts(),
         creditCardService.getCreditCards(),
         _contactService.fetchAll(),
+        paymentSourceService.getMostUsedSources(),
       ]);
       expenseCategories = results[0] as List<Category>;
       accounts = results[1] as List<BankAccount>;
       creditCards = results[2] as List<CreditCard>;
       allContacts = results[3] as List<Contact>;
+      mostUsedItems = buildMostUsedItems(results[4] as List<Map<String, dynamic>>);
       isLoadingSources = false;
       notifyListeners();
     } catch (_) {

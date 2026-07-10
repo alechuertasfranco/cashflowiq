@@ -205,6 +205,7 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
                 onAccountTap: controller.onAccountTap,
                 onCardTap: controller.onCardTap,
                 onBack: controller.backFromEntityAccounts,
+                mostUsedItems: controller.mostUsedItems,
                 onAddAccount: () => controller.navigateToAccountForm(
                   context,
                   onReload: controller.loadSources,

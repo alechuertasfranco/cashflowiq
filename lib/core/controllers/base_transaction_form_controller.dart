@@ -83,55 +83,60 @@ class BaseTransactionFormController extends ChangeNotifier {
         creditCardService.getCreditCards(),
         paymentSourceService.getMostUsedSources(),
       ]);
-      final rawAccounts = results[0] as List<BankAccount>;
-      final rawCards = results[1] as List<CreditCard>;
-      final rawSources = results[2] as List<Map<String, dynamic>>;
-
-      final items = <PaymentSourceItem>[];
-      for (final src in rawSources) {
-        final type = src['type'] as String;
-        final id = src['id'].toString();
-        final name = src['name'] as String;
-        final entityCode = src['bank_entity']['code'] as String;
-
-        if (type == 'account') {
-          final match = rawAccounts.where((a) => a.id == id);
-          if (match.isNotEmpty) {
-            final account = match.first;
-            items.add(PaymentSourceItem(
-              icon: Icons.account_balance,
-              id: id,
-              name: name,
-              entityCode: entityCode,
-              isAccount: true,
-              onTap: () => onAccountTap(account),
-            ));
-          }
-        } else {
-          final match = rawCards.where((c) => c.id == id);
-          if (match.isNotEmpty) {
-            final card = match.first;
-            items.add(PaymentSourceItem(
-              icon: Icons.credit_card,
-              id: id,
-              name: name,
-              entityCode: entityCode,
-              isAccount: false,
-              onTap: () => onCardTap(card),
-            ));
-          }
-        }
-      }
-
-      accounts = rawAccounts;
-      creditCards = rawCards;
-      mostUsedItems = items;
+      accounts = results[0] as List<BankAccount>;
+      creditCards = results[1] as List<CreditCard>;
+      mostUsedItems = buildMostUsedItems(results[2] as List<Map<String, dynamic>>);
       isLoadingSources = false;
       notifyListeners();
     } catch (_) {
       isLoadingSources = false;
       notifyListeners();
     }
+  }
+
+  /// Maps raw most-used-source entries from the API into tappable
+  /// [PaymentSourceItem]s, matched against the already-loaded [accounts] and
+  /// [creditCards]. Pulled out so subclasses whose loadSources() override
+  /// needs to fetch extra data alongside accounts/cards (e.g. split's
+  /// contacts) can still build the quick-access row without duplicating
+  /// this matching logic.
+  List<PaymentSourceItem> buildMostUsedItems(List<Map<String, dynamic>> rawSources) {
+    final items = <PaymentSourceItem>[];
+    for (final src in rawSources) {
+      final type = src['type'] as String;
+      final id = src['id'].toString();
+      final name = src['name'] as String;
+      final entityCode = src['bank_entity']['code'] as String;
+
+      if (type == 'account') {
+        final match = accounts.where((a) => a.id == id);
+        if (match.isNotEmpty) {
+          final account = match.first;
+          items.add(PaymentSourceItem(
+            icon: Icons.account_balance,
+            id: id,
+            name: name,
+            entityCode: entityCode,
+            isAccount: true,
+            onTap: () => onAccountTap(account),
+          ));
+        }
+      } else {
+        final match = creditCards.where((c) => c.id == id);
+        if (match.isNotEmpty) {
+          final card = match.first;
+          items.add(PaymentSourceItem(
+            icon: Icons.credit_card,
+            id: id,
+            name: name,
+            entityCode: entityCode,
+            isAccount: false,
+            onTap: () => onCardTap(card),
+          ));
+        }
+      }
+    }
+    return items;
   }
 
   /// Single-service variant for forms that only need accounts (income, transfer).
