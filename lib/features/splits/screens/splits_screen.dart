@@ -1,10 +1,14 @@
 // lib/features/splits/screens/splits_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/app_bottom_sheet.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/splits/data/split_service.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
@@ -135,68 +139,52 @@ class _SplitsScreenState extends State<SplitsScreen>
     }
 
     if (!mounted) return null;
-    return showModalBottomSheet<BankAccount>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return showAppBottomSheet<BankAccount>(
+      context,
       builder: (ctx) => DraggableScrollableSheet(
         initialChildSize: 0.5,
         minChildSize: 0.3,
         maxChildSize: 0.9,
         expand: false,
-        builder: (_, scrollController) => SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        builder: (_, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                '¿A qué cuenta te pagó?',
+                style: ctx.heading4(),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  '¿A qué cuenta te pagó?',
-                  style: AppTextStyles.h400(ctx),
-                ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                controller: scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: accounts.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 8),
+                itemBuilder: (_, index) {
+                  final a = accounts[index];
+                  return ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: ctx.radiusMdRadius,
+                      side: BorderSide(color: ctx.colorBorder),
+                    ),
+                    tileColor: ctx.colorSurface,
+                    leading: Icon(
+                      Icons.account_balance,
+                      color: ctx.colorPrimary,
+                    ),
+                    title: Text(
+                      a.name,
+                      style: ctx.textSubtitle1(),
+                    ),
+                    subtitle: Text(a.bankEntity.name),
+                    onTap: () => Navigator.pop(ctx, a),
+                  );
+                },
               ),
-              Expanded(
-                child: ListView.separated(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: accounts.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 8),
-                  itemBuilder: (_, index) {
-                    final a = accounts[index];
-                    return ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      tileColor: AppColors.surface,
-                      leading: const Icon(
-                        Icons.account_balance,
-                        color: AppColors.primary,
-                      ),
-                      title: Text(
-                        a.name,
-                        style: AppTextStyles.subtitle1(context),
-                      ),
-                      subtitle: Text(a.bankEntity.name),
-                      onTap: () => Navigator.pop(ctx, a),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -205,17 +193,11 @@ class _SplitsScreenState extends State<SplitsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Gastos compartidos', style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(
+        title: 'Gastos compartidos',
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.muted,
-          indicatorColor: AppColors.primary,
           tabs: const [
             Tab(text: 'Pendientes'),
             Tab(text: 'Liquidados'),
@@ -227,51 +209,28 @@ class _SplitsScreenState extends State<SplitsScreen>
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: TextField(
+              child: AppTextField(
                 controller: _searchController,
-                onChanged: (v) => setState(() => _query = v),
-                decoration: InputDecoration(
-                  isDense: true,
-                  hintText: 'Buscar por contacto',
-                  hintStyle: AppTextStyles.body2(
-                    context,
-                    color: AppColors.muted,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppColors.muted,
-                    size: 20,
-                  ),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(
-                            Icons.close,
-                            color: AppColors.muted,
-                            size: 18,
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                        ),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
+                hintText: 'Buscar por contacto',
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: context.colorMuted,
+                  size: 20,
                 ),
-                style: AppTextStyles.body1(context),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: Icon(
+                          Icons.close,
+                          color: context.colorMuted,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                      ),
+                onChanged: (v) => setState(() => _query = v),
               ),
             ),
             Expanded(
@@ -338,7 +297,7 @@ class _SplitList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonListLoader(itemCount: 4, itemHeight: 76);
     }
 
     if (splits.isEmpty) {
@@ -359,10 +318,13 @@ class _SplitList extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final split = splits[index];
-          return _SplitCard(
-            split: split,
-            showSettleButton: showSettleButton,
-            onSettle: onSettle != null ? () => onSettle!(split) : null,
+          return StaggeredFadeIn(
+            index: index,
+            child: _SplitCard(
+              split: split,
+              showSettleButton: showSettleButton,
+              onSettle: onSettle != null ? () => onSettle!(split) : null,
+            ),
           );
         },
       ),
@@ -391,9 +353,9 @@ class _SplitCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: context.colorSurface,
+        borderRadius: context.radiusLgRadius,
+        border: Border.all(color: context.colorBorder),
       ),
       child: Row(
         children: [
@@ -403,15 +365,15 @@ class _SplitCard extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               color: split.isSettled
-                  ? AppColors.success.withAlpha(25)
-                  : AppColors.error.withAlpha(25),
-              borderRadius: BorderRadius.circular(12),
+                  ? context.colorSuccess.withAlpha(25)
+                  : context.colorError.withAlpha(25),
+              borderRadius: context.radiusMdRadius,
             ),
             child: Icon(
               split.isSettled ? Icons.check_circle_outline : Icons.person,
               color: split.isSettled
-                  ? AppColors.successStrong
-                  : AppColors.error,
+                  ? context.colorSuccessStrong
+                  : context.colorError,
               size: 22,
             ),
           ),
@@ -422,13 +384,12 @@ class _SplitCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(split.contact.name, style: AppTextStyles.h600(context)),
+                Text(split.contact.name, style: context.heading6()),
                 const SizedBox(height: 2),
                 Text(
                   _formatDate(split.createdAt),
-                  style: AppTextStyles.caption(
-                    context,
-                    color: AppColors.textSecondary,
+                  style: context.textCaption(
+                    color: context.colorTextSecondary,
                   ),
                 ),
               ],
@@ -442,10 +403,10 @@ class _SplitCard extends StatelessWidget {
               AmountText(
                 symbol: split.currencySymbol ?? '',
                 amount: split.amount,
-                style: AppTextStyles.h500(context),
+                style: context.heading5(),
                 color: split.isSettled
-                    ? AppColors.successStrong
-                    : AppColors.error,
+                    ? context.colorSuccessStrong
+                    : context.colorError,
               ),
               if (showSettleButton && onSettle != null) ...[
                 const SizedBox(height: 6),
@@ -457,14 +418,13 @@ class _SplitCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
+                      color: context.colorPrimary,
+                      borderRadius: context.radiusSmRadius,
                     ),
                     child: Text(
                       'Liquidar',
-                      style: AppTextStyles.caption(
-                        context,
-                        color: Colors.white,
+                      style: context.textCaption(
+                        color: context.colorOnPrimary,
                       ),
                     ),
                   ),

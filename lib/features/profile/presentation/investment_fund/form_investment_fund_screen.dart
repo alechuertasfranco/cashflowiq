@@ -1,9 +1,11 @@
 // lib/features/investment_fund/presentation/form_investment_fund_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_dropdown_field.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
 
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
@@ -91,13 +93,8 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_isEdit ? "Editar inversión" : "Nueva inversión", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(title: _isEdit ? "Editar inversión" : "Nueva inversión"),
       body: SafeArea(
         child: controller.isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -112,27 +109,26 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label("Nombre del fondo"),
-                              const SizedBox(height: 8),
-                              _input("Ej: Vanguard S&P 500", _nameController),
+                              _input("Nombre del fondo", "Ej: Vanguard S&P 500", _nameController),
 
-                              _label("Capital invertido"),
-                              const SizedBox(height: 8),
-                              _input("Ej: 10000.00", _amountController, isNumber: true),
+                              _input("Capital invertido", "Ej: 10000.00", _amountController, isNumber: true),
 
-                              _label("Valor actual (opcional)"),
-                              const SizedBox(height: 8),
-                              _input("Ej: 11500.00", _currentValueController, isNumber: true, required: false),
+                              _input(
+                                "Valor actual (opcional)",
+                                "Ej: 11500.00",
+                                _currentValueController,
+                                isNumber: true,
+                                required: false,
+                              ),
 
-                              _label("Tipo de fondo"),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<InvestmentFundType>(
-                                initialValue: controller.selectedType,
+                              AppDropdownField<InvestmentFundType>(
+                                label: "Tipo de fondo",
+                                value: controller.selectedType,
                                 items: InvestmentFundType.values.map((t) {
                                   return DropdownMenuItem(value: t, child: Text(t.toLabel()));
                                 }).toList(),
                                 onChanged: controller.setType,
-                                decoration: inputDecoration(context, "Selecciona tipo"),
+                                hintText: "Selecciona tipo",
                               ),
 
                               const SizedBox(height: 12),
@@ -147,18 +143,17 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
 
                               const SizedBox(height: 12),
 
-                              _label("Entidad bancaria"),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField(
-                                initialValue: controller.selectedEntity,
+                              AppDropdownField(
+                                label: "Entidad bancaria",
+                                value: controller.selectedEntity,
                                 items: controller.entities.map((e) {
                                   return DropdownMenuItem(
                                     value: e,
-                                    child: Text(e.name, style: AppTextStyles.body1(context)),
+                                    child: Text(e.name, style: context.textBody1()),
                                   );
                                 }).toList(),
                                 onChanged: controller.setEntity,
-                                decoration: inputDecoration(context, "Selecciona una entidad bancaria"),
+                                hintText: "Selecciona una entidad bancaria",
                               ),
                               Align(
                                 alignment: Alignment.centerRight,
@@ -172,7 +167,7 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
                                   },
                                   child: Text(
                                     "Crear nueva entidad",
-                                    style: AppTextStyles.caption(context, color: AppColors.primary),
+                                    style: context.textCaption(color: context.colorPrimary),
                                   ),
                                 ),
                               ),
@@ -199,58 +194,36 @@ class _FormInvestmentFundScreenState extends State<FormInvestmentFundScreen> {
         bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
+        color: context.colorBackground,
+        boxShadow: context.shadowCard,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: controller.isSaving ? null : _submit,
-              child: controller.isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(
-                      _isEdit ? "Actualizar inversión" : "Crear inversión",
-                      style: AppTextStyles.subtitle2(context, color: Colors.white),
-                    ),
-            ),
+          PrimaryButton(
+            label: _isEdit ? "Actualizar inversión" : "Crear inversión",
+            isLoading: controller.isSaving,
+            onPressed: _submit,
           ),
-
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-              ),
-              onPressed: () => Navigator.pop(context),
-              child: Text("Cancelar", style: AppTextStyles.subtitle2(context, color: AppColors.primary)),
-            ),
+          SecondaryButton(
+            label: "Cancelar",
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _label(String text) => Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
+  Widget _label(String text) => Text(text, style: context.textSubtitle2(color: context.colorTextSecondary));
 
-  Widget _input(String label, TextEditingController controller, {bool isNumber = false, bool required = true}) {
+  Widget _input(String label, String hint, TextEditingController controller, {bool isNumber = false, bool required = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
+      child: AppTextField(
+        label: label,
         controller: controller,
+        hintText: hint,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        decoration: inputDecoration(context, label),
         validator: (v) {
           if (!required) return null;
           if (v == null || v.isEmpty) return "Requerido";

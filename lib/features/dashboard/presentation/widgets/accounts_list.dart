@@ -1,7 +1,6 @@
 // lib/features/dashboard/presentation/widgets/accounts_list.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/features/dashboard/data/dashboard_summary.dart';
 import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/currency_utils.dart';
@@ -64,7 +63,7 @@ class _DashboardAccountsListState extends State<DashboardAccountsList> {
       children: [
         Text(
           _tab == _AccountsTab.accounts ? 'Mis cuentas' : 'Deuda de tarjetas',
-          style: AppTextStyles.h500(context),
+          style: context.heading5(),
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(
@@ -124,7 +123,7 @@ class _DashboardAccountsListState extends State<DashboardAccountsList> {
           child: Center(
             child: Text(
               'Sin cuentas',
-              style: AppTextStyles.body1(context, color: AppColors.muted),
+              style: context.textBody1(color: context.colorMuted),
             ),
           ),
         ),
@@ -151,19 +150,19 @@ class _DashboardAccountsListState extends State<DashboardAccountsList> {
               margin: const EdgeInsets.only(top: 4),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                color: context.colorSurface,
+                borderRadius: context.radiusMdRadius,
+                border: Border.all(color: context.colorBorder),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'Ver todas las cuentas (${filtered.length})',
-                    style: AppTextStyles.body2(context, color: AppColors.primary),
+                    style: context.textBody2(color: context.colorPrimary),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.expand_more, size: 16, color: AppColors.primary),
+                  Icon(Icons.expand_more, size: 16, color: context.colorPrimary),
                 ],
               ),
             ),
@@ -187,18 +186,17 @@ class _EntityChip extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: context.motionFast,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary : AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: selected ? AppColors.primary : AppColors.border),
+            color: selected ? context.colorPrimary : context.colorSurface,
+            borderRadius: context.radiusPillRadius,
+            border: Border.all(color: selected ? context.colorPrimary : context.colorBorder),
           ),
           child: Text(
             label,
-            style: AppTextStyles.caption(
-              context,
-              color: selected ? Colors.white : AppColors.textSecondary,
+            style: context.textCaption(
+              color: selected ? context.colorOnPrimary : context.colorTextSecondary,
             ),
           ),
         ),
@@ -218,7 +216,7 @@ class _AccountRow extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: context.radiusLgRadius,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -229,16 +227,16 @@ class _AccountRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(account.name, style: AppTextStyles.subtitle1(context)),
-                    Text(account.bankEntityCode, style: AppTextStyles.caption(context)),
+                    Text(account.name, style: context.textSubtitle1()),
+                    Text(account.bankEntityCode, style: context.textCaption()),
                   ],
                 ),
               ),
               AmountText(
                 symbol: dashboardCurrencySymbol(account.currencyCode),
                 amount: account.balance,
-                style: AppTextStyles.h600(context),
-                color: AppColors.primary,
+                style: context.heading6(),
+                color: context.colorPrimary,
               ),
             ],
           ),

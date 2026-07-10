@@ -1,9 +1,12 @@
 // lib/features/voucher/presentation/voucher_scan_screen.dart
 
 import 'dart:io';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_dropdown_field.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
 import 'package:cashflowiq/features/transactions/presentation/expense_transaction/expense_screen.dart';
 import 'package:cashflowiq/features/voucher/data/payment_service_service.dart';
 import 'package:cashflowiq/features/voucher/data/voucher_service.dart';
@@ -146,13 +149,8 @@ class _VoucherScanScreenState extends State<VoucherScanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Escanear voucher", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: "Escanear voucher"),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -168,32 +166,16 @@ class _VoucherScanScreenState extends State<VoucherScanScreen> {
               _label("Servicio de pago"),
               const SizedBox(height: 8),
               _isLoadingServices
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const SkeletonListLoader(itemCount: 1, itemHeight: 56)
                   : _servicePicker(),
 
               const SizedBox(height: 20),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: (_image == null || _isAnalyzing) ? null : _analyze,
-                  icon: _isAnalyzing
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.document_scanner, color: Colors.white),
-                  label: Text(
-                    _isAnalyzing ? "Analizando..." : "Analizar",
-                    style: AppTextStyles.subtitle2(context, color: Colors.white),
-                  ),
-                ),
+              PrimaryButton(
+                label: _isAnalyzing ? "Analizando..." : "Analizar",
+                icon: _isAnalyzing ? null : Icons.document_scanner,
+                isLoading: _isAnalyzing,
+                onPressed: (_image == null || _isAnalyzing) ? null : _analyze,
               ),
 
               if (_result != null) ...[
@@ -208,20 +190,10 @@ class _VoucherScanScreenState extends State<VoucherScanScreen> {
                 const SizedBox(height: 12),
                 _resultField("Destinatario", _recipientCtrl),
                 const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    onPressed: _registerAsExpense,
-                    child: Text(
-                      "Registrar como gasto",
-                      style: AppTextStyles.subtitle2(context, color: Colors.white),
-                    ),
-                  ),
+                PrimaryButton(
+                  label: "Registrar como gasto",
+                  color: context.colorError,
+                  onPressed: _registerAsExpense,
                 ),
               ],
             ],
@@ -236,35 +208,25 @@ class _VoucherScanScreenState extends State<VoucherScanScreen> {
       return Column(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: context.radiusMdRadius,
             child: Image.file(_image!, height: 200, width: double.infinity, fit: BoxFit.cover),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                child: SecondaryButton(
+                  label: "Galería",
+                  icon: Icons.photo_library,
                   onPressed: () => _pickImage(ImageSource.gallery),
-                  icon: const Icon(Icons.photo_library),
-                  label: Text("Galería", style: AppTextStyles.caption(context, color: AppColors.primary)),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                child: SecondaryButton(
+                  label: "Cámara",
+                  icon: Icons.camera_alt,
                   onPressed: () => _pickImage(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt),
-                  label: Text("Cámara", style: AppTextStyles.caption(context, color: AppColors.primary)),
                 ),
               ),
             ],
@@ -298,41 +260,35 @@ class _VoucherScanScreenState extends State<VoucherScanScreen> {
     final items = <DropdownMenuItem<PaymentService?>>[
       DropdownMenuItem(
         value: null,
-        child: Text("Genérico", style: AppTextStyles.body1(context)),
+        child: Text("Genérico", style: context.textBody1()),
       ),
       ..._services.map((s) {
         return DropdownMenuItem(
           value: s,
-          child: Text(s.name, style: AppTextStyles.body1(context)),
+          child: Text(s.name, style: context.textBody1()),
         );
       }),
     ];
 
-    return DropdownButtonFormField<PaymentService?>(
-      initialValue: _selectedService,
+    return AppDropdownField<PaymentService?>(
+      value: _selectedService,
       items: items,
       onChanged: (v) => setState(() => _selectedService = v),
-      decoration: inputDecoration(context, "Selecciona un servicio"),
+      hintText: "Selecciona un servicio",
     );
   }
 
   Widget _resultField(String label, TextEditingController controller, {TextInputType? keyboardType}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label(label),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          decoration: inputDecoration(context, label),
-        ),
-      ],
+    return AppTextField(
+      label: label,
+      controller: controller,
+      hintText: label,
+      keyboardType: keyboardType,
     );
   }
 
   Widget _label(String text) =>
-      Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
+      Text(text, style: context.textSubtitle2(color: context.colorTextSecondary));
 }
 
 class _PickButton extends StatelessWidget {
@@ -345,23 +301,23 @@ class _PickButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(12),
+      color: context.colorSurface,
+      borderRadius: context.radiusMdRadius,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: context.radiusMdRadius,
         onTap: onTap,
         child: Container(
           height: 100,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            borderRadius: context.radiusMdRadius,
+            border: Border.all(color: context.colorBorder),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: AppColors.primary, size: 32),
+              Icon(icon, color: context.colorPrimary, size: 32),
               const SizedBox(height: 8),
-              Text(label, style: AppTextStyles.body1(context, color: AppColors.primary)),
+              Text(label, style: context.textBody1(color: context.colorPrimary)),
             ],
           ),
         ),

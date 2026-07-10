@@ -1,5 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
 class MonthNavigator extends StatelessWidget {
@@ -22,28 +21,28 @@ class MonthNavigator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        color: context.colorSurface,
+        borderRadius: context.radiusMdRadius,
+        border: Border.all(color: context.colorBorder),
       ),
       child: Row(
         children: [
           IconButton(
             icon: const Icon(Icons.chevron_left),
-            color: AppColors.primary,
+            color: context.colorPrimary,
             onPressed: onPrevious,
           ),
           Expanded(
             child: Center(
               child: Text(
                 '$monthName $year',
-                style: AppTextStyles.h500(context),
+                style: context.heading5(),
               ),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right),
-            color: canGoNext ? AppColors.primary : AppColors.muted,
+            color: canGoNext ? context.colorPrimary : context.colorMuted,
             onPressed: canGoNext ? onNext : null,
           ),
         ],

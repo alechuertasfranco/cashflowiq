@@ -1,7 +1,6 @@
 // lib/features/splits/screens/widgets/split_step_participants.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/shared/models/contact.dart';
 import 'package:flutter/material.dart';
 
@@ -48,14 +47,14 @@ class SplitStepParticipants extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("¿Quiénes participan?", style: AppTextStyles.h400(context)),
+          Text("¿Quiénes participan?", style: context.heading4()),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: Text(
                   "Modo de división",
-                  style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary),
+                  style: context.textSubtitle2(color: context.colorTextSecondary),
                 ),
               ),
               _SplitModeToggle(
@@ -83,21 +82,21 @@ class SplitStepParticipants extends StatelessWidget {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: onAddParticipant,
-            icon: const Icon(Icons.person_add_alt_1, color: AppColors.primary),
+            icon: Icon(Icons.person_add_alt_1, color: context.colorPrimary),
             label: Text(
               "Agregar participante",
-              style: AppTextStyles.body1(context, color: AppColors.primary),
+              style: context.textBody1(color: context.colorPrimary),
             ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              side: BorderSide(color: context.colorPrimary),
+              shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
             ),
           ),
           if (participants.isEmpty) ...[
             const SizedBox(height: 12),
             Text(
               "Agrega al menos un participante para dividir el gasto",
-              style: AppTextStyles.body2(context, color: AppColors.muted),
+              style: context.textBody2(color: context.colorMuted),
             ),
           ],
         ],
@@ -124,13 +123,13 @@ class _IncludeSelfRow extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(!includeSelf),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: context.motionFast,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: includeSelf ? AppColors.primary.withAlpha(20) : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          color: includeSelf ? context.colorPrimary.withAlpha(20) : context.colorSurface,
+          borderRadius: context.radiusMdRadius,
           border: Border.all(
-            color: includeSelf ? AppColors.primary : AppColors.border,
+            color: includeSelf ? context.colorPrimary : context.colorBorder,
             width: includeSelf ? 2 : 1,
           ),
         ),
@@ -138,36 +137,36 @@ class _IncludeSelfRow extends StatelessWidget {
           children: [
             // Avatar
             AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: context.motionFast,
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: includeSelf ? AppColors.primary : AppColors.secondary,
-                borderRadius: BorderRadius.circular(10),
+                color: includeSelf ? context.colorPrimary : context.colorSecondary,
+                borderRadius: context.radiusSmRadius,
               ),
               child: Icon(
                 Icons.person,
                 size: 18,
-                color: includeSelf ? Colors.white : AppColors.primary,
+                color: includeSelf ? context.colorOnPrimary : context.colorPrimary,
               ),
             ),
             const SizedBox(width: 10),
 
             // Label
             Expanded(
-              child: Text('Yo también pago', style: AppTextStyles.subtitle2(context)),
+              child: Text('Yo también pago', style: context.textSubtitle2()),
             ),
 
             // Amount + state indicator
             if (includeSelf) ...[
               Text(
                 selfShare.toStringAsFixed(2),
-                style: AppTextStyles.body1(context, color: AppColors.primary),
+                style: context.textBody1(color: context.colorPrimary),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.check_circle, color: AppColors.primary, size: 20),
+              Icon(Icons.check_circle, color: context.colorPrimary, size: 20),
             ] else
-              const Icon(Icons.add_circle_outline, color: AppColors.muted, size: 20),
+              Icon(Icons.add_circle_outline, color: context.colorMuted, size: 20),
           ],
         ),
       ),
@@ -187,9 +186,9 @@ class _SplitModeToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        color: context.colorSurface,
+        borderRadius: context.radiusSmRadius,
+        border: Border.all(color: context.colorBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -230,19 +229,19 @@ class _ToggleChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: context.motionFast,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? AppColors.primary : Colors.transparent,
+          color: active ? context.colorPrimary : Colors.transparent,
           borderRadius: BorderRadius.horizontal(
-            left: isLeft ? const Radius.circular(7) : Radius.zero,
-            right: !isLeft ? const Radius.circular(7) : Radius.zero,
+            left: isLeft ? Radius.circular(context.radiusSm - 1) : Radius.zero,
+            right: !isLeft ? Radius.circular(context.radiusSm - 1) : Radius.zero,
           ),
         ),
         child: Text(
           label,
-          style: AppTextStyles.caption(context,
-              color: active ? Colors.white : AppColors.textSecondary),
+          style: context.textCaption(
+              color: active ? context.colorOnPrimary : context.colorTextSecondary),
         ),
       ),
     );
@@ -269,9 +268,9 @@ class _SplitParticipantRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          color: context.colorSurface,
+          borderRadius: context.radiusMdRadius,
+          border: Border.all(color: context.colorBorder),
         ),
         child: Row(
           children: [
@@ -280,15 +279,15 @@ class _SplitParticipantRow extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.secondary,
-                borderRadius: BorderRadius.circular(10),
+                color: context.colorSecondary,
+                borderRadius: context.radiusSmRadius,
               ),
               child: Center(
                 child: Text(
                   participant.contact.name.isNotEmpty
                       ? participant.contact.name[0].toUpperCase()
                       : '?',
-                  style: AppTextStyles.body2(context, color: AppColors.primary),
+                  style: context.textBody2(color: context.colorPrimary),
                 ),
               ),
             ),
@@ -298,7 +297,7 @@ class _SplitParticipantRow extends StatelessWidget {
             Expanded(
               child: Text(
                 participant.contact.name,
-                style: AppTextStyles.subtitle2(context),
+                style: context.textSubtitle2(),
               ),
             ),
 
@@ -315,27 +314,27 @@ class _SplitParticipantRow extends StatelessWidget {
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 8),
                   hintText: '0.00',
-                  hintStyle: AppTextStyles.caption(context, color: AppColors.muted),
+                  hintStyle: context.textCaption(color: context.colorMuted),
                   filled: true,
-                  fillColor: isCustom ? AppColors.surface : AppColors.surfaceVariant,
+                  fillColor: isCustom ? context.colorSurface : context.colorSurfaceVariant,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderRadius: context.radiusSmRadius,
+                    borderSide: BorderSide(color: context.colorBorder),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderRadius: context.radiusSmRadius,
+                    borderSide: BorderSide(color: context.colorBorder),
                   ),
                   disabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderRadius: context.radiusSmRadius,
+                    borderSide: BorderSide(color: context.colorBorder),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.primary),
+                    borderRadius: context.radiusSmRadius,
+                    borderSide: BorderSide(color: context.colorPrimary),
                   ),
                 ),
-                style: AppTextStyles.body1(context),
+                style: context.textBody1(),
               ),
             ),
             const SizedBox(width: 4),
@@ -343,7 +342,7 @@ class _SplitParticipantRow extends StatelessWidget {
             // Remove
             GestureDetector(
               onTap: onRemove,
-              child: const Icon(Icons.close, size: 18, color: AppColors.muted),
+              child: Icon(Icons.close, size: 18, color: context.colorMuted),
             ),
           ],
         ),

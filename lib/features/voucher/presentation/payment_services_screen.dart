@@ -1,8 +1,10 @@
 // lib/features/voucher/presentation/payment_services_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/voucher/data/payment_service_service.dart';
 import 'package:cashflowiq/features/voucher/presentation/form_payment_service_screen.dart';
@@ -87,23 +89,18 @@ class _PaymentServicesScreenState extends State<PaymentServicesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Servicios de pago", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: "Servicios de pago"),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.colorPrimary,
         onPressed: _goToCreate,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: context.colorOnPrimary),
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonListLoader(itemCount: 4, itemHeight: 64)
               : _services.isEmpty
               ? InsightEmptyState(
                   icon: Icons.receipt_long,
@@ -117,23 +114,26 @@ class _PaymentServicesScreenState extends State<PaymentServicesScreen> {
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final s = _services[index];
-                    return SwipeToDelete(
-                      onDelete: () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        await _service.deletePaymentService(s.id);
-                        await _load();
-                        if (!mounted) return;
-                        messenger.showSnackBar(
-                          const SnackBar(content: Text("Servicio eliminado")),
-                        );
-                      },
-                      child: Card(
-                        child: ListTile(
-                          leading: Icon(_typeIcon(s.serviceType), color: AppColors.primary),
-                          title: Text(s.name, style: AppTextStyles.body1(context)),
-                          subtitle: Text(_typeLabel(s.serviceType), style: AppTextStyles.caption(context)),
-                          trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                          onTap: () => _goToEdit(s),
+                    return StaggeredFadeIn(
+                      index: index,
+                      child: SwipeToDelete(
+                        onDelete: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          await _service.deletePaymentService(s.id);
+                          await _load();
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text("Servicio eliminado")),
+                          );
+                        },
+                        child: Card(
+                          child: ListTile(
+                            leading: Icon(_typeIcon(s.serviceType), color: context.colorPrimary),
+                            title: Text(s.name, style: context.textBody1()),
+                            subtitle: Text(_typeLabel(s.serviceType), style: context.textCaption()),
+                            trailing: Icon(Icons.chevron_right, color: context.colorTextSecondary),
+                            onTap: () => _goToEdit(s),
+                          ),
                         ),
                       ),
                     );

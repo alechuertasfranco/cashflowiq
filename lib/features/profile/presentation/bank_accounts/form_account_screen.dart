@@ -1,9 +1,11 @@
 // lib/features/bank_accounts/presentation/form_account_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_dropdown_field.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/presentation/controllers/form_account_controller.dart';
 import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
@@ -80,13 +82,8 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_isEdit ? "Editar cuenta" : "Nueva cuenta", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(title: _isEdit ? "Editar cuenta" : "Nueva cuenta"),
       body: SafeArea(
         child: controller.isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -101,21 +98,19 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label("Nombre de la cuenta"),
-                              const SizedBox(height: 8),
-                              TextFormField(
+                              AppTextField(
+                                label: "Nombre de la cuenta",
                                 controller: _nameController,
-                                decoration: inputDecoration(context, "Ej: BCP Ahorros"),
+                                hintText: "Ej: BCP Ahorros",
                                 validator: (value) => value == null || value.isEmpty ? "Ingresa un nombre" : null,
                               ),
                               const SizedBox(height: 12),
 
-                              _label("Balance inicial"),
-                              const SizedBox(height: 8),
-                              TextFormField(
+                              AppTextField(
+                                label: "Balance inicial",
                                 controller: _amountController,
                                 keyboardType: TextInputType.number,
-                                decoration: inputDecoration(context, "0.00"),
+                                hintText: "0.00",
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return "Ingresa un monto";
@@ -137,18 +132,17 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                               ),
                               const SizedBox(height: 12),
 
-                              _label("Entidad bancaria"),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField(
-                                initialValue: controller.selectedEntity,
+                              AppDropdownField(
+                                label: "Entidad bancaria",
+                                value: controller.selectedEntity,
                                 items: controller.entities.map((e) {
                                   return DropdownMenuItem(
                                     value: e,
-                                    child: Text(e.name, style: AppTextStyles.body1(context)),
+                                    child: Text(e.name, style: context.textBody1()),
                                   );
                                 }).toList(),
                                 onChanged: controller.setEntity,
-                                decoration: inputDecoration(context, "Selecciona una entidad bancaria"),
+                                hintText: "Selecciona una entidad bancaria",
                               ),
                               Align(
                                 alignment: Alignment.centerRight,
@@ -165,7 +159,7 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                                   },
                                   child: Text(
                                     "Crear nueva entidad",
-                                    style: AppTextStyles.caption(context, color: AppColors.primary),
+                                    style: context.textCaption(color: context.colorPrimary),
                                   ),
                                 ),
                               ),
@@ -184,43 +178,21 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
                       bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
-                      boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
+                      color: context.colorBackground,
+                      boxShadow: context.shadowCard,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: controller.isSaving ? null : _submit,
-                            child: controller.isSaving
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                  )
-                                : Text(
-                                    _isEdit ? "Actualizar cuenta" : "Crear cuenta",
-                                    style: AppTextStyles.subtitle2(context, color: Colors.white),
-                                  ),
-                          ),
+                        PrimaryButton(
+                          label: _isEdit ? "Actualizar cuenta" : "Crear cuenta",
+                          isLoading: controller.isSaving,
+                          onPressed: _submit,
                         ),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              side: const BorderSide(color: AppColors.primary),
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                            child: Text("Cancelar", style: AppTextStyles.subtitle2(context, color: AppColors.primary)),
-                          ),
+                        const SizedBox(height: 10),
+                        SecondaryButton(
+                          label: "Cancelar",
+                          onPressed: () => Navigator.pop(context),
                         ),
                       ],
                     ),
@@ -231,5 +203,5 @@ class _FormAccountScreenState extends State<FormAccountScreen> {
     );
   }
 
-  Widget _label(String text) => Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
+  Widget _label(String text) => Text(text, style: context.textSubtitle2(color: context.colorTextSecondary));
 }

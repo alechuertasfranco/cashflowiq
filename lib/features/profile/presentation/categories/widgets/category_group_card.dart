@@ -1,8 +1,9 @@
 // lib/features/profile/presentation/categories/widgets/category_group_card.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/format.dart';
+import 'package:cashflowiq/core/widgets/app_bottom_sheet.dart';
+import 'package:cashflowiq/core/widgets/app_dialog.dart';
 import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_budget_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
@@ -43,11 +44,11 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
     return (_spent ?? 0) / _amount!;
   }
 
-  Color get _progressColor {
+  Color _progressColor(BuildContext context) {
     final p = _progress ?? 0;
-    if (p < 0.7) return AppColors.accent;
-    if (p < 1.0) return AppColors.complementary;
-    return AppColors.error;
+    if (p < 0.7) return context.colorAccent;
+    if (p < 1.0) return context.colorComplementary;
+    return context.colorError;
   }
 
   // ── Navigation ──────────────────────────────────────────────────────────
@@ -79,34 +80,23 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
   }
 
   Future<void> _deleteCategory(Category cat) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('Eliminar categoría', style: AppTextStyles.subtitle1(context)),
-        content: Text('¿Seguro que quieres eliminarla?', style: AppTextStyles.body2(context)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancelar', style: AppTextStyles.body2(context)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Eliminar', style: AppTextStyles.body2(context, color: AppColors.error)),
-          ),
-        ],
-      ),
+    final confirm = await showAppConfirmDialog(
+      context,
+      title: 'Eliminar categoría',
+      message: '¿Seguro que quieres eliminarla?',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      isDestructive: true,
     );
-    if (confirm == true) {
+    if (confirm) {
       await _service.deleteCategory(cat.id);
       widget.onUpdated?.call();
     }
   }
 
   Future<void> _onSetBudget() async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: AppColors.surface,
+    final result = await showAppBottomSheet<bool>(
+      context,
       builder: (_) => FormBudgetScreen(category: widget.parent),
     );
     if (result == true) widget.onUpdated?.call();
@@ -118,15 +108,10 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(10),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: context.colorSurface,
+        borderRadius: context.radiusLgRadius,
+        boxShadow: context.shadowCard,
+        border: context.isDark ? Border.all(color: context.colorBorder) : null,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -134,8 +119,8 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
         children: [
           _buildParentRow(context),
           AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
+            duration: context.motionBase,
+            curve: context.motionStandard,
             child: _expanded ? _buildChildrenSection(context) : const SizedBox.shrink(),
           ),
         ],
@@ -165,7 +150,7 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
                   children: [
                     Text(
                       cat.name,
-                      style: AppTextStyles.h600(context),
+                      style: context.heading6(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -176,14 +161,14 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
                         amount: _amount!,
                         currency: _budgetCurrency!,
                         progress: (_progress ?? 0).clamp(0.0, 1.0),
-                        progressColor: _progressColor,
+                        progressColor: _progressColor(context),
                       )
                     else
                       Text(
                         widget.children.isEmpty
                             ? 'Sin presupuesto'
                             : '${widget.children.length} subcategoría${widget.children.length > 1 ? "s" : ""}',
-                        style: AppTextStyles.caption(context, color: AppColors.muted),
+                        style: context.textCaption(color: context.colorMuted),
                       ),
                   ],
                 ),
@@ -197,11 +182,11 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
               ),
               AnimatedRotation(
                 turns: _expanded ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: const Icon(
+                duration: context.motionFast,
+                child: Icon(
                   Icons.keyboard_arrow_down_rounded,
                   size: 22,
-                  color: AppColors.muted,
+                  color: context.colorMuted,
                 ),
               ),
               const SizedBox(width: 4),
@@ -216,7 +201,7 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Divider(height: 1, thickness: 1, color: AppColors.border),
+        Divider(height: 1, thickness: 1, color: context.colorDivider),
         ...widget.children.map(
           (child) => _ChildRow(
             child: child,
@@ -238,14 +223,14 @@ class _CategoryGroupCardState extends State<CategoryGroupCard> {
                     height: 26,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary, width: 1.5),
+                      border: Border.all(color: context.colorPrimary, width: 1.5),
                     ),
-                    child: const Icon(Icons.add, size: 14, color: AppColors.primary),
+                    child: Icon(Icons.add, size: 14, color: context.colorPrimary),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'Agregar subcategoría',
-                    style: AppTextStyles.body2(context, color: AppColors.primary),
+                    style: context.textBody2(color: context.colorPrimary),
                   ),
                 ],
               ),
@@ -277,15 +262,15 @@ class _ParentMenu extends StatelessWidget {
     return PopupMenuButton<String>(
       iconSize: 20,
       padding: EdgeInsets.zero,
-      icon: const Icon(Icons.more_vert, color: AppColors.muted, size: 20),
+      icon: Icon(Icons.more_vert, color: context.colorMuted, size: 20),
       itemBuilder: (_) => [
         PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
-              const Icon(Icons.edit_outlined, size: 16, color: AppColors.complementary),
+              Icon(Icons.edit_outlined, size: 16, color: context.colorComplementary),
               const SizedBox(width: 10),
-              Text('Editar', style: AppTextStyles.body2(context)),
+              Text('Editar', style: context.textBody2()),
             ],
           ),
         ),
@@ -293,9 +278,9 @@ class _ParentMenu extends StatelessWidget {
           value: 'budget',
           child: Row(
             children: [
-              const Icon(Icons.account_balance_wallet_outlined, size: 16, color: AppColors.primary),
+              Icon(Icons.account_balance_wallet_outlined, size: 16, color: context.colorPrimary),
               const SizedBox(width: 10),
-              Text('Presupuesto', style: AppTextStyles.body2(context)),
+              Text('Presupuesto', style: context.textBody2()),
             ],
           ),
         ),
@@ -303,9 +288,9 @@ class _ParentMenu extends StatelessWidget {
           value: 'delete',
           child: Row(
             children: [
-              const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+              Icon(Icons.delete_outline, size: 16, color: context.colorError),
               const SizedBox(width: 10),
-              Text('Eliminar', style: AppTextStyles.body2(context, color: AppColors.error)),
+              Text('Eliminar', style: context.textBody2(color: context.colorError)),
             ],
           ),
         ),
@@ -338,7 +323,7 @@ class _ChildRow extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Divider(height: 1, thickness: 1, indent: 16, color: AppColors.border),
+        Divider(height: 1, thickness: 1, indent: 16, color: context.colorDivider),
         Material(
           color: Colors.transparent,
           child: InkWell(
@@ -357,7 +342,7 @@ class _ChildRow extends StatelessWidget {
                   Expanded(
                     child: Text(
                       child.name,
-                      style: AppTextStyles.body1(context),
+                      style: context.textBody1(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -365,15 +350,15 @@ class _ChildRow extends StatelessWidget {
                   PopupMenuButton<String>(
                     iconSize: 18,
                     padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.more_vert, color: AppColors.muted, size: 18),
+                    icon: Icon(Icons.more_vert, color: context.colorMuted, size: 18),
                     itemBuilder: (_) => [
                       PopupMenuItem(
                         value: 'edit',
                         child: Row(
                           children: [
-                            const Icon(Icons.edit_outlined, size: 16, color: AppColors.complementary),
+                            Icon(Icons.edit_outlined, size: 16, color: context.colorComplementary),
                             const SizedBox(width: 10),
-                            Text('Editar', style: AppTextStyles.body2(context)),
+                            Text('Editar', style: context.textBody2()),
                           ],
                         ),
                       ),
@@ -381,9 +366,9 @@ class _ChildRow extends StatelessWidget {
                         value: 'delete',
                         child: Row(
                           children: [
-                            const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+                            Icon(Icons.delete_outline, size: 16, color: context.colorError),
                             const SizedBox(width: 10),
-                            Text('Eliminar', style: AppTextStyles.body2(context, color: AppColors.error)),
+                            Text('Eliminar', style: context.textBody2(color: context.colorError)),
                           ],
                         ),
                       ),
@@ -462,7 +447,7 @@ class _BudgetSection extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 4,
-            backgroundColor: AppColors.border,
+            backgroundColor: context.colorBorder,
             valueColor: AlwaysStoppedAnimation(progressColor),
           ),
         ),
@@ -472,7 +457,7 @@ class _BudgetSection extends StatelessWidget {
             Expanded(
               child: Text(
                 '${Money(amount: spent, currency: currency).format()} de ${Money(amount: amount, currency: currency).format()}',
-                style: AppTextStyles.caption(context, color: AppColors.textSecondary),
+                style: context.textCaption(color: context.colorTextSecondary),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -482,11 +467,11 @@ class _BudgetSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
                 color: progressColor.withAlpha(22),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: context.radiusPillRadius,
               ),
               child: Text(
                 '$pct%',
-                style: AppTextStyles.caption(context, color: progressColor),
+                style: context.textCaption(color: progressColor),
               ),
             ),
           ],

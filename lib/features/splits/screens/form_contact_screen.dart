@@ -1,8 +1,9 @@
 // lib/features/splits/screens/form_contact_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/features/splits/data/contact_service.dart';
 import 'package:cashflowiq/shared/models/contact.dart';
 import 'package:flutter/material.dart';
@@ -80,15 +81,9 @@ class _FormContactScreenState extends State<FormContactScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          _isEditing ? 'Editar contacto' : 'Nuevo contacto',
-          style: AppTextStyles.h400(context),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(
+        title: _isEditing ? 'Editar contacto' : 'Nuevo contacto',
       ),
       body: SafeArea(
         child: Column(
@@ -104,11 +99,10 @@ class _FormContactScreenState extends State<FormContactScreen> {
                     children: [
                       const SizedBox(height: 16),
 
-                      _label('Nombre'),
-                      const SizedBox(height: 8),
-                      TextFormField(
+                      AppTextField(
+                        label: 'Nombre',
                         controller: _nameController,
-                        decoration: inputDecoration(context, 'Ej: Juan García'),
+                        hintText: 'Ej: Juan García',
                         textCapitalization: TextCapitalization.words,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
@@ -119,12 +113,10 @@ class _FormContactScreenState extends State<FormContactScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      _label('Email (opcional)'),
-                      const SizedBox(height: 8),
-                      TextFormField(
+                      AppTextField(
+                        label: 'Email (opcional)',
                         controller: _emailController,
-                        decoration:
-                            inputDecoration(context, 'juan@ejemplo.com'),
+                        hintText: 'juan@ejemplo.com',
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
                           if (v != null && v.trim().isNotEmpty) {
@@ -139,11 +131,10 @@ class _FormContactScreenState extends State<FormContactScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      _label('Teléfono (opcional)'),
-                      const SizedBox(height: 8),
-                      TextFormField(
+                      AppTextField(
+                        label: 'Teléfono (opcional)',
                         controller: _phoneController,
-                        decoration: inputDecoration(context, '+51 999 999 999'),
+                        hintText: '+51 999 999 999',
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 24),
@@ -163,34 +154,13 @@ class _FormContactScreenState extends State<FormContactScreen> {
               bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
             ),
             decoration: BoxDecoration(
-              color: AppColors.background,
-              boxShadow: [
-                BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10),
-              ],
+              color: context.colorBackground,
+              boxShadow: context.shadowCard,
             ),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: _isSaving ? null : _submit,
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        _isEditing ? 'Guardar cambios' : 'Crear contacto',
-                        style:
-                            AppTextStyles.subtitle2(context, color: Colors.white),
-                      ),
-              ),
+            child: PrimaryButton(
+              label: _isEditing ? 'Guardar cambios' : 'Crear contacto',
+              isLoading: _isSaving,
+              onPressed: _isSaving ? null : _submit,
             ),
           ),
         ],
@@ -198,9 +168,4 @@ class _FormContactScreenState extends State<FormContactScreen> {
       ),
     );
   }
-
-  Widget _label(String text) => Text(
-        text,
-        style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary),
-      );
 }

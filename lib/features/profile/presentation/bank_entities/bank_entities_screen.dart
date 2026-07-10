@@ -1,9 +1,12 @@
 // lib\features\bank_entities\presentation\bank_entities_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/app_dialog.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_entities/form_entities_screen.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
@@ -67,15 +70,10 @@ class _BankEntitiesScreenState extends State<BankEntitiesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Entidades bancarias", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: "Entidades bancarias"),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.colorPrimary,
         onPressed: _goToCreateEntity,
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -83,7 +81,7 @@ class _BankEntitiesScreenState extends State<BankEntitiesScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonListLoader()
               : _entities.isEmpty
               /// 🔹 Estado vacío
               ? InsightEmptyState(
@@ -101,7 +99,7 @@ class _BankEntitiesScreenState extends State<BankEntitiesScreen> {
                   },
                   child: ListView.separated(
                     itemCount: _entities.length,
-                    separatorBuilder: (_, _) => const Divider(color: AppColors.border),
+                    separatorBuilder: (_, _) => Divider(color: context.colorBorder),
                     // Dentro de ListView.separated
                     itemBuilder: (context, index) {
                       final entity = _entities[index];
@@ -110,54 +108,48 @@ class _BankEntitiesScreenState extends State<BankEntitiesScreen> {
                       try {
                         avatarColor = entity.colorHex != null
                             ? Color(int.parse("0xFF${entity.colorHex}"))
-                            : AppColors.secondary;
+                            : context.colorSecondary;
                       } catch (_) {
-                        avatarColor = AppColors.secondary;
+                        avatarColor = context.colorSecondary;
                       }
 
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      return StaggeredFadeIn(
+                        index: index,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
 
-                        /// 🏦 Avatar con color de entidad
-                        leading: CircleAvatar(
-                          backgroundColor: avatarColor,
-                          child: const Icon(Icons.account_balance, color: Colors.white),
-                        ),
+                          /// 🏦 Avatar con color de entidad
+                          leading: CircleAvatar(
+                            backgroundColor: avatarColor,
+                            child: const Icon(Icons.account_balance, color: Colors.white),
+                          ),
 
-                        /// Nombre + código en columna
-                        title: Text(entity.name, style: AppTextStyles.subtitle2(context)),
-                        subtitle: Text(entity.code, style: AppTextStyles.caption(context)),
+                          /// Nombre + código en columna
+                          title: Text(entity.name, style: context.textSubtitle2()),
+                          subtitle: Text(entity.code, style: context.textCaption()),
 
-                        /// Acción al tocar: editar
-                        onTap: () => _goToEditEntity(entity),
+                          /// Acción al tocar: editar
+                          onTap: () => _goToEditEntity(entity),
 
-                        /// Acciones rápidas: eliminar
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: AppColors.error),
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text("Eliminar entidad"),
-                                content: Text("¿Deseas eliminar '${entity.name}'?"),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
-                                    child: const Text("Cancelar"),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, true),
-                                    child: const Text("Eliminar"),
-                                  ),
-                                ],
-                              ),
-                            );
+                          /// Acciones rápidas: eliminar
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete, color: context.colorError),
+                            onPressed: () async {
+                              final confirm = await showAppConfirmDialog(
+                                context,
+                                title: "Eliminar entidad",
+                                message: "¿Deseas eliminar '${entity.name}'?",
+                                confirmText: "Eliminar",
+                                cancelText: "Cancelar",
+                                isDestructive: true,
+                              );
 
-                            if (confirm == true) {
-                              await _service.deleteEntity(entity.id);
-                              _loadEntities();
-                            }
-                          },
+                              if (confirm) {
+                                await _service.deleteEntity(entity.id);
+                                _loadEntities();
+                              }
+                            },
+                          ),
                         ),
                       );
                     },

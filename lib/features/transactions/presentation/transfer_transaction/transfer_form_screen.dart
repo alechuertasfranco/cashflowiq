@@ -1,4 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/base_transaction_form_screen.dart';
 import 'package:cashflowiq/core/widgets/form_step_amount.dart';
 import 'package:cashflowiq/core/widgets/form_step_payment_source.dart';
@@ -143,13 +143,13 @@ class _TransferFormScreenState extends State<TransferFormScreen> {
         controller: controller,
         totalSteps: 3,
         submitLabel: widget.editMode ? "Guardar cambios" : "Guardar transferencia",
-        accentColor: AppColors.primary,
+        accentColor: context.colorPrimary,
         onNextStep: _nextStep,
         onSubmit: _submit,
         steps: [
           FormStepAmount(
             title: '¿Cuánto transferiste?',
-            dateAccentColor: AppColors.primary,
+            dateAccentColor: context.colorPrimary,
             descriptionHint: 'Ej: Pago de tarjeta',
             amountController: controller.amountController,
             descriptionController: controller.descriptionController,

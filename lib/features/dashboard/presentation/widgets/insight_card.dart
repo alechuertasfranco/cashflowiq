@@ -1,7 +1,6 @@
 // lib/features/dashboard/presentation/widgets/insight_card.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/features/dashboard/data/dashboard_summary.dart';
 import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/currency_utils.dart';
@@ -27,12 +26,12 @@ class DashboardInsightCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.account_balance_outlined, color: AppColors.muted),
+              Icon(Icons.account_balance_outlined, color: context.colorMuted),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Agrega cuentas bancarias para ver tus insights',
-                  style: AppTextStyles.subtitle2(context),
+                  style: context.textSubtitle2(),
                 ),
               ),
             ],
@@ -52,17 +51,17 @@ class DashboardInsightCard extends StatelessWidget {
             // Título + movimientos
             Row(
               children: [
-                const Icon(Icons.bolt_rounded, color: AppColors.primary, size: 14),
+                Icon(Icons.bolt_rounded, color: context.colorPrimary, size: 14),
                 const SizedBox(width: 5),
                 Expanded(
                   child: Text(
                     'Cuenta más activa este mes',
-                    style: AppTextStyles.caption(context, color: AppColors.textSecondary),
+                    style: context.textCaption(color: context.colorTextSecondary),
                   ),
                 ),
                 Text(
                   '$mostActiveAccountTxCount mov. este mes',
-                  style: AppTextStyles.caption(context, color: AppColors.muted),
+                  style: context.textCaption(color: context.colorMuted),
                 ),
               ],
             ),
@@ -75,12 +74,12 @@ class DashboardInsightCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(18),
-                      borderRadius: BorderRadius.circular(6),
+                      color: context.colorPrimary.withAlpha(18),
+                      borderRadius: context.radiusSmRadius,
                     ),
                     child: Text(
                       account.bankEntityCode,
-                      style: AppTextStyles.caption(context, color: AppColors.primary),
+                      style: context.textCaption(color: context.colorPrimary),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -88,7 +87,7 @@ class DashboardInsightCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     account?.name ?? mostActiveAccountName!,
-                    style: AppTextStyles.subtitle2(context),
+                    style: context.textSubtitle2(),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -97,8 +96,8 @@ class DashboardInsightCard extends StatelessWidget {
                   AmountText(
                     symbol: dashboardCurrencySymbol(account.currencyCode),
                     amount: account.balance,
-                    style: AppTextStyles.subtitle1(context),
-                    color: AppColors.primary,
+                    style: context.textSubtitle1(),
+                    color: context.colorPrimary,
                   ),
                 ],
               ],

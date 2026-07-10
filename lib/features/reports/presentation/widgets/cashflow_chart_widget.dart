@@ -1,5 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/features/reports/data/reports_models.dart';
 import 'package:flutter/material.dart';
 
@@ -28,11 +27,11 @@ class CashflowChartWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('Evolución mensual', style: AppTextStyles.h500(context)),
+                Text('Evolución mensual', style: context.heading5()),
                 const Spacer(),
-                _LegendDot(color: AppColors.success, label: 'Ingresos'),
+                _LegendDot(color: context.colorSuccess, label: 'Ingresos'),
                 const SizedBox(width: 12),
-                _LegendDot(color: AppColors.error, label: 'Gastos'),
+                _LegendDot(color: context.colorError, label: 'Gastos'),
               ],
             ),
             const SizedBox(height: 20),
@@ -77,7 +76,7 @@ class _LegendDot extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: AppTextStyles.caption(context)),
+        Text(label, style: context.textCaption()),
       ],
     );
   }
@@ -107,15 +106,15 @@ class _TrendBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _Bar(height: incomeH, color: AppColors.success),
+            _Bar(height: incomeH, color: context.colorSuccess),
             const SizedBox(width: 2),
-            _Bar(height: expenseH, color: AppColors.error),
+            _Bar(height: expenseH, color: context.colorError),
           ],
         ),
         const SizedBox(height: 6),
         Text(
           monthLabel,
-          style: AppTextStyles.caption(context, color: AppColors.textSecondary),
+          style: context.textCaption(color: context.colorTextSecondary),
           textAlign: TextAlign.center,
         ),
       ],
@@ -131,7 +130,7 @@ class _Bar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
+      duration: context.motionBase,
       curve: Curves.easeOut,
       width: 10,
       height: height.clamp(2.0, double.infinity),

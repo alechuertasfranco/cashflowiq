@@ -1,5 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/stat_chip.dart';
 import 'package:flutter/material.dart';
@@ -31,20 +30,20 @@ class MonthlyFlowPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Flujo del mes', style: AppTextStyles.caption(context)),
+              Text('Flujo del mes', style: context.textCaption()),
               const Spacer(),
               if (displayCode != null) CurrencyBadge(code: displayCode!),
             ],
           ),
           const SizedBox(height: 8),
           if (!hasAccounts)
-            Text('Sin cuentas registradas', style: AppTextStyles.body1(context, color: AppColors.muted))
+            Text('Sin cuentas registradas', style: context.textBody1(color: context.colorMuted))
           else
             AmountText(
               symbol: symbol,
               amount: netBalance,
-              style: AppTextStyles.h100(context),
-              color: netBalance >= 0 ? AppColors.textPrimary : AppColors.error,
+              style: context.heading1(),
+              color: netBalance >= 0 ? context.colorTextPrimary : context.colorError,
             ),
           const SizedBox(height: 16),
           if (hasAccounts)
@@ -56,7 +55,7 @@ class MonthlyFlowPage extends StatelessWidget {
                     symbol: symbol,
                     amount: totalIncome,
                     sign: '+',
-                    color: AppColors.success,
+                    color: context.colorSuccess,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -66,7 +65,7 @@ class MonthlyFlowPage extends StatelessWidget {
                     symbol: symbol,
                     amount: totalExpense,
                     sign: '-',
-                    color: AppColors.error,
+                    color: context.colorError,
                   ),
                 ),
               ],

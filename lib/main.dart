@@ -49,6 +49,8 @@ class CashFlowIQApp extends StatelessWidget {
       title: 'CashFlowIQ',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       navigatorKey: navigatorKey,
       home: const AuthGate(),
     );

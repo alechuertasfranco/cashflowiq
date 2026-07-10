@@ -1,8 +1,10 @@
 // lib/features/transactions/presentation/transaction_detail_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_dialog.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/features/transactions/data/transaction_service.dart';
 import 'package:cashflowiq/features/transactions/presentation/expense_transaction/expense_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_screen.dart';
@@ -28,10 +30,10 @@ class TransactionDetailScreen extends StatelessWidget {
     this.toCardName,
   });
 
-  Color get _typeColor => switch (transaction.type) {
-        TransactionType.income => AppColors.success,
-        TransactionType.expense => AppColors.error,
-        TransactionType.transfer => AppColors.primary,
+  Color _typeColor(BuildContext context) => switch (transaction.type) {
+        TransactionType.income => context.colorSuccess,
+        TransactionType.expense => context.colorError,
+        TransactionType.transfer => context.colorPrimary,
       };
 
   IconData get _typeIcon => switch (transaction.type) {
@@ -61,29 +63,15 @@ class TransactionDetailScreen extends StatelessWidget {
   }
 
   Future<void> _delete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text("Eliminar movimiento", style: AppTextStyles.h500(ctx)),
-        content: Text(
-          "¿Seguro que deseas eliminar este movimiento? Esta acción no se puede deshacer.",
-          style: AppTextStyles.body1(ctx),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text("Cancelar", style: AppTextStyles.body1(ctx, color: AppColors.muted)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text("Eliminar", style: AppTextStyles.body1(ctx, color: AppColors.error)),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: "Eliminar movimiento",
+      message: "¿Seguro que deseas eliminar este movimiento? Esta acción no se puede deshacer.",
+      confirmText: "Eliminar",
+      isDestructive: true,
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     try {
       await TransactionService().deleteTransaction(transaction.id);
@@ -131,21 +119,20 @@ class TransactionDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typeColor = _typeColor(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_typeLabel, style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(
+        title: _typeLabel,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+            icon: Icon(Icons.edit_outlined, color: context.colorPrimary),
             tooltip: "Editar movimiento",
             onPressed: () => _edit(context),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+            icon: Icon(Icons.delete_outline, color: context.colorError),
             tooltip: "Eliminar movimiento",
             onPressed: () => _delete(context),
           ),
@@ -168,10 +155,10 @@ class TransactionDetailScreen extends StatelessWidget {
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(
-                              color: _typeColor.withAlpha(26),
-                              borderRadius: BorderRadius.circular(18),
+                              color: typeColor.withAlpha(26),
+                              borderRadius: context.radiusXlRadius,
                             ),
-                            child: Icon(_typeIcon, color: _typeColor, size: 30),
+                            child: Icon(_typeIcon, color: typeColor, size: 30),
                           ),
                           const SizedBox(height: 16),
                           AmountText(
@@ -180,8 +167,8 @@ class TransactionDetailScreen extends StatelessWidget {
                                 : transaction.currencyCode,
                             amount: transaction.amount,
                             sign: _amountSign,
-                            style: AppTextStyles.balance(context),
-                            color: _typeColor,
+                            style: context.textBalance(),
+                            color: typeColor,
                           ),
                         ],
                       ),
@@ -190,52 +177,52 @@ class TransactionDetailScreen extends StatelessWidget {
                     // Details card
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
+                        color: context.colorSurface,
+                        borderRadius: context.radiusLgRadius,
                       ),
                       child: Column(
                         children: [
                           _row(context, Icons.calendar_today_outlined, "Fecha y hora",
                               _fmtDate(transaction.date)),
                           if (categoryName != null) ...[
-                            _divider(),
+                            _divider(context),
                             _row(context, Icons.category_outlined, "Categoría", categoryName!),
                           ],
                           if (transaction.type == TransactionType.income) ...[
                             if (accountName != null) ...[
-                              _divider(),
+                              _divider(context),
                               _row(context, Icons.account_balance_outlined, "Cuenta destino",
                                   accountName!),
                             ],
                           ],
                           if (transaction.type == TransactionType.expense) ...[
                             if (cardName != null) ...[
-                              _divider(),
+                              _divider(context),
                               _row(context, Icons.credit_card_outlined, "Tarjeta", cardName!),
                             ] else if (accountName != null) ...[
-                              _divider(),
+                              _divider(context),
                               _row(context, Icons.account_balance_outlined, "Cuenta origen",
                                   accountName!),
                             ],
                           ],
                           if (transaction.type == TransactionType.transfer) ...[
                             if (accountName != null) ...[
-                              _divider(),
+                              _divider(context),
                               _row(context, Icons.account_balance_outlined, "Origen", accountName!),
                             ],
                             if (toAccountName != null) ...[
-                              _divider(),
+                              _divider(context),
                               _row(context, Icons.account_balance_outlined, "Destino",
                                   toAccountName!),
                             ],
                             if (toCardName != null) ...[
-                              _divider(),
+                              _divider(context),
                               _row(context, Icons.credit_card_outlined, "Destino (tarjeta)",
                                   toCardName!),
                             ],
                           ],
                           if (transaction.currencyCode.isNotEmpty) ...[
-                            _divider(),
+                            _divider(context),
                             _row(
                               context,
                               Icons.monetization_on_outlined,
@@ -244,12 +231,12 @@ class TransactionDetailScreen extends StatelessWidget {
                             ),
                           ],
                           if (transaction.isRecurring) ...[
-                            _divider(),
+                            _divider(context),
                             _row(context, Icons.repeat, "Origen", "Regla recurrente"),
                           ],
                           if (transaction.description != null &&
                               transaction.description!.isNotEmpty) ...[
-                            _divider(),
+                            _divider(context),
                             _row(context, Icons.notes_outlined, "Descripción",
                                 transaction.description!),
                           ],
@@ -270,24 +257,13 @@ class TransactionDetailScreen extends StatelessWidget {
                 bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
               ),
               decoration: BoxDecoration(
-                color: AppColors.background,
-                boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
+                color: context.colorBackground,
+                boxShadow: context.shadowCard,
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.copy_all_outlined, size: 18, color: Colors.white),
-                  label: Text(
-                    "Replicar movimiento",
-                    style: AppTextStyles.subtitle2(context, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: () => _replicate(context),
-                ),
+              child: PrimaryButton(
+                label: "Replicar movimiento",
+                icon: Icons.copy_all_outlined,
+                onPressed: () => _replicate(context),
               ),
             ),
           ],
@@ -302,19 +278,19 @@ class TransactionDetailScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 18, color: AppColors.muted),
+          Icon(icon, size: 18, color: context.colorMuted),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: AppTextStyles.body2(context, color: AppColors.textSecondary),
+              style: context.textBody2(color: context.colorTextSecondary),
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               value,
-              style: AppTextStyles.subtitle2(context, color: AppColors.textPrimary),
+              style: context.textSubtitle2(color: context.colorTextPrimary),
               textAlign: TextAlign.end,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -325,10 +301,10 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _divider() => const Divider(
+  Widget _divider(BuildContext context) => Divider(
         height: 1,
         thickness: 1,
-        color: AppColors.border,
+        color: context.colorBorder,
         indent: 46,
       );
 }

@@ -1,7 +1,9 @@
 // lib/features/bank_entities/presentation/form_entity_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/color_selector.dart';
 import 'package:cashflowiq/features/profile/data/bank_entity_service.dart';
 import 'package:cashflowiq/shared/models/bank_entity.dart';
@@ -75,14 +77,9 @@ class _FormEntityScreenState extends State<FormEntityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colorBackground,
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: Text(_isEdit ? "Editar entidad" : "Nueva entidad", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      appBar: AppHeaderBar(title: _isEdit ? "Editar entidad" : "Nueva entidad"),
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
@@ -100,46 +97,25 @@ class _FormEntityScreenState extends State<FormEntityScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // --- Campos ---
-                          Text("Código", style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
-                          const SizedBox(height: 8),
-                          TextFormField(
+                          AppTextField(
+                            label: "Código",
                             controller: _codeController,
-                            decoration: InputDecoration(
-                              hintText: "Ej: BCP, IBK, BBVA",
-                              filled: true,
-                              fillColor: AppColors.surface,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.border),
-                              ),
-                            ),
+                            hintText: "Ej: BCP, IBK, BBVA",
                             validator: (value) => value == null || value.isEmpty ? "Ingresa el código del banco" : null,
                           ),
                           const SizedBox(height: 16),
 
-                          Text(
-                            "Entidad bancaria",
-                            style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
+                          AppTextField(
+                            label: "Entidad bancaria",
                             controller: _nameController,
-                            decoration: InputDecoration(
-                              hintText: "Ej: Banco de Crédito del Perú",
-                              filled: true,
-                              fillColor: AppColors.surface,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.border),
-                              ),
-                            ),
+                            hintText: "Ej: Banco de Crédito del Perú",
                             validator: (value) => value == null || value.isEmpty ? "Ingresa el nombre del banco" : null,
                           ),
                           const SizedBox(height: 16),
 
                           Text(
                             "Color (opcional)",
-                            style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary),
+                            style: context.textSubtitle2(color: context.colorTextSecondary),
                           ),
                           const SizedBox(height: 8),
                           ColorSelector(
@@ -149,43 +125,15 @@ class _FormEntityScreenState extends State<FormEntityScreen> {
 
                           const Spacer(), // Mantiene los botones pegados abajo
                           // --- Botones ---
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              onPressed: _isSaving ? null : _submit,
-                              child: _isSaving
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                    )
-                                  : Text(
-                                      _isEdit ? "Actualizar entidad" : "Crear entidad",
-                                      style: AppTextStyles.subtitle2(context, color: Colors.white),
-                                    ),
-                            ),
+                          PrimaryButton(
+                            label: _isEdit ? "Actualizar entidad" : "Crear entidad",
+                            isLoading: _isSaving,
+                            onPressed: _submit,
                           ),
                           const SizedBox(height: 10),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side: const BorderSide(color: AppColors.primary),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                              child: Text(
-                                "Cancelar",
-                                style: AppTextStyles.subtitle2(context, color: AppColors.primary),
-                              ),
-                            ),
+                          SecondaryButton(
+                            label: "Cancelar",
+                            onPressed: () => Navigator.pop(context),
                           ),
                           const SizedBox(height: 32),
                         ],

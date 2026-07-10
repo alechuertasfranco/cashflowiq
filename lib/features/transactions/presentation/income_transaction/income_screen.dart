@@ -1,12 +1,13 @@
 // lib\features\transactions\presentation\income_transaction\income_screen.dart
 
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
 import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_form_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 
@@ -59,15 +60,11 @@ class _IncomeScreenState extends State<IncomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(widget.editMode ? "Editar ingreso" : "Nuevo ingreso", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(title: widget.editMode ? "Editar ingreso" : "Nuevo ingreso"),
       body: SafeArea(
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonListLoader()
             : categories.isEmpty
             ? _emptyState()
             : _form(),

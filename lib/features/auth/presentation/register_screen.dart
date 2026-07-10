@@ -1,3 +1,7 @@
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/features/auth/data/auth_service.dart';
 import 'package:flutter/material.dart';
 
@@ -33,33 +37,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: ''),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text("Crear cuenta", style: TextStyle(fontSize: 24)),
+              Text('Crear cuenta', style: context.heading2(), textAlign: TextAlign.center),
+              const SizedBox(height: 32),
 
-              const SizedBox(height: 24),
-
-              TextField(
-                controller: _email,
-                decoration: const InputDecoration(labelText: 'Email'),
-              ),
-
+              AppTextField(label: 'Email', controller: _email, hintText: 'tu@correo.com'),
               const SizedBox(height: 16),
-
-              TextField(
-                controller: _password,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Contraseña'),
-              ),
-
+              AppTextField(label: 'Contraseña', controller: _password, obscureText: true, hintText: '••••••••'),
               const SizedBox(height: 24),
 
-              ElevatedButton(onPressed: loading ? null : register, child: loading ? const CircularProgressIndicator() : const Text("Crear cuenta")),
+              PrimaryButton(label: 'Crear cuenta', isLoading: loading, onPressed: register),
             ],
           ),
         ),

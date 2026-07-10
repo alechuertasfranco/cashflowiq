@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 
 typedef OnColorSelected = void Function(Color? color);
 
@@ -63,14 +63,14 @@ class _ColorSelectorState extends State<ColorSelector> {
         return GestureDetector(
           onTap: () => _onTap(color),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
+            duration: context.motionFast,
             width: 32,
             height: 32,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? AppColors.textPrimary : Colors.transparent,
+                color: isSelected ? context.colorTextPrimary : Colors.transparent,
                 width: 2,
               ),
               boxShadow: isSelected

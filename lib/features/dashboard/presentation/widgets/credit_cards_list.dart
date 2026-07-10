@@ -1,5 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/features/dashboard/data/dashboard_summary.dart';
 import 'package:cashflowiq/features/dashboard/presentation/widgets/balance_card/currency_utils.dart';
@@ -22,7 +21,7 @@ class DashboardCreditCardsList extends StatelessWidget {
               child: Center(
                 child: Text(
                   'Sin tarjetas de crédito',
-                  style: AppTextStyles.body1(context, color: AppColors.muted),
+                  style: context.textBody1(color: context.colorMuted),
                 ),
               ),
             ),
@@ -47,11 +46,11 @@ class _CreditCardRow extends StatelessWidget {
 
     final Color ratioColor;
     if (ratio >= 0.9) {
-      ratioColor = AppColors.error;
+      ratioColor = context.colorError;
     } else if (ratio >= 0.7) {
-      ratioColor = Colors.orange;
+      ratioColor = context.colorWarning;
     } else {
-      ratioColor = AppColors.success;
+      ratioColor = context.colorSuccess;
     }
 
     return Card(
@@ -70,7 +69,7 @@ class _CreditCardRow extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(card.name, style: AppTextStyles.subtitle1(context)),
+                          Text(card.name, style: context.textSubtitle1()),
                           const SizedBox(width: 6),
                           _BrandBadge(brand: card.brand),
                         ],
@@ -78,7 +77,7 @@ class _CreditCardRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         card.bankEntityCode,
-                        style: AppTextStyles.caption(context),
+                        style: context.textCaption(),
                       ),
                     ],
                   ),
@@ -89,13 +88,13 @@ class _CreditCardRow extends StatelessWidget {
                     AmountText(
                       symbol: symbol,
                       amount: card.usedAmount,
-                      style: AppTextStyles.h600(context),
-                      color: AppColors.error,
+                      style: context.heading6(),
+                      color: context.colorError,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'de ${card.creditLimit.toStringAsFixed(2)}',
-                      style: AppTextStyles.caption(context, color: AppColors.muted),
+                      style: context.textCaption(color: context.colorMuted),
                     ),
                   ],
                 ),
@@ -103,10 +102,10 @@ class _CreditCardRow extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: context.radiusSmRadius,
               child: LinearProgressIndicator(
                 value: ratio.clamp(0, 1),
-                backgroundColor: AppColors.border,
+                backgroundColor: context.colorBorder,
                 color: ratioColor,
                 minHeight: 6,
               ),
@@ -117,11 +116,11 @@ class _CreditCardRow extends StatelessWidget {
               children: [
                 Text(
                   'Disponible: $symbol ${available.toStringAsFixed(2)}',
-                  style: AppTextStyles.caption(context, color: AppColors.textSecondary),
+                  style: context.textCaption(color: context.colorTextSecondary),
                 ),
                 Text(
                   'Cierre: ${card.closingDay}  |  Vcto: ${card.dueDay}',
-                  style: AppTextStyles.caption(context, color: AppColors.textSecondary),
+                  style: context.textCaption(color: context.colorTextSecondary),
                 ),
               ],
             ),
@@ -139,32 +138,23 @@ class _BrandBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (brand.toUpperCase()) {
-      'VISA' => Icons.credit_card,
-      'MASTERCARD' => Icons.credit_card,
-      'AMEX' => Icons.credit_card,
-      'DISCOVER' => Icons.credit_card,
-      'DINERS' => Icons.credit_card,
-      _ => Icons.credit_card,
-    };
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.secondary,
-        borderRadius: BorderRadius.circular(6),
+        color: context.colorSecondary,
+        borderRadius: context.radiusSmRadius,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AppColors.primary),
+          Icon(Icons.credit_card, size: 12, color: context.colorPrimary),
           const SizedBox(width: 3),
           Text(
             brand.toUpperCase(),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: context.colorPrimary,
               letterSpacing: 0.4,
             ),
           ),

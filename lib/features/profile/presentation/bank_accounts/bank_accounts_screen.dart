@@ -1,9 +1,11 @@
 // lib/features/bank_accounts/presentation/bank_accounts_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_accounts/form_account_screen.dart';
@@ -87,15 +89,10 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
     final balancesByCurrency = _getBalancesByCurrency();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Cuentas bancarias", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: "Cuentas bancarias"),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.colorPrimary,
         onPressed: _goToCreateAccount,
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -103,7 +100,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonListLoader()
               : (_accounts.isEmpty)
               ? Expanded(
                   child: InsightEmptyState(
@@ -123,11 +120,11 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Balance total", style: AppTextStyles.caption(context)),
+                          Text("Balance total", style: context.textCaption()),
                           const SizedBox(height: 4),
 
                           if (balancesByCurrency.isEmpty)
-                            Text("0", style: AppTextStyles.balance(context))
+                            Text("0", style: context.textBalance())
                           else
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +133,7 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
 
                                 return Text(
                                   "${money.currency.flag ?? ''} ${money.format()}",
-                                  style: AppTextStyles.balance(context),
+                                  style: context.textBalance(),
                                 );
                               }).toList(),
                             ),
@@ -157,18 +154,21 @@ class _BankAccountsScreenState extends State<BankAccountsScreen> {
                           itemBuilder: (context, index) {
                             final account = _accounts[index];
 
-                            return SwipeToDelete(
-                              onDelete: () async {
-                                final messenger = ScaffoldMessenger.of(context);
+                            return StaggeredFadeIn(
+                              index: index,
+                              child: SwipeToDelete(
+                                onDelete: () async {
+                                  final messenger = ScaffoldMessenger.of(context);
 
-                                await _service.deleteAccount(account.id);
-                                await _loadAccounts();
+                                  await _service.deleteAccount(account.id);
+                                  await _loadAccounts();
 
-                                if (!mounted) return;
+                                  if (!mounted) return;
 
-                                messenger.showSnackBar(const SnackBar(content: Text("Cuenta eliminada")));
-                              },
-                              child: BankAccountCard(account: account, onTap: () => _goToEditAccount(account)),
+                                  messenger.showSnackBar(const SnackBar(content: Text("Cuenta eliminada")));
+                                },
+                                child: BankAccountCard(account: account, onTap: () => _goToEditAccount(account)),
+                              ),
                             );
                           },
                         ),

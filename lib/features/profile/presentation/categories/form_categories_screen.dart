@@ -1,11 +1,13 @@
 // lib/features/profile/presentation/categories/form_categories_screen.dart
 
 import 'package:cashflowiq/core/utils/format.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_dropdown_field.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/icon_selector.dart';
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/color_selector.dart';
 import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/shared/models/category.dart';
@@ -91,12 +93,8 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
     final buttonText = isEdit ? "Guardar cambios" : "Crear categoría";
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(title, style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(title: title),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -109,16 +107,16 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: AppColors.secondary, borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: context.colorSecondary, borderRadius: context.radiusSmRadius),
                     child: Row(
                       children: [
-                        Icon(parseIcon(parent?.icon), size: 18, color: AppColors.primary),
+                        Icon(parseIcon(parent?.icon), size: 18, color: context.colorPrimary),
                         const SizedBox(width: 8),
 
                         Expanded(
                           child: Text(
                             "Subcategoría de ${parent?.name ?? 'categoría padre'}",
-                            style: AppTextStyles.body2(context),
+                            style: context.textBody2(),
                           ),
                         ),
                       ],
@@ -129,13 +127,10 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
                 ],
 
                 /// TYPE
-                Text("Tipo", style: AppTextStyles.subtitle2(context)),
-                const SizedBox(height: 8),
-
-                DropdownButtonFormField<CategoryType>(
-                  initialValue: type,
-                  style: AppTextStyles.body1(context),
-                  decoration: inputDecoration(context, "Selecciona tipo"),
+                AppDropdownField<CategoryType>(
+                  label: "Tipo",
+                  value: type,
+                  hintText: "Selecciona tipo",
                   items: CategoryType.values.map((e) {
                     return DropdownMenuItem(value: e, child: Text(e.toLabel()));
                   }).toList(),
@@ -145,20 +140,17 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
                 const SizedBox(height: 16),
 
                 /// NAME
-                Text("Nombre", style: AppTextStyles.subtitle2(context)),
-                const SizedBox(height: 8),
-
-                TextFormField(
-                  style: AppTextStyles.body1(context),
+                AppTextField(
+                  label: "Nombre",
                   controller: _nameController,
-                  decoration: inputDecoration(context, "Ej: Salario"),
+                  hintText: "Ej: Salario",
                   validator: (v) => v == null || v.isEmpty ? "Requerido" : null,
                 ),
 
                 const SizedBox(height: 16),
 
                 /// ICON
-                Text("Icono", style: AppTextStyles.subtitle2(context)),
+                Text("Icono", style: context.textSubtitle2()),
                 const SizedBox(height: 8),
 
                 IconSelector(
@@ -169,7 +161,7 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
                 const SizedBox(height: 16),
 
                 /// COLOR
-                Text("Color", style: AppTextStyles.subtitle2(context)),
+                Text("Color", style: context.textSubtitle2()),
                 const SizedBox(height: 8),
 
                 ColorSelector(initialColor: selectedColor, onSelected: (color) => selectedColor = color),
@@ -177,15 +169,10 @@ class _FormCategoriesScreenState extends State<FormCategoriesScreen> {
                 const Spacer(),
 
                 /// SUBMIT
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                    onPressed: isSaving ? null : submit,
-                    child: isSaving
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(buttonText, style: AppTextStyles.subtitle2(context, color: Colors.white)),
-                  ),
+                PrimaryButton(
+                  label: buttonText,
+                  isLoading: isSaving,
+                  onPressed: submit,
                 ),
               ],
             ),

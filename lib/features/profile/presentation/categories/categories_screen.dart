@@ -1,10 +1,12 @@
 // lib/features/profile/presentation/categories/categories_screen.dar
 
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/widgets/category_group_card.dart';
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/features/profile/data/category_service.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_categories_screen.dart';
 import 'package:cashflowiq/shared/models/category.dart';
@@ -54,20 +56,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final roots = categories;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(isIncome ? "Categorías de ingresos" : "Categorías de gastos", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(title: isIncome ? "Categorías de ingresos" : "Categorías de gastos"),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.complementary,
+        backgroundColor: context.colorComplementary,
         onPressed: _goToCreateCategory,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonListLoader()
             : roots.isEmpty
             ? InsightEmptyState(
                 icon: Icons.category_outlined,
@@ -86,7 +84,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   final parent = roots[i];
                   final children = parent.children;
 
-                  return CategoryGroupCard(parent: parent, children: children, onUpdated: load);
+                  return StaggeredFadeIn(
+                    index: i,
+                    child: CategoryGroupCard(parent: parent, children: children, onUpdated: load),
+                  );
                 },
               ),
       ),

@@ -1,5 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:cashflowiq/features/reports/data/reports_models.dart';
 import 'package:cashflowiq/features/reports/presentation/widgets/report_filter_bar.dart';
@@ -59,7 +58,7 @@ class _CategoryBreakdownWidgetState extends State<CategoryBreakdownWidget> {
     final hasMore = groups.length > 5;
 
     final isExpense = widget.selectedType == 'EXPENSE';
-    final color = isExpense ? AppColors.error : AppColors.success;
+    final color = isExpense ? context.colorError : context.colorSuccess;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +67,7 @@ class _CategoryBreakdownWidgetState extends State<CategoryBreakdownWidget> {
           children: [
             Text(
               isExpense ? 'Gastos por categoría' : 'Ingresos por categoría',
-              style: AppTextStyles.h500(context),
+              style: context.heading5(),
             ),
             const Spacer(),
             ReportFilterBar(
@@ -88,7 +87,7 @@ class _CategoryBreakdownWidgetState extends State<CategoryBreakdownWidget> {
               child: Center(
                 child: Text(
                   'Sin ${isExpense ? 'gastos' : 'ingresos'} categorizados este mes',
-                  style: AppTextStyles.body2(context, color: AppColors.muted),
+                  style: context.textBody2(color: context.colorMuted),
                 ),
               ),
             ),
@@ -114,12 +113,12 @@ class _CategoryBreakdownWidgetState extends State<CategoryBreakdownWidget> {
                             _showAll
                                 ? 'Ver menos'
                                 : 'Ver todos (${groups.length})',
-                            style: AppTextStyles.caption(context, color: AppColors.primary),
+                            style: context.textCaption(color: context.colorPrimary),
                           ),
                           Icon(
                             _showAll ? Icons.expand_less : Icons.expand_more,
                             size: 16,
-                            color: AppColors.primary,
+                            color: context.colorPrimary,
                           ),
                         ],
                       ),
@@ -165,7 +164,7 @@ class _CategoryBreakdownWidgetState extends State<CategoryBreakdownWidget> {
                   Expanded(
                     child: Text(
                       group.parentName,
-                      style: AppTextStyles.subtitle2(context),
+                      style: context.textSubtitle2(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -174,29 +173,29 @@ class _CategoryBreakdownWidgetState extends State<CategoryBreakdownWidget> {
                   AmountText(
                     symbol: widget.symbol,
                     amount: group.total,
-                    style: AppTextStyles.caption(context),
+                    style: context.textCaption(),
                   ),
                   Text(
                     '  ${parentPercent.toStringAsFixed(1)}%',
-                    style: AppTextStyles.caption(context),
+                    style: context.textCaption(),
                   ),
                   if (hasChildren) ...[
                     const SizedBox(width: 4),
                     Icon(
                       isExpanded ? Icons.expand_less : Icons.expand_more,
                       size: 16,
-                      color: AppColors.muted,
+                      color: context.colorMuted,
                     ),
                   ],
                 ],
               ),
               const SizedBox(height: 6),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: context.radiusSmRadius,
                 child: LinearProgressIndicator(
                   value: (parentPercent / 100).clamp(0.0, 1.0),
                   minHeight: 6,
-                  backgroundColor: AppColors.border,
+                  backgroundColor: context.colorBorder,
                   valueColor: AlwaysStoppedAnimation<Color>(barColor),
                 ),
               ),
@@ -256,7 +255,7 @@ class _CategoryRow extends StatelessWidget {
             Expanded(
               child: Text(
                 report.categoryName,
-                style: AppTextStyles.body2(context),
+                style: context.textBody2(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -268,11 +267,11 @@ class _CategoryRow extends StatelessWidget {
                 AmountText(
                   symbol: symbol,
                   amount: report.total,
-                  style: AppTextStyles.caption(context),
+                  style: context.textCaption(),
                 ),
                 Text(
                   '  ${report.percentage.toStringAsFixed(1)}%',
-                  style: AppTextStyles.caption(context),
+                  style: context.textCaption(),
                 ),
               ],
             ),
@@ -280,11 +279,11 @@ class _CategoryRow extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: context.radiusSmRadius,
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 4,
-            backgroundColor: AppColors.border,
+            backgroundColor: context.colorBorder,
             valueColor: AlwaysStoppedAnimation<Color>(barColor.withValues(alpha: 0.6)),
           ),
         ),

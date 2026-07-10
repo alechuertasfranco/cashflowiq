@@ -1,7 +1,6 @@
 // lib\core\widgets\currency_dropdown.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 import 'package:flutter/material.dart';
 
@@ -16,29 +15,29 @@ class CurrencyDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<Currency>(
       initialValue: value,
-      dropdownColor: AppColors.surface,
+      dropdownColor: context.colorSurface,
       items: currencies.map((currency) {
         return DropdownMenuItem(
           value: currency,
-          child: Text("${currency.flag} ${currency.code}", style: AppTextStyles.body1(context)),
+          child: Text("${currency.flag} ${currency.code}", style: context.textBody1()),
         );
       }).toList(),
       onChanged: onChanged,
       decoration: InputDecoration(
         hintText: "Selecciona moneda",
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: context.colorSurface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: context.radiusMdRadius,
+          borderSide: BorderSide(color: context.colorBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: context.radiusMdRadius,
+          borderSide: BorderSide(color: context.colorBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary),
+          borderRadius: context.radiusMdRadius,
+          borderSide: BorderSide(color: context.colorPrimary, width: 1.5),
         ),
       ),
     );

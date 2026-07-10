@@ -1,9 +1,10 @@
 // lib/features/profile/presentation/investment_fund/fund_detail_screen.dart
 
 import 'package:cashflowiq/core/services/notification_service.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/app_card.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/investment_fund_service.dart';
 import 'package:cashflowiq/features/profile/presentation/investment_fund/form_investment_fund_screen.dart';
@@ -121,15 +122,12 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
     final isGain = diff != null && diff >= 0;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(fund.name, style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(
+        title: fund.name,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
+            icon: Icon(Icons.notifications_outlined, color: context.colorPrimary),
             tooltip: "Activar recordatorio mensual",
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
@@ -140,7 +138,7 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+            icon: Icon(Icons.edit_outlined, color: context.colorPrimary),
             tooltip: "Editar fondo",
             onPressed: () async {
               final nav = Navigator.of(context);
@@ -156,10 +154,10 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.colorPrimary,
         onPressed: _addSnapshot,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: Text("Registrar balance", style: AppTextStyles.body2(context, color: Colors.white)),
+        label: Text("Registrar balance", style: context.textBody2(color: Colors.white)),
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -186,13 +184,13 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
               else if (_snapshots.isEmpty)
                 _EmptyChart(onAdd: _addSnapshot)
               else
-                _SinglePointHint(),
+                const _SinglePointHint(),
 
               if (_snapshots.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 Text(
                   "Historial de balances",
-                  style: AppTextStyles.subtitle1(context),
+                  style: context.textSubtitle1(),
                 ),
                 const SizedBox(height: 12),
                 ..._snapshots.reversed.map(
@@ -235,21 +233,16 @@ class _HeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasCurrentValue = fund.currentValue != null;
 
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Valor actual", style: AppTextStyles.caption(context, color: AppColors.textSecondary)),
+          Text("Valor actual", style: context.textCaption(color: context.colorTextSecondary)),
           const SizedBox(height: 4),
           Text(
             hasCurrentValue ? fund.currentValueMoney!.format() : "—",
-            style: AppTextStyles.balance(context),
+            style: context.textBalance(),
           ),
           const SizedBox(height: 12),
           Row(
@@ -257,15 +250,13 @@ class _HeaderCard extends StatelessWidget {
               _Stat(
                 label: "Invertido",
                 value: fund.investedMoney.format(),
-                context: context,
               ),
               if (diff != null) ...[
                 const SizedBox(width: 24),
                 _Stat(
                   label: isGain ? "Ganancia" : "Pérdida",
                   value: "${isGain ? '+' : ''}${fund.currency.symbol} ${diff!.abs().toStringAsFixed(fund.currency.decimals)}",
-                  valueColor: isGain ? AppColors.success : AppColors.error,
-                  context: context,
+                  valueColor: isGain ? context.colorSuccess : context.colorError,
                 ),
               ],
             ],
@@ -280,20 +271,19 @@ class _Stat extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
-  final BuildContext context;
 
-  const _Stat({required this.label, required this.value, this.valueColor, required this.context});
+  const _Stat({required this.label, required this.value, this.valueColor});
 
   @override
-  Widget build(BuildContext _) {
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption(context, color: AppColors.textSecondary)),
+        Text(label, style: context.textCaption(color: context.colorTextSecondary)),
         const SizedBox(height: 2),
         Text(
           value,
-          style: AppTextStyles.subtitle1(context, color: valueColor),
+          style: context.textSubtitle1(color: valueColor),
         ),
       ],
     );
@@ -321,19 +311,14 @@ class _ChartCard extends StatelessWidget {
                         'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     final origin = snapshots.first.snapshotDate;
 
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.fromLTRB(12, 16, 16, 8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 8, bottom: 12),
-            child: Text("Evolución del valor", style: AppTextStyles.subtitle2(context)),
+            child: Text("Evolución del valor", style: context.textSubtitle2()),
           ),
           SizedBox(
             height: 180,
@@ -346,7 +331,7 @@ class _ChartCard extends StatelessWidget {
                   drawVerticalLine: false,
                   horizontalInterval: (maxY - minY + yPad * 2) / 4,
                   getDrawingHorizontalLine: (_) => FlLine(
-                    color: AppColors.border,
+                    color: context.colorBorder,
                     strokeWidth: 1,
                   ),
                 ),
@@ -368,7 +353,7 @@ class _ChartCard extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             months[date.month],
-                            style: AppTextStyles.caption(context, color: AppColors.textSecondary),
+                            style: context.textCaption(color: context.colorTextSecondary),
                           ),
                         );
                       },
@@ -379,29 +364,29 @@ class _ChartCard extends StatelessWidget {
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
-                    color: AppColors.primary,
+                    color: context.colorPrimary,
                     barWidth: 2.5,
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (p0, p1, p2, p3) => FlDotCirclePainter(
                         radius: 4,
-                        color: AppColors.primary,
+                        color: context.colorPrimary,
                         strokeWidth: 0,
                       ),
                     ),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: AppColors.primary.withAlpha(26),
+                      color: context.colorPrimary.withAlpha(26),
                     ),
                   ),
                 ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => AppColors.surface,
+                    getTooltipColor: (_) => context.colorSurface,
                     getTooltipItems: (spots) => spots.map((s) {
                       return LineTooltipItem(
                         '${fund.currency.symbol} ${s.y.toStringAsFixed(fund.currency.decimals)}',
-                        AppTextStyles.caption(context, color: AppColors.primary),
+                        context.textCaption(color: context.colorPrimary),
                       );
                     }).toList(),
                   ),
@@ -426,26 +411,21 @@ class _EmptyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
       child: Column(
         children: [
-          const Icon(Icons.show_chart, size: 40, color: AppColors.muted),
+          Icon(Icons.show_chart, size: 40, color: context.colorMuted),
           const SizedBox(height: 12),
           Text(
             "Sin historial todavía",
-            style: AppTextStyles.subtitle2(context),
+            style: context.textSubtitle2(),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             "Registra el balance de este mes para empezar a ver la evolución de tu inversión",
-            style: AppTextStyles.caption(context, color: AppColors.textSecondary),
+            style: context.textCaption(color: context.colorTextSecondary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -459,21 +439,15 @@ class _SinglePointHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+    return AppCard(
       child: Row(
         children: [
-          const Icon(Icons.info_outline, size: 18, color: AppColors.muted),
+          Icon(Icons.info_outline, size: 18, color: context.colorMuted),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               "Registra al menos 2 balances para ver el gráfico",
-              style: AppTextStyles.body2(context, color: AppColors.textSecondary),
+              style: context.textBody2(color: context.colorTextSecondary),
             ),
           ),
         ],
@@ -501,23 +475,18 @@ class _SnapshotRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             fmtDate(snapshot.snapshotDate),
-            style: AppTextStyles.body1(context),
+            style: context.textBody1(),
           ),
           Text(
             "$symbol ${snapshot.value.toStringAsFixed(decimals)}",
-            style: AppTextStyles.subtitle2(context, color: AppColors.primary),
+            style: context.textSubtitle2(color: context.colorPrimary),
           ),
         ],
       ),

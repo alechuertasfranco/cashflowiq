@@ -1,6 +1,7 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/features/reports/data/reports_models.dart';
 import 'package:cashflowiq/features/reports/presentation/reports_data_loader.dart';
 import 'package:cashflowiq/features/reports/presentation/widgets/cashflow_chart_widget.dart';
@@ -33,7 +34,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colorBackground,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => _loader.loadAll(invalidateCache: true),
@@ -56,7 +57,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Reportes', style: AppTextStyles.h300(context)),
+                Text('Reportes', style: context.heading3()),
                 const SizedBox(height: 16),
                 MonthNavigator(
                   monthName: ReportDataLoader.monthNames[_loader.month - 1],
@@ -71,8 +72,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
         ),
         if (_loader.isLoading)
-          const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
+          const SliverToBoxAdapter(
+            child: SkeletonListLoader(itemCount: 4, itemHeight: 120),
           )
         else if (_loader.errorMessage != null)
           SliverFillRemaining(
@@ -81,7 +82,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 padding: const EdgeInsets.all(24),
                 child: Text(
                   _loader.errorMessage!,
-                  style: AppTextStyles.body1(context, color: AppColors.error),
+                  style: context.textBody1(color: context.colorError),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -110,7 +111,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             padding: const EdgeInsets.symmetric(vertical: 48),
             child: Text(
               'Sin movimientos este mes',
-              style: AppTextStyles.body1(context, color: AppColors.muted),
+              style: context.textBody1(color: context.colorMuted),
             ),
           ),
         ),
@@ -132,6 +133,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       }
     }
 
+    int sectionIndex = 0;
     for (final code in _loader.currencyCodes) {
       final cashflow = _loader.cashflows.where((r) => r.currencyCode == code).firstOrNull;
       final expenses = _loader.expenses.where((r) => r.currencyCode == code).toList();
@@ -142,7 +144,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       if (!hasTrend) widgets.add(_SectionHeader(label: code));
 
       if (cashflow != null) {
-        widgets.add(_CashflowCard(report: cashflow, symbol: cashflow.currencySymbol));
+        widgets.add(StaggeredFadeIn(
+          index: sectionIndex++,
+          child: _CashflowCard(report: cashflow, symbol: cashflow.currencySymbol),
+        ));
         widgets.add(const SizedBox(height: 16));
       }
 
@@ -152,25 +157,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
           code;
 
       if (expenses.isNotEmpty || incomes.isNotEmpty) {
-        widgets.add(
-          CategoryBreakdownWidget(
+        widgets.add(StaggeredFadeIn(
+          index: sectionIndex++,
+          child: CategoryBreakdownWidget(
             expenses: expenses,
             incomes: incomes,
             symbol: catSymbol,
             selectedType: _loader.categoryType,
             onTypeChanged: _loader.setCategoryType,
           ),
-        );
+        ));
         widgets.add(const SizedBox(height: 16));
       }
 
       if (budgets.isNotEmpty) {
-        widgets.add(_BudgetVsActualSection(items: budgets, symbol: budgets.first.currencySymbol));
+        widgets.add(StaggeredFadeIn(
+          index: sectionIndex++,
+          child: _BudgetVsActualSection(items: budgets, symbol: budgets.first.currencySymbol),
+        ));
         widgets.add(const SizedBox(height: 16));
       }
 
       if (entities.isNotEmpty) {
-        widgets.add(_EntitySection(entities: entities, symbol: entities.first.currencySymbol));
+        widgets.add(StaggeredFadeIn(
+          index: sectionIndex++,
+          child: _EntitySection(entities: entities, symbol: entities.first.currencySymbol),
+        ));
         widgets.add(const SizedBox(height: 16));
       }
     }
@@ -196,21 +208,21 @@ class _SectionHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(8),
+              color: context.colorPrimary,
+              borderRadius: context.radiusSmRadius,
             ),
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: context.colorOnPrimary,
                 letterSpacing: 0.5,
               ),
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(child: Divider(color: AppColors.border, height: 1)),
+          Expanded(child: Divider(color: context.colorDivider, height: 1)),
         ],
       ),
     );
@@ -237,7 +249,7 @@ class _CashflowCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Flujo de caja', style: AppTextStyles.h500(context)),
+            Text('Flujo de caja', style: context.heading5()),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -246,7 +258,7 @@ class _CashflowCard extends StatelessWidget {
                     label: 'Ingresos',
                     amount: report.totalIncome,
                     symbol: symbol,
-                    color: AppColors.success,
+                    color: context.colorSuccess,
                     icon: Icons.arrow_downward_rounded,
                   ),
                 ),
@@ -256,40 +268,40 @@ class _CashflowCard extends StatelessWidget {
                     label: 'Gastos',
                     amount: report.totalExpense,
                     symbol: symbol,
-                    color: AppColors.error,
+                    color: context.colorError,
                     icon: Icons.arrow_upward_rounded,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: context.colorBorder),
             const SizedBox(height: 16),
             _ExpenseRow(label: 'Gasto fijo', amount: report.fixedExpense, symbol: symbol),
             const SizedBox(height: 8),
             _ExpenseRow(label: 'Gasto variable', amount: report.variableExpense, symbol: symbol),
             const SizedBox(height: 16),
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: context.colorBorder),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Tasa de ahorro', style: AppTextStyles.subtitle2(context)),
+                Text('Tasa de ahorro', style: context.textSubtitle2()),
                 Text(
                   '${report.savingsRate.toStringAsFixed(1)}%',
-                  style: AppTextStyles.h600(context, color: AppColors.primary),
+                  style: context.heading6(color: context.colorPrimary),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: context.radiusSmRadius,
               child: LinearProgressIndicator(
                 value: savingsProgress,
                 minHeight: 8,
-                backgroundColor: AppColors.border,
+                backgroundColor: context.colorBorder,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  savingsProgress >= 0.2 ? AppColors.success : AppColors.error,
+                  savingsProgress >= 0.2 ? context.colorSuccess : context.colorError,
                 ),
               ),
             ),
@@ -321,7 +333,7 @@ class _SummaryTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: context.radiusMdRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,11 +342,11 @@ class _SummaryTile extends StatelessWidget {
             children: [
               Icon(icon, color: color, size: 14),
               const SizedBox(width: 4),
-              Text(label, style: AppTextStyles.caption(context, color: color)),
+              Text(label, style: context.textCaption(color: color)),
             ],
           ),
           const SizedBox(height: 6),
-          AmountText(symbol: symbol, amount: amount, style: AppTextStyles.h500(context), color: color),
+          AmountText(symbol: symbol, amount: amount, style: context.heading5(), color: color),
         ],
       ),
     );
@@ -353,8 +365,8 @@ class _ExpenseRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: AppTextStyles.body1(context, color: AppColors.textSecondary)),
-        AmountText(symbol: symbol, amount: amount, style: AppTextStyles.body1(context)),
+        Text(label, style: context.textBody1(color: context.colorTextSecondary)),
+        AmountText(symbol: symbol, amount: amount, style: context.textBody1()),
       ],
     );
   }
@@ -375,7 +387,7 @@ class _BudgetVsActualSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Presupuesto vs gasto real', style: AppTextStyles.h500(context)),
+        Text('Presupuesto vs gasto real', style: context.heading5()),
         const SizedBox(height: 12),
         Card(
           child: Padding(
@@ -385,7 +397,7 @@ class _BudgetVsActualSection extends StatelessWidget {
                 for (int i = 0; i < items.length; i++) ...[
                   if (i > 0) ...[
                     const SizedBox(height: 4),
-                    const Divider(height: 16, color: AppColors.border),
+                    Divider(height: 16, color: context.colorBorder),
                   ],
                   _BudgetRow(item: items[i], symbol: symbol),
                 ],
@@ -404,17 +416,17 @@ class _BudgetRow extends StatelessWidget {
 
   const _BudgetRow({required this.item, required this.symbol});
 
-  Color _barColor(double pct) {
-    if (pct >= 100) return AppColors.error;
-    if (pct >= 80) return const Color(0xFFF97316);
-    return AppColors.success;
+  Color _barColor(BuildContext context, double pct) {
+    if (pct >= 100) return context.colorError;
+    if (pct >= 80) return context.colorWarning;
+    return context.colorSuccess;
   }
 
   @override
   Widget build(BuildContext context) {
     final pct = item.percentageUsed;
     final progress = (pct / 100).clamp(0.0, 1.0);
-    final barColor = _barColor(pct);
+    final barColor = _barColor(context, pct);
     final isOver = pct >= 100;
 
     return Column(
@@ -423,7 +435,7 @@ class _BudgetRow extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(item.categoryName, style: AppTextStyles.subtitle2(context),
+              child: Text(item.categoryName, style: context.textSubtitle2(),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
             if (isOver)
@@ -431,12 +443,12 @@ class _BudgetRow extends StatelessWidget {
                 margin: const EdgeInsets.only(left: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
+                  color: context.colorError.withValues(alpha: 0.1),
+                  borderRadius: context.radiusSmRadius,
                 ),
                 child: Text(
                   'Excedido',
-                  style: AppTextStyles.caption(context, color: AppColors.error)
+                  style: context.textCaption(color: context.colorError)
                       .copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -444,11 +456,11 @@ class _BudgetRow extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: context.radiusSmRadius,
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 8,
-            backgroundColor: AppColors.border,
+            backgroundColor: context.colorBorder,
             valueColor: AlwaysStoppedAnimation<Color>(barColor),
           ),
         ),
@@ -460,15 +472,15 @@ class _BudgetRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AmountText(symbol: symbol, amount: item.spentAmount,
-                    style: AppTextStyles.caption(context, color: barColor)),
-                Text(' de ', style: AppTextStyles.caption(context, color: AppColors.muted)),
+                    style: context.textCaption(color: barColor)),
+                Text(' de ', style: context.textCaption(color: context.colorMuted)),
                 AmountText(symbol: symbol, amount: item.budgetAmount,
-                    style: AppTextStyles.caption(context, color: AppColors.textSecondary)),
+                    style: context.textCaption(color: context.colorTextSecondary)),
               ],
             ),
             Text(
               '${pct.toStringAsFixed(1)}%',
-              style: AppTextStyles.caption(context, color: barColor)
+              style: context.textCaption(color: barColor)
                   .copyWith(fontWeight: FontWeight.w700),
             ),
           ],
@@ -493,7 +505,7 @@ class _EntitySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Por entidad bancaria', style: AppTextStyles.h500(context)),
+        Text('Por entidad bancaria', style: context.heading5()),
         const SizedBox(height: 12),
         for (final entity in entities) ...[
           _EntityCard(report: entity, symbol: symbol),
@@ -518,16 +530,16 @@ class _EntityCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(report.entityName, style: AppTextStyles.h600(context)),
+            Text(report.entityName, style: context.heading6()),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(child: _EntityStat(label: 'Ingresos', value: report.totalIncome,
-                    symbol: symbol, color: AppColors.success)),
+                    symbol: symbol, color: context.colorSuccess)),
                 Expanded(child: _EntityStat(label: 'Gastos', value: report.totalExpense,
-                    symbol: symbol, color: AppColors.error)),
+                    symbol: symbol, color: context.colorError)),
                 Expanded(child: _EntityStat(label: 'Neto', value: report.net,
-                    symbol: symbol, color: AppColors.primary)),
+                    symbol: symbol, color: context.colorPrimary)),
               ],
             ),
           ],
@@ -550,9 +562,9 @@ class _EntityStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption(context)),
+        Text(label, style: context.textCaption()),
         const SizedBox(height: 2),
-        AmountText(symbol: symbol, amount: value, style: AppTextStyles.body1(context), color: color),
+        AmountText(symbol: symbol, amount: value, style: context.textBody1(), color: color),
       ],
     );
   }

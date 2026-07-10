@@ -1,10 +1,13 @@
 // lib/features/transactions/presentation/transactions_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
+import 'package:cashflowiq/core/widgets/app_bottom_sheet.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/data/category_service.dart';
@@ -160,23 +163,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _showFilterSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Column(
+    showAppBottomSheet(
+      context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Filtrar por cuenta", style: AppTextStyles.h500(ctx)),
+                Text("Filtrar por cuenta", style: ctx.heading5()),
                 if (_entityFilter != null || _accountFilter != null)
                   TextButton(
                     onPressed: () {
@@ -186,13 +184,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       });
                       Navigator.pop(ctx);
                     },
-                    child: Text("Limpiar", style: AppTextStyles.body2(ctx, color: AppColors.primary)),
+                    child: Text("Limpiar", style: ctx.textBody2(color: ctx.colorPrimary)),
                   ),
               ],
             ),
             const SizedBox(height: 16),
             if (_uniqueEntities.isNotEmpty) ...[
-              Text("Entidad bancaria", style: AppTextStyles.caption(ctx, color: AppColors.textSecondary)),
+              Text("Entidad bancaria", style: ctx.textCaption(color: ctx.colorTextSecondary)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -208,18 +206,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       Navigator.pop(ctx);
                     },
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
+                      duration: ctx.motionFast,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.primary : AppColors.background,
-                        borderRadius: BorderRadius.circular(20),
+                        color: selected ? ctx.colorPrimary : ctx.colorBackground,
+                        borderRadius: ctx.radiusXlRadius,
                         border: Border.all(
-                          color: selected ? AppColors.primary : AppColors.border,
+                          color: selected ? ctx.colorPrimary : ctx.colorBorder,
                         ),
                       ),
                       child: Text(
                         entity.name,
-                        style: AppTextStyles.body2(ctx, color: selected ? Colors.white : AppColors.textSecondary),
+                        style: ctx.textBody2(color: selected ? ctx.colorOnPrimary : ctx.colorTextSecondary),
                       ),
                     ),
                   );
@@ -227,7 +225,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
               const SizedBox(height: 20),
             ],
-            Text("Cuenta específica", style: AppTextStyles.caption(ctx, color: AppColors.textSecondary)),
+            Text("Cuenta específica", style: ctx.textCaption(color: ctx.colorTextSecondary)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -243,25 +241,24 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     Navigator.pop(ctx);
                   },
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
+                    duration: ctx.motionFast,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.primary : AppColors.background,
-                      borderRadius: BorderRadius.circular(20),
+                      color: selected ? ctx.colorPrimary : ctx.colorBackground,
+                      borderRadius: ctx.radiusXlRadius,
                       border: Border.all(
-                        color: selected ? AppColors.primary : AppColors.border,
+                        color: selected ? ctx.colorPrimary : ctx.colorBorder,
                       ),
                     ),
                     child: Text(
                       account.name,
-                      style: AppTextStyles.body2(ctx, color: selected ? Colors.white : AppColors.textSecondary),
+                      style: ctx.textBody2(color: selected ? ctx.colorOnPrimary : ctx.colorTextSecondary),
                     ),
                   ),
                 );
               }).toList(),
             ),
           ],
-          ),
         ),
       ),
     );
@@ -340,16 +337,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final hasAccountFilter = _entityFilter != null || _accountFilter != null;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Movimientos", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(
+        title: "Movimientos",
         actions: [
           IconButton(
             icon: Icon(
               Icons.date_range,
-              color: _dateRange != null ? AppColors.primary : AppColors.muted,
+              color: _dateRange != null ? context.colorPrimary : context.colorMuted,
             ),
             onPressed: _pickDateRange,
             tooltip: "Filtrar por fecha",
@@ -360,7 +355,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               IconButton(
                 icon: Icon(
                   Icons.tune,
-                  color: hasAccountFilter ? AppColors.primary : AppColors.muted,
+                  color: hasAccountFilter ? context.colorPrimary : context.colorMuted,
                 ),
                 onPressed: _showFilterSheet,
                 tooltip: "Filtrar por cuenta",
@@ -372,8 +367,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   child: Container(
                     width: 7,
                     height: 7,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
+                    decoration: BoxDecoration(
+                      color: context.colorPrimary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -381,7 +376,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.add, color: AppColors.primary),
+            icon: Icon(Icons.add, color: context.colorPrimary),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const TransactionTypeScreen()),
@@ -399,7 +394,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             if (hasAccountFilter) _accountFilterBanner(),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const SkeletonListLoader()
                   : _filteredTransactions.isEmpty
                       ? _emptyState()
                       : _list(),
@@ -429,20 +424,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 _load();
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+                duration: context.motionFast,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: selected ? AppColors.primary : AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  color: selected ? context.colorPrimary : context.colorSurface,
+                  borderRadius: context.radiusXlRadius,
                   border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.border,
+                    color: selected ? context.colorPrimary : context.colorBorder,
                   ),
                 ),
                 child: Text(
                   labels[i],
-                  style: AppTextStyles.body2(
-                    context,
-                    color: selected ? Colors.white : AppColors.textSecondary,
+                  style: context.textBody2(
+                    color: selected ? context.colorOnPrimary : context.colorTextSecondary,
                   ),
                 ),
               ),
@@ -458,17 +452,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.secondary,
-        borderRadius: BorderRadius.circular(10),
+        color: context.colorSecondary,
+        borderRadius: context.radiusMdRadius,
       ),
       child: Row(
         children: [
-          const Icon(Icons.date_range, size: 16, color: AppColors.primary),
+          Icon(Icons.date_range, size: 16, color: context.colorPrimary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               "${_fmtDate(_dateRange!.start)} – ${_fmtDate(_dateRange!.end)}",
-              style: AppTextStyles.body2(context, color: AppColors.primary),
+              style: context.textBody2(color: context.colorPrimary),
             ),
           ),
           GestureDetector(
@@ -476,7 +470,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               setState(() => _dateRange = null);
               _load();
             },
-            child: const Icon(Icons.close, size: 16, color: AppColors.primary),
+            child: Icon(Icons.close, size: 16, color: context.colorPrimary),
           ),
         ],
       ),
@@ -489,17 +483,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.secondary,
-        borderRadius: BorderRadius.circular(10),
+        color: context.colorSecondary,
+        borderRadius: context.radiusMdRadius,
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_balance, size: 16, color: AppColors.primary),
+          Icon(Icons.account_balance, size: 16, color: context.colorPrimary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               label,
-              style: AppTextStyles.body2(context, color: AppColors.primary),
+              style: context.textBody2(color: context.colorPrimary),
             ),
           ),
           GestureDetector(
@@ -507,7 +501,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               _entityFilter = null;
               _accountFilter = null;
             }),
-            child: const Icon(Icons.close, size: 16, color: AppColors.primary),
+            child: Icon(Icons.close, size: 16, color: context.colorPrimary),
           ),
         ],
       ),
@@ -529,7 +523,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         itemCount: dateKeys.length,
-        itemBuilder: (_, i) => _dateGroup(dateKeys[i], grouped[dateKeys[i]]!),
+        itemBuilder: (_, i) => StaggeredFadeIn(
+          index: i,
+          child: _dateGroup(dateKeys[i], grouped[dateKeys[i]]!),
+        ),
       ),
     );
   }
@@ -540,7 +537,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 12, bottom: 6),
-          child: Text(date, style: AppTextStyles.caption(context, color: AppColors.textSecondary)),
+          child: Text(date, style: context.textCaption(color: context.colorTextSecondary)),
         ),
         ReorderableListView(
           shrinkWrap: true,
@@ -577,8 +574,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        color: context.colorSurface,
+        borderRadius: context.radiusLgRadius,
       ),
       child: Row(
         children: [
@@ -587,7 +584,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             height: 42,
             decoration: BoxDecoration(
               color: color.withAlpha(26),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: context.radiusMdRadius,
             ),
             child: Icon(icon, color: color, size: 20),
           ),
@@ -598,14 +595,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.subtitle2(context),
+                  style: context.textSubtitle2(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle.isNotEmpty)
                   Text(
                     subtitle,
-                    style: AppTextStyles.caption(context, color: AppColors.muted),
+                    style: context.textCaption(color: context.colorMuted),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -620,12 +617,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 symbol: tx.currencySymbol,
                 amount: tx.amount,
                 sign: sign.isEmpty ? null : sign,
-                style: AppTextStyles.subtitle2(context),
+                style: context.textSubtitle2(),
                 color: color,
               ),
               Text(
                 _fmtTime(tx.date),
-                style: AppTextStyles.caption(context, color: AppColors.muted),
+                style: context.textCaption(color: context.colorMuted),
               ),
             ],
           ),
@@ -643,7 +640,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         final incomeSubtitle = hasIncomeDesc
             ? (account.isNotEmpty ? "$incomeCategory · $account" : incomeCategory)
             : account;
-        return (Icons.arrow_downward, AppColors.success, hasIncomeDesc ? tx.description! : incomeCategory, incomeSubtitle, "+");
+        return (Icons.arrow_downward, context.colorSuccess, hasIncomeDesc ? tx.description! : incomeCategory, incomeSubtitle, "+");
 
       case TransactionType.expense:
         final expenseCategory = tx.categoryId != null ? _categoryNames[tx.categoryId] ?? "Gasto" : "Gasto";
@@ -656,7 +653,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         final expenseSubtitle = hasExpenseDesc
             ? (source.isNotEmpty ? "$expenseCategory · $source" : expenseCategory)
             : source;
-        return (Icons.arrow_upward, AppColors.error, hasExpenseDesc ? tx.description! : expenseCategory, expenseSubtitle, "-");
+        return (Icons.arrow_upward, context.colorError, hasExpenseDesc ? tx.description! : expenseCategory, expenseSubtitle, "-");
 
       case TransactionType.transfer:
         final from = tx.accountId != null ? _accountNames[tx.accountId] ?? "" : "";
@@ -666,7 +663,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ? _cardNames[tx.toCreditCardId] ?? ""
                 : "";
         final subtitle = from.isNotEmpty && to.isNotEmpty ? "$from → $to" : "";
-        return (Icons.swap_horiz, AppColors.primary, "Transferencia", subtitle, "");
+        return (Icons.swap_horiz, context.colorPrimary, "Transferencia", subtitle, "");
     }
   }
 

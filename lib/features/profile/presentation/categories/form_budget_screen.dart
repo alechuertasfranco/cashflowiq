@@ -1,9 +1,9 @@
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
 import 'package:cashflowiq/features/profile/presentation/controllers/form_budget_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 
 import 'package:cashflowiq/shared/models/category.dart';
 
@@ -70,15 +70,15 @@ class _FormBudgetScreenState extends State<FormBudgetScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text("Definir presupuesto", style: AppTextStyles.subtitle1(context)),
+                  Text("Definir presupuesto", style: context.textSubtitle1()),
 
                   const SizedBox(height: 16),
 
                   /// 💰 MONTO
-                  TextFormField(
+                  AppTextField(
                     controller: amountController,
                     keyboardType: TextInputType.number,
-                    decoration: inputDecoration(context, "Ej: 500"),
+                    hintText: "Ej: 500",
                     validator: (value) {
                       if (value == null || value.isEmpty) return "Ingrese un monto";
                       if (double.tryParse(value) == null) return "Monto inválido";
@@ -98,18 +98,10 @@ class _FormBudgetScreenState extends State<FormBudgetScreen> {
                   const SizedBox(height: 20),
 
                   /// 🚀 BOTÓN
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                      onPressed: controller.isSaving ? null : _submit,
-                      child: controller.isSaving
-                          ? const Padding(
-                              padding: EdgeInsets.all(8),
-                              child: CircularProgressIndicator(color: Colors.white),
-                            )
-                          : Text("Guardar", style: AppTextStyles.subtitle2(context, color: Colors.white)),
-                    ),
+                  PrimaryButton(
+                    label: "Guardar",
+                    isLoading: controller.isSaving,
+                    onPressed: _submit,
                   ),
                 ],
               ),

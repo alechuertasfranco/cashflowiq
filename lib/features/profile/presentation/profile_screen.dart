@@ -1,5 +1,5 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_accounts/bank_accounts_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/bank_entities/bank_entities_screen.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/categories_screen.dart';
@@ -23,147 +23,135 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
+    final sections = [
+      /// Header
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Perfil", style: context.heading3()),
+          const SizedBox(height: 4),
+          Text("Gestiona tu cuenta", style: context.textCaption()),
+        ],
+      ),
+
+      /// User Card
+      Card(
+        child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              /// Header
-              Text("Perfil", style: AppTextStyles.h300(context)),
-              const SizedBox(height: 4),
-              Text("Gestiona tu cuenta", style: AppTextStyles.caption(context)),
-
-              const SizedBox(height: 24),
-
-              /// User Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: AppColors.primary,
-                        child: Text(
-                          user?.email != null ? user!.email![0].toUpperCase() : "U",
-                          style: AppTextStyles.h400(context).copyWith(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(child: Text(user?.email ?? "Usuario", style: AppTextStyles.subtitle1(context))),
-                    ],
-                  ),
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: context.colorPrimary,
+                child: Text(
+                  user?.email != null ? user!.email![0].toUpperCase() : "U",
+                  style: context.heading4(color: context.colorOnPrimary),
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              /// Categorías
-              _SectionTitle("Categorías"),
-              const SizedBox(height: 12),
-              _MenuCard(
-                items: [
-                  _MenuItem(
-                    icon: Icons.arrow_downward,
-                    title: "Categorías de ingresos",
-                    subtitle: "Organiza tus ingresos por categoría",
-                    onTap: () => _go(context, const CategoriesScreen(type: CategoryType.income)),
-                  ),
-
-                  _MenuItem(
-                    icon: Icons.arrow_upward,
-                    title: "Categorías de gastos",
-                    subtitle: "Organiza tus gastos por categoría",
-                    onTap: () => _go(context, const CategoriesScreen(type: CategoryType.expense)),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              /// Activos financieros
-              _SectionTitle("Activos financieros"),
-              const SizedBox(height: 12),
-              _MenuCard(
-                items: [
-                  _MenuItem(
-                    icon: Icons.domain,
-                    title: "Entidades bancarias",
-                    subtitle: "Organiza tus cuentas por banco",
-                    onTap: () => _go(context, const BankEntitiesScreen()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.account_balance,
-                    title: "Cuentas bancarias",
-                    subtitle: "Gestiona tu dinero disponible",
-                    onTap: () => _go(context, const BankAccountsScreen()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.credit_card,
-                    title: "Tarjetas de crédito",
-                    subtitle: "Controla tu deuda y límites",
-                    onTap: () => _go(context, const CreditCardsScreen()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.trending_up,
-                    title: "Fondos de inversión",
-                    subtitle: "Haz crecer tu dinero",
-                    onTap: () => _go(context, const InvestmentFundsScreen()),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              /// Servicios de pago
-              _SectionTitle("Servicios de pago"),
-              const SizedBox(height: 12),
-              _MenuCard(
-                items: [
-                  _MenuItem(
-                    icon: Icons.receipt_long,
-                    title: "Servicios vinculados",
-                    subtitle: "Yape, Plin y otros para escanear vouchers",
-                    onTap: () => _go(context, const PaymentServicesScreen()),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              /// Contactos
-              _SectionTitle("Contactos"),
-              const SizedBox(height: 12),
-              _MenuCard(
-                items: [
-                  _MenuItem(
-                    icon: Icons.people,
-                    title: "Mis contactos",
-                    subtitle: "Gestiona contactos para gastos compartidos",
-                    onTap: () => _go(context, const ContactsScreen()),
-                  ),
-                  _MenuItem(
-                    icon: Icons.handshake_outlined,
-                    title: "Gastos compartidos",
-                    subtitle: "Revisa deudas pendientes y liquidadas",
-                    onTap: () => _go(context, const SplitsScreen()),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              /// Cuenta
-              _SectionTitle("Cuenta"),
-              const SizedBox(height: 12),
-              _MenuCard(
-                items: [_MenuItem(icon: Icons.logout, title: "Cerrar sesión", onTap: _logout)],
-              ),
+              const SizedBox(width: 16),
+              Expanded(child: Text(user?.email ?? "Usuario", style: context.textSubtitle1())),
             ],
           ),
+        ),
+      ),
+
+      /// Categorías
+      _Section(
+        title: "Categorías",
+        items: [
+          _MenuItem(
+            icon: Icons.arrow_downward,
+            title: "Categorías de ingresos",
+            subtitle: "Organiza tus ingresos por categoría",
+            onTap: () => _go(context, const CategoriesScreen(type: CategoryType.income)),
+          ),
+          _MenuItem(
+            icon: Icons.arrow_upward,
+            title: "Categorías de gastos",
+            subtitle: "Organiza tus gastos por categoría",
+            onTap: () => _go(context, const CategoriesScreen(type: CategoryType.expense)),
+          ),
+        ],
+      ),
+
+      /// Activos financieros
+      _Section(
+        title: "Activos financieros",
+        items: [
+          _MenuItem(
+            icon: Icons.domain,
+            title: "Entidades bancarias",
+            subtitle: "Organiza tus cuentas por banco",
+            onTap: () => _go(context, const BankEntitiesScreen()),
+          ),
+          _MenuItem(
+            icon: Icons.account_balance,
+            title: "Cuentas bancarias",
+            subtitle: "Gestiona tu dinero disponible",
+            onTap: () => _go(context, const BankAccountsScreen()),
+          ),
+          _MenuItem(
+            icon: Icons.credit_card,
+            title: "Tarjetas de crédito",
+            subtitle: "Controla tu deuda y límites",
+            onTap: () => _go(context, const CreditCardsScreen()),
+          ),
+          _MenuItem(
+            icon: Icons.trending_up,
+            title: "Fondos de inversión",
+            subtitle: "Haz crecer tu dinero",
+            onTap: () => _go(context, const InvestmentFundsScreen()),
+          ),
+        ],
+      ),
+
+      /// Servicios de pago
+      _Section(
+        title: "Servicios de pago",
+        items: [
+          _MenuItem(
+            icon: Icons.receipt_long,
+            title: "Servicios vinculados",
+            subtitle: "Yape, Plin y otros para escanear vouchers",
+            onTap: () => _go(context, const PaymentServicesScreen()),
+          ),
+        ],
+      ),
+
+      /// Contactos
+      _Section(
+        title: "Contactos",
+        items: [
+          _MenuItem(
+            icon: Icons.people,
+            title: "Mis contactos",
+            subtitle: "Gestiona contactos para gastos compartidos",
+            onTap: () => _go(context, const ContactsScreen()),
+          ),
+          _MenuItem(
+            icon: Icons.handshake_outlined,
+            title: "Gastos compartidos",
+            subtitle: "Revisa deudas pendientes y liquidadas",
+            onTap: () => _go(context, const SplitsScreen()),
+          ),
+        ],
+      ),
+
+      /// Cuenta
+      _Section(
+        title: "Cuenta",
+        items: [_MenuItem(icon: Icons.logout, title: "Cerrar sesión", onTap: _logout)],
+      ),
+    ];
+
+    return Scaffold(
+      backgroundColor: context.colorBackground,
+      body: SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: sections.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 24),
+          itemBuilder: (context, i) => StaggeredFadeIn(index: i, child: sections[i]),
         ),
       ),
     );
@@ -174,40 +162,37 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-/// 🔹 Section title reutilizable
-class _SectionTitle extends StatelessWidget {
+/// Section title + menu card, reusable across the profile menu groups.
+class _Section extends StatelessWidget {
   final String title;
-
-  const _SectionTitle(this.title);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Text(title, style: AppTextStyles.subtitle1(context)),
-    );
-  }
-}
-
-/// 🔹 Card reutilizable
-class _MenuCard extends StatelessWidget {
   final List<_MenuItem> items;
 
-  const _MenuCard({required this.items});
+  const _Section({required this.title, required this.items});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Column(
-        children: List.generate(items.length, (index) {
-          return Column(children: [items[index], if (index != items.length - 1) const Divider(height: 1)]);
-        }),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(title, style: context.textSubtitle1()),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Column(
+            children: List.generate(items.length, (index) {
+              return Column(
+                children: [items[index], if (index != items.length - 1) const Divider(height: 1)],
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// 🔹 Item reutilizable
 class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -219,9 +204,9 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.textSecondary),
-      title: Text(title, style: AppTextStyles.body1(context)),
-      subtitle: subtitle != null ? Text(subtitle!, style: AppTextStyles.caption(context)) : null,
+      leading: Icon(icon, color: context.colorTextSecondary),
+      title: Text(title, style: context.textBody1()),
+      subtitle: subtitle != null ? Text(subtitle!, style: context.textCaption()) : null,
       onTap: onTap,
     );
   }

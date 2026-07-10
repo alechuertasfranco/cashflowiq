@@ -4,8 +4,10 @@
 
 import 'package:cashflowiq/core/network/api_client.dart';
 import 'package:cashflowiq/core/services/notification_service.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/features/transactions/data/recurring_transaction_service.dart';
 import 'package:cashflowiq/shared/models/recurring_transaction.dart';
 import 'package:flutter/material.dart';
@@ -74,16 +76,11 @@ class _RecurringExecutionFormScreenState
   Widget build(BuildContext context) {
     final rule = widget.rule;
     final isIncome = rule.type == 'INCOME';
-    final typeColor = isIncome ? AppColors.success : AppColors.error;
+    final typeColor = isIncome ? context.colorSuccess : context.colorError;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Registrar transacción', style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: 'Registrar transacción'),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -96,9 +93,9 @@ class _RecurringExecutionFormScreenState
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                    color: context.colorSurface,
+                    borderRadius: context.radiusLgRadius,
+                    border: Border.all(color: context.colorBorder),
                   ),
                   child: Row(
                     children: [
@@ -107,7 +104,7 @@ class _RecurringExecutionFormScreenState
                         height: 40,
                         decoration: BoxDecoration(
                           color: typeColor.withAlpha(25),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: context.radiusMdRadius,
                         ),
                         child: Icon(
                           isIncome ? Icons.arrow_downward : Icons.arrow_upward,
@@ -120,13 +117,12 @@ class _RecurringExecutionFormScreenState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(rule.name, style: AppTextStyles.h600(context)),
+                            Text(rule.name, style: context.heading6()),
                             if (rule.categoryName != null)
                               Text(
                                 rule.categoryName!,
-                                style: AppTextStyles.caption(
-                                  context,
-                                  color: AppColors.textSecondary,
+                                style: context.textCaption(
+                                  color: context.colorTextSecondary,
                                 ),
                               ),
                           ],
@@ -136,27 +132,14 @@ class _RecurringExecutionFormScreenState
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text('Monto', style: AppTextStyles.h600(context)),
-                const SizedBox(height: 8),
-                TextFormField(
+                AppTextField(
+                  label: 'Monto',
                   controller: _amountController,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    hintText: '0.00',
-                    prefixText:
-                        rule.currencySymbol != null ? '${rule.currencySymbol} ' : null,
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
+                  hintText: '0.00',
+                  prefixText:
+                      rule.currencySymbol != null ? '${rule.currencySymbol} ' : null,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Ingresa el monto';
                     if (double.tryParse(v.replaceAll(',', '.')) == null) {
@@ -166,31 +149,10 @@ class _RecurringExecutionFormScreenState
                   },
                 ),
                 const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Registrar',
-                            style: AppTextStyles.h500(context, color: Colors.white),
-                          ),
-                  ),
+                PrimaryButton(
+                  label: 'Registrar',
+                  isLoading: _isLoading,
+                  onPressed: _submit,
                 ),
               ],
             ),

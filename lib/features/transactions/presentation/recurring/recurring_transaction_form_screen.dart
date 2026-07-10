@@ -1,6 +1,6 @@
 import 'package:cashflowiq/core/services/notification_service.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/base_transaction_form_screen.dart';
 import 'package:cashflowiq/core/widgets/currency_dropdown.dart';
 import 'package:cashflowiq/core/widgets/form_step_category.dart';
@@ -133,15 +133,9 @@ class _RecurringTransactionFormScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          _isEditing ? "Editar recurrente" : "Nueva regla recurrente",
-          style: AppTextStyles.h400(context),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(
+        title: _isEditing ? "Editar recurrente" : "Nueva regla recurrente",
       ),
       body: SafeArea(
         child: ListenableBuilder(
@@ -150,7 +144,7 @@ class _RecurringTransactionFormScreenState
             controller: controller,
             totalSteps: 4,
             submitLabel: _isEditing ? "Guardar cambios" : "Crear regla",
-            accentColor: AppColors.primary,
+            accentColor: context.colorPrimary,
             onNextStep: _nextStep,
             onSubmit: _submit,
             steps: [
@@ -281,23 +275,23 @@ class _CurrencySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Moneda",
-              style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
+              style: context.textSubtitle2(color: context.colorTextSecondary)),
           const SizedBox(height: 8),
           if (derived != null && fromLabel != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                color: context.colorSurface,
+                borderRadius: context.radiusMdRadius,
+                border: Border.all(color: context.colorBorder),
               ),
               child: Row(
                 children: [
                   Text("${derived.flag} ${derived.code}",
-                      style: AppTextStyles.body1(context)),
+                      style: context.textBody1()),
                   const SizedBox(width: 8),
                   Text(fromLabel,
-                      style: AppTextStyles.caption(context, color: AppColors.muted)),
+                      style: context.textCaption(color: context.colorMuted)),
                 ],
               ),
             )

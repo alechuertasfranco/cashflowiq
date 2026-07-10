@@ -1,8 +1,11 @@
 // lib/features/voucher/presentation/form_payment_service_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_dropdown_field.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
 import 'package:cashflowiq/features/voucher/data/payment_service_service.dart';
@@ -149,19 +152,13 @@ class _FormPaymentServiceScreenState extends State<FormPaymentServiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          _isEdit ? "Editar servicio" : "Nuevo servicio",
-          style: AppTextStyles.h400(context),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(
+        title: _isEdit ? "Editar servicio" : "Nuevo servicio",
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonListLoader(itemCount: 3, itemHeight: 56)
             : Column(
                 children: [
                   Expanded(
@@ -173,44 +170,41 @@ class _FormPaymentServiceScreenState extends State<FormPaymentServiceScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label("Nombre"),
-                              const SizedBox(height: 8),
-                              TextFormField(
+                              AppTextField(
+                                label: "Nombre",
                                 controller: _nameController,
-                                decoration: inputDecoration(context, "Ej: Mi Yape personal"),
+                                hintText: "Ej: Mi Yape personal",
                                 validator: (v) => v == null || v.isEmpty ? "Ingresa un nombre" : null,
                               ),
 
                               const SizedBox(height: 12),
 
-                              _label("Tipo"),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<String>(
-                                initialValue: _selectedType,
+                              AppDropdownField<String>(
+                                label: "Tipo",
+                                value: _selectedType,
                                 items: _typeOptions.map((opt) {
                                   return DropdownMenuItem(
                                     value: opt['value'],
-                                    child: Text(opt['label']!, style: AppTextStyles.body1(context)),
+                                    child: Text(opt['label']!, style: context.textBody1()),
                                   );
                                 }).toList(),
                                 onChanged: (v) => setState(() => _selectedType = v ?? 'generic'),
-                                decoration: inputDecoration(context, "Selecciona el tipo"),
+                                hintText: "Selecciona el tipo",
                               ),
 
                               const SizedBox(height: 12),
 
-                              _label("Cuenta vinculada"),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<_LinkedItem>(
-                                initialValue: _selectedLinked,
+                              AppDropdownField<_LinkedItem>(
+                                label: "Cuenta vinculada",
+                                value: _selectedLinked,
                                 items: _linkedItems.map((item) {
                                   return DropdownMenuItem(
                                     value: item,
-                                    child: Text(item.label, style: AppTextStyles.body1(context)),
+                                    child: Text(item.label, style: context.textBody1()),
                                   );
                                 }).toList(),
                                 onChanged: (v) => setState(() => _selectedLinked = v),
-                                decoration: inputDecoration(context, "Ninguna"),
+                                hintText: "Ninguna",
                               ),
                             ],
                           ),
@@ -227,45 +221,21 @@ class _FormPaymentServiceScreenState extends State<FormPaymentServiceScreen> {
                       bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
-                      boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10)],
+                      color: context.colorBackground,
+                      boxShadow: context.shadowCard,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: _isSaving ? null : _submit,
-                            child: _isSaving
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                  )
-                                : Text(
-                                    "Guardar",
-                                    style: AppTextStyles.subtitle2(context, color: Colors.white),
-                                  ),
-                          ),
+                        PrimaryButton(
+                          label: "Guardar",
+                          isLoading: _isSaving,
+                          onPressed: _isSaving ? null : _submit,
                         ),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              side: const BorderSide(color: AppColors.primary),
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(
-                              "Cancelar",
-                              style: AppTextStyles.subtitle2(context, color: AppColors.primary),
-                            ),
-                          ),
+                        const SizedBox(height: 8),
+                        SecondaryButton(
+                          label: "Cancelar",
+                          onPressed: () => Navigator.pop(context),
                         ),
                       ],
                     ),
@@ -275,7 +245,4 @@ class _FormPaymentServiceScreenState extends State<FormPaymentServiceScreen> {
       ),
     );
   }
-
-  Widget _label(String text) =>
-      Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
 }

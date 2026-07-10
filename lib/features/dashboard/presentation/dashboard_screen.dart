@@ -1,8 +1,9 @@
 // lib/features/dashboard/presentation/dashboard_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/features/dashboard/data/dashboard_service.dart';
 import 'package:cashflowiq/features/dashboard/data/dashboard_summary.dart';
 import 'package:cashflowiq/features/dashboard/presentation/widgets/accounts_list.dart';
@@ -57,7 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colorBackground,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -72,7 +73,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildBody(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          SizedBox(height: 56),
+          SkeletonListLoader(itemCount: 1, itemHeight: 148),
+          SizedBox(height: 20),
+          SkeletonListLoader(itemCount: 1, itemHeight: 80),
+          SizedBox(height: 20),
+          SkeletonListLoader(itemCount: 3, itemHeight: 64),
+        ],
+      );
     }
 
     if (_errorMessage != null) {
@@ -83,7 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Center(
               child: Text(
                 _errorMessage!,
-                style: AppTextStyles.body1(context, color: AppColors.error),
+                style: context.textBody1(color: context.colorError),
               ),
             ),
           ),
@@ -93,35 +104,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final summary = _summary!;
 
-    return ListView(
+    final sections = [
+      const DashboardHeader(),
+      DashboardBalanceCard(
+        accounts: summary.accounts,
+        netBalance: summary.netBalance,
+        totalIncome: summary.totalIncome,
+        totalExpense: summary.totalExpense,
+        allTimeIncome: summary.allTimeIncome,
+        allTimeExpense: summary.allTimeExpense,
+      ),
+      DashboardInsightCard(
+        mostActiveAccount: summary.mostActiveAccountId != null
+            ? summary.accounts
+                .where((a) => a.id == summary.mostActiveAccountId)
+                .firstOrNull
+            : null,
+        mostActiveAccountName: summary.mostActiveAccountName,
+        mostActiveAccountTxCount: summary.mostActiveAccountTxCount,
+      ),
+      DashboardAccountsList(
+        accounts: summary.accounts,
+        creditCards: summary.creditCards,
+      ),
+    ];
+
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      children: [
-        const DashboardHeader(),
-        const SizedBox(height: 20),
-        DashboardBalanceCard(
-          accounts: summary.accounts,
-          netBalance: summary.netBalance,
-          totalIncome: summary.totalIncome,
-          totalExpense: summary.totalExpense,
-          allTimeIncome: summary.allTimeIncome,
-          allTimeExpense: summary.allTimeExpense,
-        ),
-        const SizedBox(height: 20),
-        DashboardInsightCard(
-          mostActiveAccount: summary.mostActiveAccountId != null
-              ? summary.accounts
-                  .where((a) => a.id == summary.mostActiveAccountId)
-                  .firstOrNull
-              : null,
-          mostActiveAccountName: summary.mostActiveAccountName,
-          mostActiveAccountTxCount: summary.mostActiveAccountTxCount,
-        ),
-        const SizedBox(height: 20),
-        DashboardAccountsList(
-          accounts: summary.accounts,
-          creditCards: summary.creditCards,
-        ),
-      ],
+      itemCount: sections.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 20),
+      itemBuilder: (context, i) => StaggeredFadeIn(index: i, child: sections[i]),
     );
   }
 }

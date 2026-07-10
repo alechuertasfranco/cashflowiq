@@ -1,5 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/format.dart';
 import 'package:cashflowiq/core/widgets/sub_step_switcher.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
@@ -29,7 +28,7 @@ class FormStepPaymentSource extends StatelessWidget {
 
   // ── Customization ─────────────────────────────────────────────────────────
   final String title;
-  final Color accentColor;
+  final Color? accentColor;
 
   // ── Cards (null = accounts-only) ──────────────────────────────────────────
   final CreditCard? selectedCreditCard;
@@ -58,7 +57,7 @@ class FormStepPaymentSource extends StatelessWidget {
     required this.onBack,
     required this.onAddAccount,
     this.title = '¿A qué cuenta?',
-    this.accentColor = AppColors.primary,
+    this.accentColor,
     this.selectedCreditCard,
     this.cardsFor,
     this.onCardTap,
@@ -75,10 +74,14 @@ class FormStepPaymentSource extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedAccentColor = accentColor ?? context.colorPrimary;
+
     final subStep = SubStepSwitcher(
       viewKey: viewKey,
       goingForward: goingForward,
-      child: selectedEntity != null ? _buildAccountsView(context) : _buildEntityList(context),
+      child: selectedEntity != null
+          ? _buildAccountsView(context, resolvedAccentColor)
+          : _buildEntityList(context, resolvedAccentColor),
     );
 
     if (_hasToggle || bottomSlot != null) {
@@ -102,13 +105,13 @@ class FormStepPaymentSource extends StatelessWidget {
     return subStep;
   }
 
-  Widget _buildEntityList(BuildContext context) {
+  Widget _buildEntityList(BuildContext context, Color accentColor) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.h400(context)),
+          Text(title, style: context.heading4()),
           if (mostUsedItems.isNotEmpty) ...[
             const SizedBox(height: 16),
             _QuickAccessRow(
@@ -148,7 +151,7 @@ class FormStepPaymentSource extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountsView(BuildContext context) {
+  Widget _buildAccountsView(BuildContext context, Color accentColor) {
     final entity = selectedEntity!;
     final accounts = accountsFor(entity);
     final cards = _hasCards ? cardsFor!(entity) : <CreditCard>[];
@@ -181,16 +184,16 @@ class FormStepPaymentSource extends StatelessWidget {
             children: [
               _EntityBadge(entity: entity, size: 28),
               const SizedBox(width: 8),
-              Expanded(child: Text(entity.name, style: AppTextStyles.h400(context))),
+              Expanded(child: Text(entity.name, style: context.heading4())),
             ],
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: AppTextStyles.body2(context, color: AppColors.textSecondary)),
+          Text(subtitle, style: context.textBody2(color: context.colorTextSecondary)),
 
           // Accounts section
           if (accounts.isNotEmpty && !showCardSection) ...[
             const SizedBox(height: 20),
-            Text('Cuentas bancarias', style: AppTextStyles.body2(context, color: entityColor)),
+            Text('Cuentas bancarias', style: context.textBody2(color: entityColor)),
             const SizedBox(height: 10),
             ...accounts.map((a) => _AccountCard(
                   account: a,
@@ -203,7 +206,7 @@ class FormStepPaymentSource extends StatelessWidget {
           // Cards section
           if (cards.isNotEmpty && (showBothSections || showCardSection)) ...[
             const SizedBox(height: 20),
-            Text('Tarjetas de crédito', style: AppTextStyles.body2(context, color: entityColor)),
+            Text('Tarjetas de crédito', style: context.textBody2(color: entityColor)),
             const SizedBox(height: 10),
             ...cards.map((c) => _CreditCardCard(
                   card: c,
@@ -243,22 +246,21 @@ class _SourceToggle extends StatelessWidget {
         child: GestureDetector(
           onTap: () => onChanged(value),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: context.motionFast,
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? AppColors.primary : AppColors.surface,
+              color: selected ? context.colorPrimary : context.colorSurface,
               borderRadius: BorderRadius.horizontal(
-                left: Radius.circular(left ? 12 : 0),
-                right: Radius.circular(left ? 0 : 12),
+                left: Radius.circular(left ? context.radiusMd : 0),
+                right: Radius.circular(left ? 0 : context.radiusMd),
               ),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.colorBorder),
             ),
             child: Center(
               child: Text(
                 label,
-                style: AppTextStyles.body2(
-                  context,
-                  color: selected ? Colors.white : AppColors.textSecondary,
+                style: context.textBody2(
+                  color: selected ? context.colorOnPrimary : context.colorTextSecondary,
                 ),
               ),
             ),
@@ -296,7 +298,7 @@ class _QuickAccessRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Más usado', style: AppTextStyles.caption(context, color: AppColors.textSecondary)),
+        Text('Más usado', style: context.textCaption(color: context.colorTextSecondary)),
         const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -346,19 +348,19 @@ class _QuickAccessCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withAlpha(20) : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? accentColor.withAlpha(20) : context.colorSurface,
+          borderRadius: context.radiusMdRadius,
           border: Border.all(
-            color: isSelected ? accentColor : AppColors.border,
+            color: isSelected ? accentColor : context.colorBorder,
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: isSelected ? accentColor : AppColors.muted),
+            Icon(icon, size: 16, color: isSelected ? accentColor : context.colorMuted),
             const SizedBox(width: 6),
-            Text(name, style: AppTextStyles.caption(context, color: AppColors.textPrimary)),
+            Text(name, style: context.textCaption(color: context.colorTextPrimary)),
             if (isSelected) ...[
               const SizedBox(width: 6),
               Icon(Icons.check, size: 14, color: accentColor),
@@ -405,9 +407,9 @@ class _EntityTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          color: context.colorSurface,
+          borderRadius: context.radiusLgRadius,
+          border: Border.all(color: context.colorBorder),
         ),
         child: Row(
           children: [
@@ -417,13 +419,13 @@ class _EntityTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(entity.name, style: AppTextStyles.subtitle2(context)),
+                  Text(entity.name, style: context.textSubtitle2()),
                   if (parts.isNotEmpty)
-                    Text(parts.join(' · '), style: AppTextStyles.body2(context, color: color)),
+                    Text(parts.join(' · '), style: context.textBody2(color: color)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.muted, size: 20),
+            Icon(Icons.chevron_right, color: context.colorMuted, size: 20),
           ],
         ),
       ),
@@ -453,7 +455,7 @@ class _EmptyHint extends StatelessWidget {
           hasCards
               ? 'Aún no tienes cuentas ni tarjetas registradas.'
               : 'Aún no tienes cuentas bancarias registradas.',
-          style: AppTextStyles.body2(context, color: AppColors.textSecondary),
+          style: context.textBody2(color: context.colorTextSecondary),
         ),
         const SizedBox(height: 16),
         _AddRow(
@@ -488,23 +490,23 @@ class _AccountCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: context.motionFast,
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withAlpha(20) : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          color: isSelected ? accentColor.withAlpha(20) : context.colorSurface,
+          borderRadius: context.radiusLgRadius,
           border: Border.all(
-            color: isSelected ? accentColor : AppColors.border,
+            color: isSelected ? accentColor : context.colorBorder,
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
             Icon(Icons.account_balance, size: 20,
-                color: isSelected ? accentColor : AppColors.muted),
+                color: isSelected ? accentColor : context.colorMuted),
             const SizedBox(width: 12),
-            Expanded(child: Text(account.name, style: AppTextStyles.subtitle2(context))),
+            Expanded(child: Text(account.name, style: context.textSubtitle2())),
             if (isSelected) Icon(Icons.check_circle, color: accentColor, size: 20),
           ],
         ),
@@ -531,23 +533,23 @@ class _CreditCardCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: context.motionFast,
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withAlpha(20) : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          color: isSelected ? accentColor.withAlpha(20) : context.colorSurface,
+          borderRadius: context.radiusLgRadius,
           border: Border.all(
-            color: isSelected ? accentColor : AppColors.border,
+            color: isSelected ? accentColor : context.colorBorder,
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
             Icon(Icons.credit_card, size: 20,
-                color: isSelected ? accentColor : AppColors.muted),
+                color: isSelected ? accentColor : context.colorMuted),
             const SizedBox(width: 12),
-            Expanded(child: Text(card.name, style: AppTextStyles.subtitle2(context))),
+            Expanded(child: Text(card.name, style: context.textSubtitle2())),
             if (isSelected) Icon(Icons.check_circle, color: accentColor, size: 20),
           ],
         ),
@@ -573,7 +575,7 @@ class _EntityBadge extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(size * 0.25)),
       child: Center(
-        child: Text(label, style: AppTextStyles.caption(context, color: getContrastColor(color))),
+        child: Text(label, style: context.textCaption(color: getContrastColor(color))),
       ),
     );
   }
@@ -605,7 +607,7 @@ class _AddRow extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: accentColor,
           side: BorderSide(color: accentColor),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
         ),
       );
     }
@@ -619,7 +621,7 @@ class _AddRow extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: accentColor,
           side: BorderSide(color: accentColor),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
         ),
       );
     }
@@ -635,7 +637,7 @@ class _AddRow extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               foregroundColor: accentColor,
               side: BorderSide(color: accentColor),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
             ),
           ),
         ),
@@ -648,7 +650,7 @@ class _AddRow extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               foregroundColor: accentColor,
               side: BorderSide(color: accentColor),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
             ),
           ),
         ),

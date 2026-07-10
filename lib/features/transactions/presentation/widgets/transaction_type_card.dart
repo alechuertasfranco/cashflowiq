@@ -1,8 +1,7 @@
 // lib/features/transactions/presentation/widgets/transaction_type_card.dart
 
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 
 class TransactionTypeCard extends StatelessWidget {
   final String title;
@@ -23,16 +22,16 @@ class TransactionTypeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surfaceVariant,
-      borderRadius: BorderRadius.circular(16),
+      color: context.colorSurfaceVariant,
+      borderRadius: context.radiusLgRadius,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: context.radiusLgRadius,
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            borderRadius: context.radiusLgRadius,
+            border: Border.all(color: context.colorBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -41,7 +40,7 @@ class TransactionTypeCard extends StatelessWidget {
               /// Icon badge (foco visual)
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: color.withAlpha(30), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: color.withAlpha(30), borderRadius: context.radiusMdRadius),
                 child: Icon(icon, color: color, size: 28),
               ),
 
@@ -50,10 +49,10 @@ class TransactionTypeCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   /// Title (decisión)
-                  Text(title, style: AppTextStyles.h300(context, color: AppColors.textPrimary)),
+                  Text(title, style: context.heading3(color: context.colorTextPrimary)),
 
                   /// Description (contexto)
-                  Text(description, style: AppTextStyles.caption(context)),
+                  Text(description, style: context.textCaption()),
                 ],
               ),
             ],

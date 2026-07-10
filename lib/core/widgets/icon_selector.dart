@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 
 typedef OnIconSelected = void Function(IconData? icon);
 
@@ -75,19 +75,19 @@ class _IconSelectorState extends State<IconSelector> {
           return GestureDetector(
             onTap: () => _onTap(icon),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
+              duration: context.motionFast,
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary.withAlpha(20) : AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
+                color: isSelected ? context.colorPrimary.withAlpha(20) : context.colorSurface,
+                borderRadius: context.radiusSmRadius,
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.border,
+                  color: isSelected ? context.colorPrimary : context.colorBorder,
                   width: isSelected ? 2 : 1,
                 ),
               ),
               child: Icon(
                 icon,
                 size: 20,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                color: isSelected ? context.colorPrimary : context.colorTextSecondary,
               ),
             ),
           );

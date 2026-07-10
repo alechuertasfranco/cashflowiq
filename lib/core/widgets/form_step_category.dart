@@ -1,5 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/format.dart';
 import 'package:cashflowiq/core/widgets/sub_step_switcher.dart';
 import 'package:cashflowiq/shared/models/category.dart';
@@ -19,7 +18,7 @@ class FormStepCategory extends StatelessWidget {
 
   final String title;
   final String emptyMessage;
-  final Color accentColor;
+  final Color? accentColor;
 
   const FormStepCategory({
     super.key,
@@ -35,13 +34,15 @@ class FormStepCategory extends StatelessWidget {
     required this.onAddSubcategory,
     this.title = '¿En qué categoría?',
     this.emptyMessage = 'Aún no tienes categorías.',
-    this.accentColor = AppColors.primary,
+    this.accentColor,
   });
 
   bool get _showingChildren => selectedParentCategory != null && selectedParentCategory!.children.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedAccentColor = accentColor ?? context.colorPrimary;
+
     return SubStepSwitcher(
       viewKey: viewKey,
       goingForward: goingForward,
@@ -49,7 +50,7 @@ class FormStepCategory extends StatelessWidget {
           ? _ChildCategoryView(
               parent: selectedParentCategory!,
               selectedCategory: selectedCategory,
-              accentColor: accentColor,
+              accentColor: resolvedAccentColor,
               onChildTap: onChildTap,
               onBack: onBack,
               onAddSubcategory: onAddSubcategory,
@@ -60,7 +61,7 @@ class FormStepCategory extends StatelessWidget {
               selectedCategory: selectedCategory,
               title: title,
               emptyMessage: emptyMessage,
-              accentColor: accentColor,
+              accentColor: resolvedAccentColor,
               onParentTap: onParentTap,
               onAddCategory: onAddCategory,
             ),
@@ -100,7 +101,7 @@ class _ParentCategoryView extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(title, style: AppTextStyles.h400(context))),
+              Expanded(child: Text(title, style: context.heading4())),
               _AddButton(label: 'Nueva categoría', accentColor: accentColor, onTap: onAddCategory),
             ],
           ),
@@ -149,18 +150,18 @@ class _ParentCategoryTile extends StatelessWidget {
     final hasChildren = category.children.isNotEmpty;
     final color = parseHexColor(category.color);
     final icon = parseIcon(category.icon);
-    final contentColor = isHighlighted ? getContrastColor(color) : AppColors.textPrimary;
+    final contentColor = isHighlighted ? getContrastColor(color) : context.colorTextPrimary;
     final iconColor = isHighlighted ? getContrastColor(color) : color;
 
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: context.motionFast,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isHighlighted ? color : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isHighlighted ? color : AppColors.border, width: isHighlighted ? 2 : 1),
+          color: isHighlighted ? color : context.colorSurface,
+          borderRadius: context.radiusLgRadius,
+          border: Border.all(color: isHighlighted ? color : context.colorBorder, width: isHighlighted ? 2 : 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -177,7 +178,7 @@ class _ParentCategoryTile extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.caption(context, color: contentColor),
+                    style: context.textCaption(color: contentColor),
                   ),
                 ),
                 if (hasChildren) ...[const SizedBox(width: 2), Icon(Icons.chevron_right, size: 12, color: iconColor)],
@@ -234,12 +235,12 @@ class _ChildCategoryView extends StatelessWidget {
             children: [
               Icon(parseIcon(parent.icon), size: 20, color: parentColor),
               const SizedBox(width: 8),
-              Expanded(child: Text(parent.name, style: AppTextStyles.h400(context))),
+              Expanded(child: Text(parent.name, style: context.heading4())),
               _AddButton(label: 'Nueva subcategoría', accentColor: accentColor, onTap: onAddSubcategory),
             ],
           ),
           const SizedBox(height: 4),
-          Text('Selecciona una subcategoría', style: AppTextStyles.body2(context, color: AppColors.textSecondary)),
+          Text('Selecciona una subcategoría', style: context.textBody2(color: context.colorTextSecondary)),
           const SizedBox(height: 20),
           if (parent.children.isEmpty)
             _EmptyHint(
@@ -286,12 +287,12 @@ class _LeafCategoryTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: context.motionFast,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isSelected ? color : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isSelected ? color : AppColors.border, width: isSelected ? 2 : 1),
+          color: isSelected ? color : context.colorSurface,
+          borderRadius: context.radiusLgRadius,
+          border: Border.all(color: isSelected ? color : context.colorBorder, width: isSelected ? 2 : 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -303,9 +304,8 @@ class _LeafCategoryTile extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.caption(
-                context,
-                color: isSelected ? getContrastColor(color) : AppColors.textPrimary,
+              style: context.textCaption(
+                color: isSelected ? getContrastColor(color) : context.colorTextPrimary,
               ),
             ),
           ],
@@ -335,7 +335,7 @@ class _AddButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         minimumSize: Size.zero,
-        textStyle: AppTextStyles.caption(context),
+        textStyle: context.textCaption(),
       ),
     );
   }
@@ -354,7 +354,7 @@ class _EmptyHint extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(message, style: AppTextStyles.body2(context, color: AppColors.textSecondary)),
+        Text(message, style: context.textBody2(color: context.colorTextSecondary)),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: onTap,
@@ -363,7 +363,7 @@ class _EmptyHint extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: accentColor,
             side: BorderSide(color: accentColor),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: context.radiusMdRadius),
           ),
         ),
       ],

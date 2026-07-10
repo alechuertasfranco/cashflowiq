@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:flutter/services.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 
 class CustomBottomBar extends StatelessWidget {
   final int currentIndex;
@@ -13,6 +14,11 @@ class CustomBottomBar extends StatelessWidget {
 
   double _t(double i, double current) => (1 - (current - i).abs()).clamp(0.0, 1.0);
 
+  void _handleTap(int index) {
+    HapticFeedback.selectionClick();
+    onTap(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -24,8 +30,8 @@ class CustomBottomBar extends StatelessWidget {
           return Container(
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+              color: context.colorSurface,
+              border: Border(top: BorderSide(color: context.colorBorder, width: 0.5)),
             ),
             child: Column(
               children: [
@@ -34,7 +40,7 @@ class CustomBottomBar extends StatelessWidget {
                   child: Row(
                     children: List.generate(5, (i) {
                       if (i == 2) {
-                        return _AddButton(t: _t(2, animatedIndex), onTap: () => onTap(2));
+                        return _AddButton(t: _t(2, animatedIndex), onTap: () => _handleTap(2));
                       }
 
                       final icons = [
@@ -51,7 +57,7 @@ class CustomBottomBar extends StatelessWidget {
                         t: _t(i.toDouble(), animatedIndex),
                         icon: pair[0],
                         activeIcon: pair[1],
-                        onTap: () => onTap(i),
+                        onTap: () => _handleTap(i),
                       );
                     }),
                   ),
@@ -87,7 +93,7 @@ class _TopIndicator extends StatelessWidget {
               width: width,
               height: 2.5,
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: context.colorPrimary,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(4)),
               ),
             ),
@@ -117,7 +123,7 @@ class _NavItem extends StatelessWidget {
               offset: Offset(0, lerpDouble(0, -4, t)!),
               child: Icon(
                 t > 0.5 ? activeIcon : icon,
-                color: Color.lerp(AppColors.muted, AppColors.primary, t),
+                color: Color.lerp(context.colorMuted, context.colorPrimary, t),
                 size: lerpDouble(24, 26, t),
               ),
             ),
@@ -147,15 +153,13 @@ class _AddButton extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: context.colorPrimary,
                 borderRadius: BorderRadius.lerp(BorderRadius.circular(100), BorderRadius.circular(16), t),
-                boxShadow: [
-                  BoxShadow(color: AppColors.primary.withAlpha(70), blurRadius: 16, offset: const Offset(0, 6)),
-                ],
+                boxShadow: context.shadowRaised(context.colorPrimary),
               ),
               child: Transform.rotate(
                 angle: lerpDouble(0, 0.25, t)! * 2 * 3.1416,
-                child: const Icon(Icons.add, color: Colors.white),
+                child: Icon(Icons.add, color: context.colorOnPrimary),
               ),
             ),
           ),

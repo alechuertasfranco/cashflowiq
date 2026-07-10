@@ -1,6 +1,8 @@
 import 'package:cashflowiq/core/network/api_client.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_bottom_sheet.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/base_transaction_form_screen.dart';
 import 'package:cashflowiq/core/widgets/form_step_amount.dart';
 import 'package:cashflowiq/core/widgets/form_step_category.dart';
@@ -107,12 +109,8 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
   }
 
   Future<void> _openContactsPicker() async {
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    await showAppBottomSheet(
+      context,
       builder: (ctx) => _ContactPickerSheet(
         controller: controller,
         onCreateNew: () {
@@ -140,13 +138,8 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Gasto compartido', style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: 'Gasto compartido'),
       body: SafeArea(
         child: ListenableBuilder(
           listenable: controller,
@@ -154,13 +147,13 @@ class _SplitFormScreenState extends State<SplitFormScreen> {
             controller: controller,
             totalSteps: 4,
             submitLabel: "Registrar gasto compartido",
-            accentColor: AppColors.primary,
+            accentColor: context.colorPrimary,
             onNextStep: _nextStep,
             onSubmit: _submit,
             steps: [
               FormStepAmount(
                 title: '¿Cuánto fue en total?',
-                dateAccentColor: AppColors.primary,
+                dateAccentColor: context.colorPrimary,
                 descriptionHint: 'Ej: Cena de cumpleaños',
                 descriptionRequired: true,
                 amountController: controller.amountController,
@@ -282,134 +275,99 @@ class _ContactPickerSheetState extends State<_ContactPickerSheet> {
       minChildSize: 0.4,
       maxChildSize: 0.9,
       expand: false,
-      builder: (_, scrollController) => SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text('Seleccionar participante',
-                        style: AppTextStyles.h400(context)),
-                  ),
-                  TextButton.icon(
-                    onPressed: widget.onCreateNew,
-                    icon: const Icon(Icons.person_add_alt_1, size: 18),
-                    label: const Text('Nuevo'),
-                    style:
-                        TextButton.styleFrom(foregroundColor: AppColors.primary),
-                  ),
-                ],
-              ),
-            ),
-            if (widget.controller.allContacts.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: 'Buscar contacto',
-                    hintStyle:
-                        AppTextStyles.body2(context, color: AppColors.muted),
-                    prefixIcon: const Icon(Icons.search,
-                        color: AppColors.muted, size: 20),
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                  ),
-                  style: AppTextStyles.body1(context),
+      builder: (_, scrollController) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 8, 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('Seleccionar participante',
+                      style: context.heading4()),
                 ),
+                TextButton.icon(
+                  onPressed: widget.onCreateNew,
+                  icon: const Icon(Icons.person_add_alt_1, size: 18),
+                  label: const Text('Nuevo'),
+                  style:
+                      TextButton.styleFrom(foregroundColor: context.colorPrimary),
+                ),
+              ],
+            ),
+          ),
+          if (widget.controller.allContacts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: AppTextField(
+                controller: _searchController,
+                hintText: 'Buscar contacto',
+                prefixIcon: Icon(Icons.search, color: context.colorMuted, size: 20),
+                onChanged: (v) => setState(() => _query = v),
               ),
-            Expanded(
-              child: RefreshIndicator(
-                color: AppColors.primary,
-                onRefresh: () async {
-                  await widget.controller.reloadContacts();
-                  if (mounted) setState(() {});
-                },
-                child: available.isEmpty
-                    ? ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          const SizedBox(height: 80),
-                          Center(
+            ),
+          Expanded(
+            child: RefreshIndicator(
+              color: context.colorPrimary,
+              onRefresh: () async {
+                await widget.controller.reloadContacts();
+                if (mounted) setState(() {});
+              },
+              child: available.isEmpty
+                  ? ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        const SizedBox(height: 80),
+                        Center(
+                          child: Text(
+                            widget.controller.allContacts.isEmpty
+                                ? 'Aún no tienes contactos'
+                                : _query.isEmpty
+                                    ? 'Todos los contactos ya fueron agregados'
+                                    : 'Sin resultados',
+                            style: context.textBody2(color: context.colorMuted),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: available.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (_, index) {
+                        final c = available[index];
+                        final subtitle = [
+                          if (c.email != null && c.email!.isNotEmpty)
+                            c.email!,
+                          if (c.phone != null && c.phone!.isNotEmpty)
+                            c.phone!,
+                        ].join(' · ');
+                        return ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: context.radiusMdRadius,
+                            side: BorderSide(color: context.colorBorder),
+                          ),
+                          tileColor: context.colorSurface,
+                          leading: CircleAvatar(
+                            backgroundColor: context.colorSecondary,
                             child: Text(
-                              widget.controller.allContacts.isEmpty
-                                  ? 'Aún no tienes contactos'
-                                  : _query.isEmpty
-                                      ? 'Todos los contactos ya fueron agregados'
-                                      : 'Sin resultados',
-                              style: AppTextStyles.body2(context,
-                                  color: AppColors.muted),
+                              c.name.isNotEmpty
+                                  ? c.name[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(color: context.colorPrimary),
                             ),
                           ),
-                        ],
-                      )
-                    : ListView.separated(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: available.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (_, index) {
-                          final c = available[index];
-                          final subtitle = [
-                            if (c.email != null && c.email!.isNotEmpty)
-                              c.email!,
-                            if (c.phone != null && c.phone!.isNotEmpty)
-                              c.phone!,
-                          ].join(' · ');
-                          return ListTile(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(color: AppColors.border),
-                            ),
-                            tileColor: AppColors.surface,
-                            leading: CircleAvatar(
-                              backgroundColor: AppColors.secondary,
-                              child: Text(
-                                c.name.isNotEmpty
-                                    ? c.name[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(color: AppColors.primary),
-                              ),
-                            ),
-                            title:
-                                Text(c.name, style: AppTextStyles.subtitle1(context)),
-                            subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
-                            onTap: () => widget.onSelected(c),
-                          );
-                        },
-                      ),
-              ),
+                          title:
+                              Text(c.name, style: context.textSubtitle1()),
+                          subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
+                          onTap: () => widget.onSelected(c),
+                        );
+                      },
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

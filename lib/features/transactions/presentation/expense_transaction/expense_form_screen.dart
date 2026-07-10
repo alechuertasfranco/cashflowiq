@@ -1,5 +1,5 @@
 import 'package:cashflowiq/core/controllers/base_transaction_form_controller.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/base_transaction_form_screen.dart';
 import 'package:cashflowiq/core/widgets/form_step_amount.dart';
 import 'package:cashflowiq/core/widgets/form_step_category.dart';
@@ -168,13 +168,13 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         controller: controller,
         totalSteps: 3,
         submitLabel: widget.editMode ? "Guardar cambios" : "Guardar gasto",
-        accentColor: AppColors.error,
+        accentColor: context.colorError,
         onNextStep: _nextStep,
         onSubmit: _submit,
         steps: [
           FormStepAmount(
             title: '¿Cuánto gastaste?',
-            dateAccentColor: AppColors.error,
+            dateAccentColor: context.colorError,
             descriptionHint: 'Ej: Supermercado',
             amountController: controller.amountController,
             descriptionController: controller.descriptionController,
@@ -186,7 +186,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           FormStepCategory(
             title: '¿En qué gastaste?',
             emptyMessage: 'Aún no tienes categorías de gasto.',
-            accentColor: AppColors.error,
+            accentColor: context.colorError,
             categories: widget.categories,
             selectedParentCategory: controller.selectedParentCategory,
             selectedCategory: controller.selectedCategory,
@@ -201,7 +201,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           ),
           FormStepPaymentSource(
             title: '¿Con qué pagaste?',
-            accentColor: AppColors.error,
+            accentColor: context.colorError,
             entities: controller.uniqueEntities,
             selectedEntity: controller.selectedEntity,
             selectedAccount: controller.selectedAccount,

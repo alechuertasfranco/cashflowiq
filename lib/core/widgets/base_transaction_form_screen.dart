@@ -1,6 +1,6 @@
 import 'package:cashflowiq/core/controllers/base_transaction_form_controller.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
 import 'package:cashflowiq/core/widgets/step_indicator.dart';
 import 'package:flutter/material.dart';
 
@@ -8,7 +8,7 @@ class BaseTransactionFormScreen extends StatelessWidget {
   final BaseTransactionFormController controller;
   final List<Widget> steps;
   final int totalSteps;
-  final Color accentColor;
+  final Color? accentColor;
   final String submitLabel;
   final String nextLabel;
   final String backLabel;
@@ -21,7 +21,7 @@ class BaseTransactionFormScreen extends StatelessWidget {
     required this.controller,
     required this.steps,
     required this.totalSteps,
-    this.accentColor = AppColors.error,
+    this.accentColor,
     this.submitLabel = 'Guardar',
     this.nextLabel = 'Siguiente',
     this.backLabel = 'Atrás',
@@ -32,6 +32,8 @@ class BaseTransactionFormScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedAccentColor = accentColor ?? context.colorError;
+
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
@@ -57,9 +59,9 @@ class BaseTransactionFormScreen extends StatelessWidget {
               StepIndicator(
                 currentStep: controller.currentStep,
                 totalSteps: totalSteps,
-                activeColor: accentColor,
+                activeColor: resolvedAccentColor,
               ),
-              _bottomBar(context),
+              _bottomBar(context, resolvedAccentColor),
             ],
           ),
         );
@@ -67,7 +69,7 @@ class BaseTransactionFormScreen extends StatelessWidget {
     );
   }
 
-  Widget _bottomBar(BuildContext context) {
+  Widget _bottomBar(BuildContext context, Color accentColor) {
     final isLastStep = controller.currentStep == totalSteps - 1;
     return Container(
       padding: EdgeInsets.only(
@@ -77,56 +79,26 @@ class BaseTransactionFormScreen extends StatelessWidget {
         bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 12 : 16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10),
-        ],
+        color: context.colorBackground,
+        boxShadow: context.shadowCard,
       ),
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: accentColor,
-                side: BorderSide(color: accentColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            child: SecondaryButton(
+              label: backLabel,
+              color: accentColor,
               onPressed: () => controller.prevStep(context),
-              child: Text(
-                backLabel,
-                style: AppTextStyles.subtitle2(context, color: accentColor),
-              ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             flex: 2,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: controller.isSaving
-                  ? null
-                  : (isLastStep ? onSubmit : onNextStep),
-              child: controller.isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(
-                      isLastStep ? submitLabel : nextLabel,
-                      style:
-                          AppTextStyles.subtitle2(context, color: Colors.white),
-                    ),
+            child: PrimaryButton(
+              label: isLastStep ? submitLabel : nextLabel,
+              color: accentColor,
+              isLoading: controller.isSaving,
+              onPressed: isLastStep ? onSubmit : onNextStep,
             ),
           ),
         ],

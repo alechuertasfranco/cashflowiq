@@ -2,7 +2,7 @@
 
 import 'dart:io';
 import 'package:cashflowiq/core/services/update_service.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/update_dialog.dart';
 import 'package:cashflowiq/features/main/presentation/widgets/custom_bottom_bar.dart';
@@ -99,7 +99,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (!didPop) _onTabTapped(0);
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.colorBackground,
 
         body: SafeArea(
           child: PageView(

@@ -1,12 +1,13 @@
 // lib/features/profile/presentation/categories/widgets/category_card.dart
 
+import 'package:cashflowiq/core/widgets/app_bottom_sheet.dart';
+import 'package:cashflowiq/core/widgets/app_card.dart';
 import 'package:cashflowiq/features/profile/presentation/categories/form_budget_screen.dart';
 import 'package:cashflowiq/shared/models/currency.dart';
 import 'package:cashflowiq/shared/models/money.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/core/utils/format.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/shared/models/category.dart';
 
 class CategoryCard extends StatelessWidget {
@@ -42,9 +43,8 @@ class CategoryCard extends StatelessWidget {
   }
 
   Future<void> _onSetBudget(BuildContext context) async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: AppColors.surface,
+    final result = await showAppBottomSheet<bool>(
+      context,
       builder: (_) => FormBudgetScreen(category: category),
     );
     if (result == true) onBudgetUpdated?.call();
@@ -52,38 +52,31 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: AppColors.surface,
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: _isParent ? onToggle : null,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: _isParent ? 14 : 10,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildIcon(),
-              const SizedBox(width: 12),
-              Expanded(child: _buildContent(context)),
-              _buildActions(context),
-            ],
-          ),
-        ),
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: _isParent ? 14 : 10,
+      ),
+      onTap: _isParent ? onToggle : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _buildIcon(context),
+          const SizedBox(width: 12),
+          Expanded(child: _buildContent(context)),
+          _buildActions(context),
+        ],
       ),
     );
   }
 
   // ── Icon ──────────────────────────────────────────────────────────────────
 
-  Widget _buildIcon() {
+  Widget _buildIcon(BuildContext context) {
     final cat = parseHexColor(category.color);
     final double size = _isParent ? 38 : 28;
     final double iconSize = _isParent ? 20 : 14;
-    final double radius = _isParent ? 10 : 6;
+    final radius = _isParent ? context.radiusSmRadius : context.radiusSmRadius;
 
     // Parent: solid color background, contrast icon
     // Child: light tint background, saturated category color icon
@@ -95,7 +88,7 @@ class CategoryCard extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: radius,
       ),
       child: Icon(parseIcon(category.icon), color: iconColor, size: iconSize),
     );
@@ -110,8 +103,8 @@ class CategoryCard extends StatelessWidget {
         Text(
           category.name,
           style: _isParent
-              ? AppTextStyles.subtitle1(context)
-              : AppTextStyles.body2(context),
+              ? context.textSubtitle1()
+              : context.textBody2(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -122,14 +115,14 @@ class CategoryCard extends StatelessWidget {
             amount: _amount!,
             currency: _budgetCurrency!,
             progress: (_progress ?? 0).clamp(0.0, 1.0),
-            progressColor: _progressColor,
+            progressColor: _progressColor(context),
           ),
         ],
         if (_isParent && !_hasBudget) ...[
           const SizedBox(height: 2),
           Text(
             'Sin presupuesto',
-            style: AppTextStyles.caption(context, color: AppColors.muted),
+            style: context.textCaption(color: context.colorMuted),
           ),
         ],
       ],
@@ -151,7 +144,7 @@ class CategoryCard extends StatelessWidget {
               child: Icon(
                 Icons.account_balance_wallet_outlined,
                 size: 18,
-                color: AppColors.primary,
+                color: context.colorPrimary,
               ),
             ),
           ),
@@ -159,15 +152,15 @@ class CategoryCard extends StatelessWidget {
         PopupMenuButton<String>(
           iconSize: 18,
           padding: EdgeInsets.zero,
-          icon: const Icon(Icons.more_vert, color: AppColors.muted),
+          icon: Icon(Icons.more_vert, color: context.colorMuted),
           itemBuilder: (_) => [
             PopupMenuItem(
               value: 'edit',
               child: Row(
                 children: [
-                  const Icon(Icons.edit_outlined, size: 16, color: AppColors.complementary),
+                  Icon(Icons.edit_outlined, size: 16, color: context.colorComplementary),
                   const SizedBox(width: 10),
-                  Text('Editar', style: AppTextStyles.body2(context)),
+                  Text('Editar', style: context.textBody2()),
                 ],
               ),
             ),
@@ -175,9 +168,9 @@ class CategoryCard extends StatelessWidget {
               value: 'delete',
               child: Row(
                 children: [
-                  const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+                  Icon(Icons.delete_outline, size: 16, color: context.colorError),
                   const SizedBox(width: 10),
-                  Text('Eliminar', style: AppTextStyles.body2(context, color: AppColors.error)),
+                  Text('Eliminar', style: context.textBody2(color: context.colorError)),
                 ],
               ),
             ),
@@ -195,8 +188,8 @@ class CategoryCard extends StatelessWidget {
               padding: const EdgeInsets.all(4),
               child: AnimatedRotation(
                 turns: isExpanded ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: const Icon(Icons.keyboard_arrow_down, size: 22, color: AppColors.muted),
+                duration: context.motionFast,
+                child: Icon(Icons.keyboard_arrow_down, size: 22, color: context.colorMuted),
               ),
             ),
           ),
@@ -205,11 +198,11 @@ class CategoryCard extends StatelessWidget {
     );
   }
 
-  Color get _progressColor {
+  Color _progressColor(BuildContext context) {
     final p = _progress ?? 0;
-    if (p < 0.7) return AppColors.accent;
-    if (p < 1.0) return AppColors.complementary;
-    return AppColors.error;
+    if (p < 0.7) return context.colorAccent;
+    if (p < 1.0) return context.colorComplementary;
+    return context.colorError;
   }
 }
 
@@ -244,11 +237,11 @@ class _BudgetBar extends StatelessWidget {
           children: [
             Text(
               Money(amount: spent, currency: currency).format(),
-              style: AppTextStyles.body2(context),
+              style: context.textBody2(),
             ),
             Text(
               '$pct%',
-              style: AppTextStyles.caption(context, color: progressColor),
+              style: context.textCaption(color: progressColor),
             ),
           ],
         ),
@@ -258,7 +251,7 @@ class _BudgetBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 6,
-            backgroundColor: AppColors.border,
+            backgroundColor: context.colorBorder,
             valueColor: AlwaysStoppedAnimation(progressColor),
           ),
         ),
@@ -270,14 +263,13 @@ class _BudgetBar extends StatelessWidget {
               isOver
                   ? 'Excedido: ${Money(amount: -remaining, currency: currency).format()}'
                   : 'Disponible: ${Money(amount: remaining, currency: currency).format()}',
-              style: AppTextStyles.caption(
-                context,
-                color: isOver ? AppColors.error : AppColors.muted,
+              style: context.textCaption(
+                color: isOver ? context.colorError : context.colorMuted,
               ),
             ),
             Text(
               Money(amount: amount, currency: currency).format(),
-              style: AppTextStyles.caption(context, color: AppColors.muted),
+              style: context.textCaption(color: context.colorMuted),
             ),
           ],
         ),

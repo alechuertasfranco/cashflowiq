@@ -1,11 +1,14 @@
 // lib/features/transactions/presentation/recurring/recurring_transactions_screen.dart
 
 import 'package:cashflowiq/core/services/notification_service.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
+import 'package:cashflowiq/core/widgets/app_dialog.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/transactions/data/recurring_transaction_service.dart';
 import 'package:cashflowiq/features/transactions/presentation/recurring/recurring_execution_form_screen.dart';
@@ -74,42 +77,24 @@ class _RecurringTransactionsScreenState
     if (result == true) _load();
   }
 
-  Future<bool?> _confirmRegister(RecurringTransaction rule) {
+  Future<bool> _confirmRegister(RecurringTransaction rule) {
     final isIncome = rule.type == 'INCOME';
     final amountStr =
         '${rule.currencySymbol ?? ''}${rule.amount!.toStringAsFixed(2)}';
-    return showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('Registrar pago', style: AppTextStyles.h500(context)),
-        content: Text(
-          '¿Deseas registrar "${rule.name}" por '
+    return showAppConfirmDialog(
+      context,
+      title: 'Registrar pago',
+      message: '¿Deseas registrar "${rule.name}" por '
           '${isIncome ? '+' : '-'}$amountStr? '
           'Se creará una transacción en tus movimientos.',
-          style: AppTextStyles.body1(context, color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancelar',
-                style: AppTextStyles.subtitle2(context, color: AppColors.muted)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Registrar',
-                style:
-                    AppTextStyles.subtitle1(context, color: AppColors.primary)),
-          ),
-        ],
-      ),
+      confirmText: 'Registrar',
     );
   }
 
   Future<void> _executeRule(RecurringTransaction rule) async {
     if (rule.amount != null) {
       final confirmed = await _confirmRegister(rule);
-      if (confirmed != true) return;
+      if (!confirmed) return;
       try {
         await NotificationService.instance.autoRegister(rule);
         if (!mounted) return;
@@ -156,21 +141,16 @@ class _RecurringTransactionsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Transacciones recurrentes", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: "Transacciones recurrentes"),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.colorPrimary,
         onPressed: _goToCreate,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: context.colorOnPrimary),
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonListLoader()
             : _rules.isEmpty
                 ? InsightEmptyState(
                     icon: Icons.repeat,
@@ -191,12 +171,15 @@ class _RecurringTransactionsScreenState
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final rule = _rules[index];
-                        return SwipeToDelete(
-                          onDelete: () => _delete(rule),
-                          child: _RecurringRuleTile(
-                            rule: rule,
-                            onTap: () => _goToEdit(rule),
-                            onExecute: () => _executeRule(rule),
+                        return StaggeredFadeIn(
+                          index: index,
+                          child: SwipeToDelete(
+                            onDelete: () => _delete(rule),
+                            child: _RecurringRuleTile(
+                              rule: rule,
+                              onTap: () => _goToEdit(rule),
+                              onExecute: () => _executeRule(rule),
+                            ),
                           ),
                         );
                       },
@@ -224,16 +207,16 @@ class _RecurringRuleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = rule.type == 'INCOME';
-    final typeColor = isIncome ? AppColors.success : AppColors.error;
+    final typeColor = isIncome ? context.colorSuccess : context.colorError;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          color: context.colorSurface,
+          borderRadius: context.radiusLgRadius,
+          border: Border.all(color: context.colorBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +229,7 @@ class _RecurringRuleTile extends StatelessWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     color: typeColor.withAlpha(25),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: context.radiusMdRadius,
                   ),
                   child: Icon(
                     isIncome ? Icons.arrow_downward : Icons.arrow_upward,
@@ -261,12 +244,12 @@ class _RecurringRuleTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(rule.name, style: AppTextStyles.h600(context)),
+                      Text(rule.name, style: context.heading6()),
                       if (rule.categoryName != null)
                         Text(
                           rule.categoryName!,
-                          style: AppTextStyles.caption(context,
-                              color: AppColors.textSecondary),
+                          style: context.textCaption(
+                              color: context.colorTextSecondary),
                         ),
                     ],
                   ),
@@ -278,19 +261,19 @@ class _RecurringRuleTile extends StatelessWidget {
                     symbol: rule.currencySymbol ?? '',
                     amount: rule.amount!,
                     sign: isIncome ? '+' : '-',
-                    style: AppTextStyles.h500(context),
+                    style: context.heading5(),
                     color: typeColor,
                   )
                 else
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.muted.withAlpha(30),
-                      borderRadius: BorderRadius.circular(8),
+                      color: context.colorMuted.withAlpha(30),
+                      borderRadius: context.radiusSmRadius,
                     ),
                     child: Text(
                       'Variable',
-                      style: AppTextStyles.caption(context, color: AppColors.muted),
+                      style: context.textCaption(color: context.colorMuted),
                     ),
                   ),
               ],
@@ -304,22 +287,22 @@ class _RecurringRuleTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary,
-                    borderRadius: BorderRadius.circular(8),
+                    color: context.colorSecondary,
+                    borderRadius: context.radiusSmRadius,
                   ),
                   child: Text(
                     rule.frequency.toLabel(),
-                    style: AppTextStyles.caption(context, color: AppColors.primary),
+                    style: context.textCaption(color: context.colorPrimary),
                   ),
                 ),
                 const SizedBox(width: 8),
 
                 // Next execution date
-                const Icon(Icons.event, size: 14, color: AppColors.muted),
+                Icon(Icons.event, size: 14, color: context.colorMuted),
                 const SizedBox(width: 4),
                 Text(
                   _formatDate(rule.nextExecutionDate),
-                  style: AppTextStyles.caption(context),
+                  style: context.textCaption(),
                 ),
 
                 const Spacer(),
@@ -328,24 +311,24 @@ class _RecurringRuleTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.muted.withAlpha(40),
-                      borderRadius: BorderRadius.circular(8),
+                      color: context.colorMuted.withAlpha(40),
+                      borderRadius: context.radiusSmRadius,
                     ),
                     child: Text(
                       'Inactivo',
-                      style: AppTextStyles.caption(context, color: AppColors.muted),
+                      style: context.textCaption(color: context.colorMuted),
                     ),
                   )
                 else if (rule.notificationDaysBefore != null && rule.currentPeriodRegistered)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withAlpha(25),
-                      borderRadius: BorderRadius.circular(8),
+                      color: context.colorSuccess.withAlpha(25),
+                      borderRadius: context.radiusSmRadius,
                     ),
                     child: Text(
                       'Registrado',
-                      style: AppTextStyles.caption(context, color: AppColors.successStrong),
+                      style: context.textCaption(color: context.colorSuccessStrong),
                     ),
                   )
                 else if (rule.notificationDaysBefore != null)
@@ -354,13 +337,13 @@ class _RecurringRuleTile extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(20),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.primary.withAlpha(60)),
+                        color: context.colorPrimary.withAlpha(20),
+                        borderRadius: context.radiusSmRadius,
+                        border: Border.all(color: context.colorPrimary.withAlpha(60)),
                       ),
                       child: Text(
                         'Registrar ahora',
-                        style: AppTextStyles.caption(context, color: AppColors.primary),
+                        style: context.textCaption(color: context.colorPrimary),
                       ),
                     ),
                   )
@@ -368,12 +351,12 @@ class _RecurringRuleTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withAlpha(25),
-                      borderRadius: BorderRadius.circular(8),
+                      color: context.colorSuccess.withAlpha(25),
+                      borderRadius: context.radiusSmRadius,
                     ),
                     child: Text(
                       'Activo',
-                      style: AppTextStyles.caption(context, color: AppColors.successStrong),
+                      style: context.textCaption(color: context.colorSuccessStrong),
                     ),
                   ),
               ],

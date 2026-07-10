@@ -1,8 +1,8 @@
 // lib/features/investment_fund/widgets/card.dart
 
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_card.dart';
 import 'package:cashflowiq/shared/models/investment_fund.dart';
 
 class InvestmentFundCard extends StatelessWidget {
@@ -17,64 +17,56 @@ class InvestmentFundCard extends StatelessWidget {
     final diff = hasCurrentValue ? fund.currentValue! - fund.investedAmount : null;
     final isGain = diff != null && diff >= 0;
 
-    return GestureDetector(
+    return AppCard(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    fund.name,
-                    style: AppTextStyles.subtitle1(context),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  fund.name,
+                  style: context.textSubtitle1(),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 8),
-                _TypeBadge(type: fund.fundType),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Primary: current value if available, otherwise invested amount
-            Text(
-              hasCurrentValue
-                  ? fund.currentValueMoney!.format()
-                  : fund.investedMoney.format(),
-              style: AppTextStyles.balance(context),
-            ),
-
-            if (hasCurrentValue) ...[
-              const SizedBox(height: 4),
-              // Secondary: invested amount
-              Text(
-                "Invertido: ${fund.investedMoney.format()}",
-                style: AppTextStyles.body2(context, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 6),
-              // Diff chip: gain or loss
-              _DiffChip(
-                diff: diff!,
-                symbol: fund.currency.symbol,
-                decimals: fund.currency.decimals,
-                isGain: isGain,
-              ),
+              const SizedBox(width: 8),
+              _TypeBadge(type: fund.fundType),
             ],
+          ),
 
-            const SizedBox(height: 8),
-            Text(fund.bankEntity.name, style: AppTextStyles.body2(context)),
+          const SizedBox(height: 12),
+
+          // Primary: current value if available, otherwise invested amount
+          Text(
+            hasCurrentValue
+                ? fund.currentValueMoney!.format()
+                : fund.investedMoney.format(),
+            style: context.textBalance(),
+          ),
+
+          if (hasCurrentValue) ...[
+            const SizedBox(height: 4),
+            // Secondary: invested amount
+            Text(
+              "Invertido: ${fund.investedMoney.format()}",
+              style: context.textBody2(color: context.colorTextSecondary),
+            ),
+            const SizedBox(height: 6),
+            // Diff chip: gain or loss
+            _DiffChip(
+              diff: diff!,
+              symbol: fund.currency.symbol,
+              decimals: fund.currency.decimals,
+              isGain: isGain,
+            ),
           ],
-        ),
+
+          const SizedBox(height: 8),
+          Text(fund.bankEntity.name, style: context.textBody2()),
+        ],
       ),
     );
   }
@@ -95,7 +87,7 @@ class _DiffChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isGain ? AppColors.success : AppColors.error;
+    final color = isGain ? context.colorSuccess : context.colorError;
     final sign = isGain ? '+' : '';
     final label = '$sign$symbol ${diff.abs().toStringAsFixed(decimals)}';
 
@@ -103,7 +95,7 @@ class _DiffChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withAlpha(26),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: context.radiusSmRadius,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -114,7 +106,7 @@ class _DiffChip extends StatelessWidget {
             color: color,
           ),
           const SizedBox(width: 4),
-          Text(label, style: AppTextStyles.caption(context, color: color)),
+          Text(label, style: context.textCaption(color: color)),
         ],
       ),
     );
@@ -130,8 +122,8 @@ class _TypeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: type.color, borderRadius: BorderRadius.circular(8)),
-      child: Text(type.toLabel(), style: AppTextStyles.caption(context)),
+      decoration: BoxDecoration(color: type.color, borderRadius: context.radiusSmRadius),
+      child: Text(type.toLabel(), style: context.textCaption()),
     );
   }
 }

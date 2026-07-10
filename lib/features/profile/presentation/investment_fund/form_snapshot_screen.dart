@@ -1,7 +1,9 @@
 // lib/features/profile/presentation/investment_fund/form_snapshot_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/features/profile/data/investment_fund_service.dart';
 import 'package:cashflowiq/shared/models/investment_fund.dart';
 import 'package:cashflowiq/shared/models/investment_fund_snapshot.dart';
@@ -83,44 +85,39 @@ class _FormSnapshotScreenState extends State<FormSnapshotScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Registrar balance", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: "Registrar balance"),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(widget.fund.name, style: AppTextStyles.subtitle1(context)),
+              Text(widget.fund.name, style: context.textSubtitle1()),
               const SizedBox(height: 4),
               Text(
                 widget.fund.bankEntity.name,
-                style: AppTextStyles.body2(context, color: AppColors.textSecondary),
+                style: context.textBody2(color: context.colorTextSecondary),
               ),
               const SizedBox(height: 28),
 
               // Date picker
-              Text("Mes", style: AppTextStyles.caption(context, color: AppColors.textSecondary)),
+              Text("Mes", style: context.textCaption(color: context.colorTextSecondary)),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickDate,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+                    color: context.colorSurface,
+                    borderRadius: context.radiusMdRadius,
+                    border: Border.all(color: context.colorBorder),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
+                      Icon(Icons.calendar_today, size: 18, color: context.colorPrimary),
                       const SizedBox(width: 12),
-                      Text(_fmtDate(_selectedDate), style: AppTextStyles.body1(context)),
+                      Text(_fmtDate(_selectedDate), style: context.textBody1()),
                     ],
                   ),
                 ),
@@ -128,57 +125,19 @@ class _FormSnapshotScreenState extends State<FormSnapshotScreen> {
               const SizedBox(height: 20),
 
               // Value input
-              Text(
-                "Valor actual (${widget.fund.currency.symbol})",
-                style: AppTextStyles.caption(context, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 8),
-              TextField(
+              AppTextField(
+                label: "Valor actual (${widget.fund.currency.symbol})",
                 controller: _valueController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: AppTextStyles.body1(context),
-                decoration: InputDecoration(
-                  prefixText: "${widget.fund.currency.symbol} ",
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                ),
+                prefixText: "${widget.fund.currency.symbol} ",
               ),
 
               const Spacer(),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(
-                          "Guardar balance",
-                          style: AppTextStyles.subtitle2(context, color: Colors.white),
-                        ),
-                ),
+              PrimaryButton(
+                label: "Guardar balance",
+                isLoading: _isSaving,
+                onPressed: _save,
               ),
             ],
           ),

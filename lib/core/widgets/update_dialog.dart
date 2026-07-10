@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cashflowiq/core/services/update_service.dart';
 import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
 import 'package:cashflowiq/shared/models/update_info.dart';
 
 /// Shows the update prompt and drives the download → install flow.
@@ -73,12 +74,24 @@ class _UpdateDialogState extends State<_UpdateDialog> {
           ],
         ],
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        if (!widget.info.forceUpdate && !downloading)
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Más tarde')),
-        ElevatedButton(
-          onPressed: downloading ? null : _startUpdate,
-          child: Text(downloading ? 'Descargando…' : 'Actualizar ahora'),
+        Row(
+          children: [
+            if (!widget.info.forceUpdate && !downloading) ...[
+              Expanded(
+                child: GhostButton(label: 'Más tarde', onPressed: () => Navigator.of(context).pop()),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              flex: 2,
+              child: PrimaryButton(
+                label: downloading ? 'Descargando…' : 'Actualizar ahora',
+                onPressed: downloading ? null : _startUpdate,
+              ),
+            ),
+          ],
         ),
       ],
     );

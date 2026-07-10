@@ -1,3 +1,7 @@
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/features/auth/data/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -54,51 +58,44 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.colorBackground,
       body: SafeArea(
         child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Controla tu dinero", style: TextStyle(fontSize: 24)),
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: StaggeredFadeIn(
+              index: 0,
+              staggerMs: 0,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('CashFlowIQ', style: context.textCaption(), textAlign: TextAlign.center),
+                  const SizedBox(height: 4),
+                  Text('Controla tu dinero', style: context.heading2(), textAlign: TextAlign.center),
+                  const SizedBox(height: 32),
 
-            const SizedBox(height: 24),
+                  AppTextField(label: 'Email', controller: _email, hintText: 'tu@correo.com'),
+                  const SizedBox(height: 16),
+                  AppTextField(label: 'Contraseña', controller: _password, obscureText: true, hintText: '••••••••'),
+                  const SizedBox(height: 24),
 
-            TextField(
-              controller: _email,
-              decoration: const InputDecoration(labelText: 'Email'),
+                  PrimaryButton(label: 'Iniciar sesión', isLoading: loading, onPressed: login),
+                  const SizedBox(height: 12),
+                  SecondaryButton(label: 'Continuar con Google', onPressed: loginGoogle),
+                  const SizedBox(height: 12),
+
+                  GhostButton(
+                    label: 'Crear cuenta',
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen()));
+                    },
+                  ),
+                ],
+              ),
             ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: _password,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
-            ),
-
-            const SizedBox(height: 24),
-
-            ElevatedButton(
-              onPressed: loading ? null : login,
-              child: loading ? const CircularProgressIndicator() : const Text("Iniciar sesión"),
-            ),
-
-            const SizedBox(height: 16),
-
-            OutlinedButton(onPressed: loginGoogle, child: const Text("Continuar con Google")),
-
-            const SizedBox(height: 16),
-
-            TextButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen()));
-              },
-              child: const Text("Crear cuenta"),
-            ),
-          ],
+          ),
         ),
-      ),
       ),
     );
   }

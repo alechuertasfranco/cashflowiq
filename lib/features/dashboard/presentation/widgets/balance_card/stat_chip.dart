@@ -1,4 +1,4 @@
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/amount_text.dart';
 import 'package:flutter/material.dart';
 
@@ -24,18 +24,18 @@ class StatChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: context.radiusSmRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTextStyles.caption(context, color: color)),
+          Text(label, style: context.textCaption(color: color)),
           const SizedBox(height: 4),
           AmountText(
             symbol: symbol,
             amount: amount,
             sign: sign,
-            style: AppTextStyles.body2(context),
+            style: context.textBody2(),
             color: color,
           ),
         ],

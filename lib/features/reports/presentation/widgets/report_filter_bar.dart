@@ -1,5 +1,4 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
 class ReportFilterBar extends StatelessWidget {
@@ -16,9 +15,9 @@ class ReportFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        color: context.colorBackground,
+        borderRadius: context.radiusSmRadius,
+        border: Border.all(color: context.colorBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -26,14 +25,14 @@ class ReportFilterBar extends StatelessWidget {
           _ToggleOption(
             label: 'Gasto',
             selected: selected == 'EXPENSE',
-            color: AppColors.error,
+            color: context.colorError,
             onTap: () => onChanged('EXPENSE'),
             isLeft: true,
           ),
           _ToggleOption(
             label: 'Ingreso',
             selected: selected == 'INCOME',
-            color: AppColors.success,
+            color: context.colorSuccess,
             onTap: () => onChanged('INCOME'),
             isLeft: false,
           ),
@@ -63,20 +62,19 @@ class _ToggleOption extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: context.motionFast,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
           borderRadius: BorderRadius.horizontal(
-            left: isLeft ? const Radius.circular(7) : Radius.zero,
-            right: isLeft ? Radius.zero : const Radius.circular(7),
+            left: isLeft ? Radius.circular(context.radiusSm - 1) : Radius.zero,
+            right: isLeft ? Radius.zero : Radius.circular(context.radiusSm - 1),
           ),
         ),
         child: Text(
           label,
-          style: AppTextStyles.caption(
-            context,
-            color: selected ? color : AppColors.muted,
+          style: context.textCaption(
+            color: selected ? color : context.colorMuted,
           ).copyWith(fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
         ),
       ),

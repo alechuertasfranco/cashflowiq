@@ -1,6 +1,6 @@
 // lib/core/widgets/amount_text.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/shared/models/money.dart';
 import 'package:flutter/material.dart';
 
@@ -11,9 +11,9 @@ import 'package:flutter/material.dart';
 /// ambiguous.
 ///
 /// ```dart
-/// AmountText(symbol: 'S/', amount: 250.0, style: AppTextStyles.h500(context))
-/// AmountText.fromMoney(account.balance, style: AppTextStyles.h600(context))
-/// AmountText.fromMoney(money, sign: '+', color: AppColors.success, style: ...)
+/// AmountText(symbol: 'S/', amount: 250.0, style: context.heading5())
+/// AmountText.fromMoney(account.balance, style: context.heading6())
+/// AmountText.fromMoney(money, sign: '+', color: context.colorSuccess, style: ...)
 /// ```
 class AmountText extends StatelessWidget {
   final double amount;
@@ -55,7 +55,7 @@ class AmountText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? AppColors.textPrimary;
+    final effectiveColor = color ?? context.colorTextPrimary;
     final base = (style ?? DefaultTextStyle.of(context).style).copyWith(
       color: effectiveColor,
     );
@@ -102,15 +102,15 @@ class CurrencyBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.secondary,
-        borderRadius: BorderRadius.circular(6),
+        color: backgroundColor ?? context.colorSecondary,
+        borderRadius: context.radiusSmRadius,
       ),
       child: Text(
         code,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: textColor ?? AppColors.primary,
+          color: textColor ?? context.colorPrimary,
           letterSpacing: 0.4,
         ),
       ),

@@ -1,11 +1,12 @@
 // lib/features/transactions/presentation/transfer_transaction/transfer_screen.dart
 
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
 import 'package:cashflowiq/shared/models/transaction.dart';
 import 'package:cashflowiq/features/transactions/presentation/transfer_transaction/transfer_form_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
 import 'package:cashflowiq/features/profile/data/bank_account_service.dart';
 import 'package:cashflowiq/shared/models/bank_account.dart';
 
@@ -46,15 +47,11 @@ class _TransferScreenState extends State<TransferScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(widget.editMode ? "Editar transferencia" : "Nueva transferencia", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(title: widget.editMode ? "Editar transferencia" : "Nueva transferencia"),
       body: SafeArea(
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonListLoader()
             : accounts.isEmpty
             ? _emptyState()
             : TransferFormScreen(prefill: widget.prefill, editMode: widget.editMode),

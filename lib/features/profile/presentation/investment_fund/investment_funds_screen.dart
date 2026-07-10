@@ -1,10 +1,12 @@
 // lib/features/investment_fund/presentation/investment_funds_screen.dart
 
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:flutter/material.dart';
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 
 import 'package:cashflowiq/features/profile/data/investment_fund_service.dart';
@@ -107,15 +109,10 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
     final totals = _getInvestedByCurrency();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Inversiones", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: "Inversiones"),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.complementary,
+        backgroundColor: context.colorComplementary,
         onPressed: _goToCreate,
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -123,7 +120,7 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonListLoader()
               : _funds.isEmpty
               ? Expanded(
                   child: InsightEmptyState(
@@ -142,11 +139,11 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Total invertido", style: AppTextStyles.caption(context)),
+                          Text("Total invertido", style: context.textCaption()),
                           const SizedBox(height: 4),
 
                           if (totals.isEmpty)
-                            Text("0", style: AppTextStyles.balance(context))
+                            Text("0", style: context.textBalance())
                           else
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +152,7 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
 
                                 return Text(
                                   "${money.currency.flag ?? ''} ${money.format()}",
-                                  style: AppTextStyles.balance(context),
+                                  style: context.textBalance(),
                                 );
                               }).toList(),
                             ),
@@ -175,9 +172,12 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
                           itemBuilder: (context, index) {
                             final fund = _funds[index];
 
-                            return SwipeToDelete(
-                              onDelete: () => _delete(fund),
-                              child: InvestmentFundCard(fund: fund, onTap: () => _goToDetail(fund)),
+                            return StaggeredFadeIn(
+                              index: index,
+                              child: SwipeToDelete(
+                                onDelete: () => _delete(fund),
+                                child: InvestmentFundCard(fund: fund, onTap: () => _goToDetail(fund)),
+                              ),
                             );
                           },
                         ),

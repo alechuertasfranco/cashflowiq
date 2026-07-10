@@ -1,5 +1,5 @@
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/decorations.dart';
 import 'package:flutter/material.dart';
 
@@ -10,7 +10,7 @@ class FormStepAmount extends StatelessWidget {
   final String? amountError;
   final String? descriptionError;
   final String title;
-  final Color dateAccentColor;
+  final Color? dateAccentColor;
   final String descriptionHint;
   final bool descriptionRequired;
   final VoidCallback onDateTap;
@@ -27,7 +27,7 @@ class FormStepAmount extends StatelessWidget {
     this.amountError,
     this.descriptionError,
     this.title = '¿Cuánto fue?',
-    this.dateAccentColor = AppColors.error,
+    this.dateAccentColor,
     this.descriptionHint = '',
     this.descriptionRequired = false,
     this.onDescriptionChanged,
@@ -43,14 +43,16 @@ class FormStepAmount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedDateAccentColor = dateAccentColor ?? context.colorError;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.h400(context)),
+          Text(title, style: context.heading4()),
           const SizedBox(height: 24),
-          _datePicker(context),
+          _datePicker(context, resolvedDateAccentColor),
           const SizedBox(height: 24),
           _amountField(context),
           const SizedBox(height: 24),
@@ -60,31 +62,31 @@ class FormStepAmount extends StatelessWidget {
     );
   }
 
-  Widget _datePicker(BuildContext context) {
+  Widget _datePicker(BuildContext context, Color dateAccentColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text("Fecha y hora",
-            style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
+            style: context.textSubtitle2(color: context.colorTextSecondary)),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: onDateTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              color: context.colorSurface,
+              borderRadius: context.radiusMdRadius,
+              border: Border.all(color: context.colorBorder),
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today, size: 18, color: AppColors.muted),
+                Icon(Icons.calendar_today, size: 18, color: context.colorMuted),
                 const SizedBox(width: 10),
                 Text(_formatDate(selectedDate),
-                    style: AppTextStyles.subtitle2(context)),
+                    style: context.textSubtitle2()),
                 const Spacer(),
                 Text("Cambiar",
-                    style: AppTextStyles.body2(context, color: dateAccentColor)),
+                    style: context.textBody2(color: dateAccentColor)),
               ],
             ),
           ),
@@ -98,13 +100,13 @@ class FormStepAmount extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text("Monto",
-            style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
+            style: context.textSubtitle2(color: context.colorTextSecondary)),
         const SizedBox(height: 8),
         TextField(
           controller: amountController,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: AppTextStyles.h300(context),
+          style: context.heading3(),
           decoration: inputDecoration(context, "0.00").copyWith(
             errorText: amountError,
           ),
@@ -116,23 +118,15 @@ class FormStepAmount extends StatelessWidget {
 
   Widget _descriptionField(BuildContext context) {
     final label = descriptionRequired ? "Descripción" : "Descripción (opcional)";
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: descriptionController,
-          decoration: inputDecoration(context, descriptionHint).copyWith(
-            errorText: descriptionError,
-          ),
-          maxLines: 2,
-          onChanged: descriptionRequired || onDescriptionChanged != null
-              ? (_) => onDescriptionChanged?.call()
-              : null,
-        ),
-      ],
+    return AppTextField(
+      label: label,
+      controller: descriptionController,
+      hintText: descriptionHint,
+      errorText: descriptionError,
+      maxLines: 2,
+      onChanged: descriptionRequired || onDescriptionChanged != null
+          ? (_) => onDescriptionChanged?.call()
+          : null,
     );
   }
 }

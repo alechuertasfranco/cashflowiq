@@ -1,8 +1,7 @@
 // lib/features/transactions/presentation/recurring/widgets/recurring_step_details.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
-import 'package:cashflowiq/core/widgets/decorations.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 class RecurringStepDetails extends StatelessWidget {
@@ -45,14 +44,12 @@ class RecurringStepDetails extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Name
-          _label(context, "Nombre"),
-          const SizedBox(height: 8),
-          TextField(
+          AppTextField(
+            label: "Nombre",
             controller: nameController,
+            hintText: "Ej: Alquiler mensual",
+            errorText: nameError,
             onChanged: (_) => onNameChanged(),
-            decoration: inputDecoration(context, "Ej: Alquiler mensual").copyWith(
-              errorText: nameError,
-            ),
           ),
           const SizedBox(height: 20),
 
@@ -64,15 +61,13 @@ class RecurringStepDetails extends StatelessWidget {
           // Amount (only shown if fixed)
           if (isFixedAmount) ...[
             const SizedBox(height: 20),
-            _label(context, "Monto"),
-            const SizedBox(height: 8),
-            TextField(
+            AppTextField(
+              label: "Monto",
               controller: amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              hintText: "0.00",
+              errorText: amountError,
               onChanged: (_) => onAmountChanged(),
-              decoration: inputDecoration(context, "0.00").copyWith(
-                errorText: amountError,
-              ),
             ),
           ],
         ],
@@ -81,7 +76,7 @@ class RecurringStepDetails extends StatelessWidget {
   }
 
   Widget _label(BuildContext context, String text) =>
-      Text(text, style: AppTextStyles.subtitle2(context, color: AppColors.textSecondary));
+      Text(text, style: context.textSubtitle2(color: context.colorTextSecondary));
 
   Widget _typeToggle(BuildContext context) {
     return Row(
@@ -90,19 +85,18 @@ class RecurringStepDetails extends StatelessWidget {
           child: GestureDetector(
             onTap: () => onTypeChanged('INCOME'),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: context.motionFast,
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: type == 'INCOME' ? AppColors.success : AppColors.surface,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-                border: Border.all(color: AppColors.border),
+                color: type == 'INCOME' ? context.colorSuccess : context.colorSurface,
+                borderRadius: BorderRadius.horizontal(left: Radius.circular(context.radiusMd)),
+                border: Border.all(color: context.colorBorder),
               ),
               child: Center(
                 child: Text(
                   "Ingreso",
-                  style: AppTextStyles.body2(
-                    context,
-                    color: type == 'INCOME' ? Colors.white : AppColors.textSecondary,
+                  style: context.textBody2(
+                    color: type == 'INCOME' ? context.colorOnPrimary : context.colorTextSecondary,
                   ),
                 ),
               ),
@@ -113,19 +107,18 @@ class RecurringStepDetails extends StatelessWidget {
           child: GestureDetector(
             onTap: () => onTypeChanged('EXPENSE'),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: context.motionFast,
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: type == 'EXPENSE' ? AppColors.error : AppColors.surface,
-                borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
-                border: Border.all(color: AppColors.border),
+                color: type == 'EXPENSE' ? context.colorError : context.colorSurface,
+                borderRadius: BorderRadius.horizontal(right: Radius.circular(context.radiusMd)),
+                border: Border.all(color: context.colorBorder),
               ),
               child: Center(
                 child: Text(
                   "Gasto",
-                  style: AppTextStyles.body2(
-                    context,
-                    color: type == 'EXPENSE' ? Colors.white : AppColors.textSecondary,
+                  style: context.textBody2(
+                    color: type == 'EXPENSE' ? context.colorOnPrimary : context.colorTextSecondary,
                   ),
                 ),
               ),
@@ -143,19 +136,18 @@ class RecurringStepDetails extends StatelessWidget {
           child: GestureDetector(
             onTap: () => onAmountTypeChanged(true),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: context.motionFast,
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: isFixedAmount ? AppColors.primary : AppColors.surface,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-                border: Border.all(color: AppColors.border),
+                color: isFixedAmount ? context.colorPrimary : context.colorSurface,
+                borderRadius: BorderRadius.horizontal(left: Radius.circular(context.radiusMd)),
+                border: Border.all(color: context.colorBorder),
               ),
               child: Center(
                 child: Text(
                   "Monto fijo",
-                  style: AppTextStyles.body2(
-                    context,
-                    color: isFixedAmount ? Colors.white : AppColors.textSecondary,
+                  style: context.textBody2(
+                    color: isFixedAmount ? context.colorOnPrimary : context.colorTextSecondary,
                   ),
                 ),
               ),
@@ -166,19 +158,18 @@ class RecurringStepDetails extends StatelessWidget {
           child: GestureDetector(
             onTap: () => onAmountTypeChanged(false),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: context.motionFast,
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: !isFixedAmount ? AppColors.primary : AppColors.surface,
-                borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
-                border: Border.all(color: AppColors.border),
+                color: !isFixedAmount ? context.colorPrimary : context.colorSurface,
+                borderRadius: BorderRadius.horizontal(right: Radius.circular(context.radiusMd)),
+                border: Border.all(color: context.colorBorder),
               ),
               child: Center(
                 child: Text(
                   "Monto variable",
-                  style: AppTextStyles.body2(
-                    context,
-                    color: !isFixedAmount ? Colors.white : AppColors.textSecondary,
+                  style: context.textBody2(
+                    color: !isFixedAmount ? context.colorOnPrimary : context.colorTextSecondary,
                   ),
                 ),
               ),

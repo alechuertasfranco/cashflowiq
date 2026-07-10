@@ -1,9 +1,11 @@
 // lib/features/credit_cards/presentation/credit_cards_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/profile/data/credit_card_service.dart';
 import 'package:cashflowiq/features/profile/presentation/credit_cards/form_credit_card_screen.dart';
@@ -95,15 +97,10 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
     final limitsByCurrency = _getCreditLimitsByCurrency();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text("Tarjetas de crédito", style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
-      ),
+      backgroundColor: context.colorBackground,
+      appBar: const AppHeaderBar(title: "Tarjetas de crédito"),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.complementary,
+        backgroundColor: context.colorComplementary,
         onPressed: _goToCreateCard,
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -111,7 +108,7 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonListLoader()
               : _cards.isEmpty
               ? Expanded(
                   child: InsightEmptyState(
@@ -130,11 +127,11 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Línea total", style: AppTextStyles.caption(context)),
+                          Text("Línea total", style: context.textCaption()),
                           const SizedBox(height: 4),
 
                           if (limitsByCurrency.isEmpty)
-                            Text("0", style: AppTextStyles.balance(context))
+                            Text("0", style: context.textBalance())
                           else
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +140,7 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
 
                                 return Text(
                                   "${money.currency.flag ?? ''} ${money.format()}",
-                                  style: AppTextStyles.balance(context),
+                                  style: context.textBalance(),
                                 );
                               }).toList(),
                             ),
@@ -163,9 +160,12 @@ class _CreditCardsScreenState extends State<CreditCardsScreen> {
                           itemBuilder: (context, index) {
                             final card = _cards[index];
 
-                            return SwipeToDelete(
-                              onDelete: () => _deleteCard(card),
-                              child: CreditCardCard(card: card, onTap: () => _goToEditCard(card)),
+                            return StaggeredFadeIn(
+                              index: index,
+                              child: SwipeToDelete(
+                                onDelete: () => _deleteCard(card),
+                                child: CreditCardCard(card: card, onTap: () => _goToEditCard(card)),
+                              ),
                             );
                           },
                         ),

@@ -1,9 +1,14 @@
 // lib/features/splits/screens/contacts_screen.dart
 
-import 'package:cashflowiq/core/theme/app_colors.dart';
-import 'package:cashflowiq/core/theme/app_text_styles.dart';
+import 'package:cashflowiq/core/theme/theme_extensions.dart';
 import 'package:cashflowiq/core/utils/data_cache.dart';
+import 'package:cashflowiq/core/widgets/app_bottom_sheet.dart';
+import 'package:cashflowiq/core/widgets/app_buttons.dart';
+import 'package:cashflowiq/core/widgets/app_header_bar.dart';
+import 'package:cashflowiq/core/widgets/app_text_field.dart';
 import 'package:cashflowiq/core/widgets/insight_empty_state.dart';
+import 'package:cashflowiq/core/widgets/skeleton_loader.dart';
+import 'package:cashflowiq/core/widgets/staggered_fade_in.dart';
 import 'package:cashflowiq/core/widgets/swipe_to_delete.dart';
 import 'package:cashflowiq/features/splits/data/contact_service.dart';
 import 'package:cashflowiq/features/splits/data/split_service.dart';
@@ -151,12 +156,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   Future<void> _showImportBottomSheet(
       List<fc.Contact> available) async {
-    final selected = await showModalBottomSheet<Set<String>>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    final selected = await showAppBottomSheet<Set<String>>(
+      context,
       builder: (ctx) => _ImportContactsSheet(available: available),
     );
 
@@ -204,28 +205,25 @@ class _ContactsScreenState extends State<ContactsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Contactos', style: AppTextStyles.h400(context)),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primary),
+      backgroundColor: context.colorBackground,
+      appBar: AppHeaderBar(
+        title: 'Contactos',
         actions: [
           IconButton(
-            icon: const Icon(Icons.contact_phone, color: AppColors.primary),
+            icon: Icon(Icons.contact_phone, color: context.colorPrimary),
             onPressed: _importFromPhone,
             tooltip: 'Importar del teléfono',
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.colorPrimary,
         onPressed: _goToCreate,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: context.colorOnPrimary),
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const SkeletonListLoader(itemCount: 5, itemHeight: 76)
             : _contacts.isEmpty
                 ? InsightEmptyState(
                     icon: Icons.people_outline,
@@ -248,13 +246,16 @@ class _ContactsScreenState extends State<ContactsScreen> {
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final contact = _contacts[index];
-                        return SwipeToDelete(
-                          key: ValueKey(contact.id),
-                          onDelete: () => _delete(contact),
-                          child: _ContactTile(
-                            contact: contact,
-                            balance: _balances[contact.id],
-                            onTap: () => _goToEdit(contact),
+                        return StaggeredFadeIn(
+                          index: index,
+                          child: SwipeToDelete(
+                            key: ValueKey(contact.id),
+                            onDelete: () => _delete(contact),
+                            child: _ContactTile(
+                              contact: contact,
+                              balance: _balances[contact.id],
+                              onTap: () => _goToEdit(contact),
+                            ),
                           ),
                         );
                       },
@@ -284,9 +285,9 @@ class _ContactTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          color: context.colorSurface,
+          borderRadius: context.radiusLgRadius,
+          border: Border.all(color: context.colorBorder),
         ),
         child: Row(
           children: [
@@ -294,16 +295,15 @@ class _ContactTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.secondary,
-                borderRadius: BorderRadius.circular(12),
+                color: context.colorSecondary,
+                borderRadius: context.radiusMdRadius,
               ),
               child: Center(
                 child: Text(
                   contact.name.isNotEmpty
                       ? contact.name[0].toUpperCase()
                       : '?',
-                  style: AppTextStyles.h400(context)
-                      .copyWith(color: AppColors.primary),
+                  style: context.heading4(color: context.colorPrimary),
                 ),
               ),
             ),
@@ -312,12 +312,12 @@ class _ContactTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(contact.name, style: AppTextStyles.h600(context)),
+                  Text(contact.name, style: context.heading6()),
                   if (subtitle.isNotEmpty)
                     Text(
                       subtitle,
-                      style: AppTextStyles.caption(context,
-                          color: AppColors.textSecondary),
+                      style: context.textCaption(
+                          color: context.colorTextSecondary),
                     ),
                 ],
               ),
@@ -343,20 +343,20 @@ class _BalanceBadge extends StatelessWidget {
     if (!hasDebt) {
       return Text(
         'Al día',
-        style: AppTextStyles.caption(context, color: AppColors.muted),
+        style: context.textCaption(color: context.colorMuted),
       );
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.success.withAlpha(25),
-        borderRadius: BorderRadius.circular(8),
+        color: context.colorSuccess.withAlpha(25),
+        borderRadius: context.radiusSmRadius,
       ),
       child: Text(
         'Te debe\n${balance!.toStringAsFixed(2)}',
         textAlign: TextAlign.center,
-        style: AppTextStyles.caption(context, color: AppColors.successStrong),
+        style: context.textCaption(color: context.colorSuccessStrong),
       ),
     );
   }
@@ -401,154 +401,105 @@ class _ImportContactsSheetState extends State<_ImportContactsSheet> {
       maxChildSize: 0.9,
       expand: false,
       builder: (_, scrollController) {
-        return SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                'Importar contactos',
+                style: context.heading4(),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  'Importar contactos',
-                  style: AppTextStyles.h400(context),
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: AppTextField(
+                controller: _searchController,
+                hintText: 'Buscar contacto',
+                prefixIcon: Icon(Icons.search, color: context.colorMuted, size: 20),
+                onChanged: (v) => setState(() => _query = v),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: 'Buscar contacto',
-                    hintStyle:
-                        AppTextStyles.body2(context, color: AppColors.muted),
-                    prefixIcon: const Icon(Icons.search,
-                        color: AppColors.muted, size: 20),
-                    filled: true,
-                    fillColor: AppColors.surface,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                  ),
-                  style: AppTextStyles.body1(context),
-                ),
-              ),
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Sin resultados',
-                          style: AppTextStyles.body2(context,
-                              color: AppColors.muted),
-                        ),
-                      )
-                    : ListView.separated(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: filtered.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (_, index) {
-                          final pc = filtered[index];
-                          final phone = pc.phones.isNotEmpty
-                              ? pc.phones.first.number
-                              : null;
-                          final isSelected = _selected.contains(pc.id);
-                          return ListTile(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(color: AppColors.border),
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Sin resultados',
+                        style: context.textBody2(color: context.colorMuted),
+                      ),
+                    )
+                  : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filtered.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (_, index) {
+                        final pc = filtered[index];
+                        final phone = pc.phones.isNotEmpty
+                            ? pc.phones.first.number
+                            : null;
+                        final isSelected = _selected.contains(pc.id);
+                        return ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: context.radiusMdRadius,
+                            side: BorderSide(color: context.colorBorder),
+                          ),
+                          tileColor: context.colorSurface,
+                          leading: CircleAvatar(
+                            backgroundColor: context.colorSecondary,
+                            child: Text(
+                              pc.displayName.isNotEmpty
+                                  ? pc.displayName[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(color: context.colorPrimary),
                             ),
-                            tileColor: AppColors.surface,
-                            leading: CircleAvatar(
-                              backgroundColor: AppColors.secondary,
-                              child: Text(
-                                pc.displayName.isNotEmpty
-                                    ? pc.displayName[0].toUpperCase()
-                                    : '?',
-                                style: TextStyle(color: AppColors.primary),
-                              ),
-                            ),
-                            title: Text(
-                              pc.displayName,
-                              style: AppTextStyles.subtitle1(context),
-                            ),
-                            subtitle: phone != null
-                                ? Text(
-                                    phone,
-                                    style: AppTextStyles.caption(context,
-                                        color: AppColors.textSecondary),
-                                  )
-                                : null,
-                            trailing: Checkbox(
-                              value: isSelected,
-                              activeColor: AppColors.primary,
-                              onChanged: (val) {
-                                setState(() {
-                                  if (val == true) {
-                                    _selected.add(pc.id);
-                                  } else {
-                                    _selected.remove(pc.id);
-                                  }
-                                });
-                              },
-                            ),
-                            onTap: () {
+                          ),
+                          title: Text(
+                            pc.displayName,
+                            style: context.textSubtitle1(),
+                          ),
+                          subtitle: phone != null
+                              ? Text(
+                                  phone,
+                                  style: context.textCaption(
+                                      color: context.colorTextSecondary),
+                                )
+                              : null,
+                          trailing: Checkbox(
+                            value: isSelected,
+                            activeColor: context.colorPrimary,
+                            onChanged: (val) {
                               setState(() {
-                                if (isSelected) {
-                                  _selected.remove(pc.id);
-                                } else {
+                                if (val == true) {
                                   _selected.add(pc.id);
+                                } else {
+                                  _selected.remove(pc.id);
                                 }
                               });
                             },
-                          );
-                        },
-                      ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              if (isSelected) {
+                                _selected.remove(pc.id);
+                              } else {
+                                _selected.add(pc.id);
+                              }
+                            });
+                          },
+                        );
+                      },
                     ),
-                    onPressed: _selected.isEmpty
-                        ? null
-                        : () => Navigator.pop(context, _selected),
-                    child: Text(
-                      'Importar seleccionados',
-                      style:
-                          AppTextStyles.subtitle2(context, color: Colors.white),
-                    ),
-                  ),
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: PrimaryButton(
+                label: 'Importar seleccionados',
+                onPressed:
+                    _selected.isEmpty ? null : () => Navigator.pop(context, _selected),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
