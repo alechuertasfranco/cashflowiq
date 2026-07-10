@@ -84,7 +84,9 @@ class _InvestmentFundsScreenState extends State<InvestmentFundsScreen> {
       context,
       MaterialPageRoute(builder: (_) => FundDetailScreen(fund: fund)),
     );
-    // Reload in case current_value was updated from detail
+    // Snapshot writes and the detail screen's current_value self-heal each
+    // invalidate this cache themselves when they actually change something,
+    // so a plain reload here is enough — no need to force-bust the cache.
     _loadFunds();
   }
 

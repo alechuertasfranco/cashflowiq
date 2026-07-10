@@ -42,10 +42,23 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
         _snapshots = snapshots;
         _isLoading = false;
       });
+      _syncCurrentValueIfStale(snapshots);
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
+  }
+
+  /// Snapshots are the source of truth for current_value. If what's stored
+  /// on the fund (e.g. from a manual edit via "Editar fondo", or data older
+  /// than the snapshot-sync logic) no longer matches the latest snapshot,
+  /// fire a background sync so the backend row self-heals on every load.
+  /// The UI already shows the correct value regardless (see build()), so
+  /// this call's result isn't needed here.
+  void _syncCurrentValueIfStale(List<InvestmentFundSnapshot> snapshots) {
+    if (snapshots.isEmpty) return;
+    if (widget.fund.currentValue == snapshots.last.value) return;
+    _service.syncCurrentValue(widget.fund.id).catchError((_) => widget.fund);
   }
 
   Future<void> _addSnapshot() async {
@@ -95,7 +108,14 @@ class _FundDetailScreenState extends State<FundDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final fund = widget.fund;
+    // widget.fund is fixed at navigation time, so current_value can go stale
+    // as soon as a snapshot is added/removed in this screen. The latest
+    // snapshot (by date) is the same source of truth the backend uses, so
+    // override it here rather than relying on the value passed in.
+    final latestSnapshotValue = _snapshots.isNotEmpty ? _snapshots.last.value : null;
+    final fund = latestSnapshotValue != null
+        ? widget.fund.copyWith(currentValue: latestSnapshotValue)
+        : widget.fund;
     final hasCurrentValue = fund.currentValue != null;
     final diff = hasCurrentValue ? fund.currentValue! - fund.investedAmount : null;
     final isGain = diff != null && diff >= 0;

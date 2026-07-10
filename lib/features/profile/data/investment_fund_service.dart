@@ -30,6 +30,15 @@ class InvestmentFundService {
     return InvestmentFund.fromJson(response);
   }
 
+  /// Re-aligns current_value with the latest snapshot on the backend.
+  /// Snapshots writes already do this automatically; this covers drift from
+  /// manual edits (FormInvestmentFundScreen) or pre-existing data.
+  Future<InvestmentFund> syncCurrentValue(String fundId) async {
+    final response = await ApiClient.postJson("/investment-funds/$fundId/sync-current-value");
+    DataCache.instance.invalidate('investment_funds');
+    return InvestmentFund.fromJson(response);
+  }
+
   Future<void> deleteFund(String id) async {
     await ApiClient.delete("/investment-funds/$id");
     DataCache.instance.invalidate('investment_funds');
@@ -61,12 +70,16 @@ class InvestmentFundService {
       "/investment-funds/$fundId/snapshots",
       body: snapshot.toJson(),
     );
+    // Adding a snapshot also updates the fund's current_value on the backend,
+    // so the cached funds list must be invalidated too, not just the snapshots.
     DataCache.instance.invalidate('fund_snapshots_$fundId');
+    DataCache.instance.invalidate('investment_funds');
     return InvestmentFundSnapshot.fromJson(response);
   }
 
   Future<void> deleteSnapshot(String fundId, String snapshotId) async {
     await ApiClient.delete("/investment-funds/$fundId/snapshots/$snapshotId");
     DataCache.instance.invalidate('fund_snapshots_$fundId');
+    DataCache.instance.invalidate('investment_funds');
   }
 }
