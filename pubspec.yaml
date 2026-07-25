@@ -46,6 +46,10 @@ dependencies:
   permission_handler: ^11.3.1
   image_picker: ^1.1.2
   google_mlkit_text_recognition: ^0.13.1
+  # Pinned <8.1.0: file_picker >=8.1.0 requires web ^1.0.0, which conflicts
+  # with firebase_core ^2.30.0 (pins web ^0.5.1).
+  file_picker: ">=8.0.0 <8.1.0"
+  syncfusion_flutter_pdf: ^27.1.48
 
   fl_chart: ^0.69.0
   flutter_local_notifications: ^18.0.1

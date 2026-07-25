@@ -6,6 +6,7 @@ import 'package:cashflowiq/features/transactions/presentation/expense_transactio
 import 'package:cashflowiq/features/transactions/presentation/income_transaction/income_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/recurring/recurring_transactions_screen.dart';
 import 'package:cashflowiq/features/transactions/presentation/transfer_transaction/transfer_screen.dart';
+import 'package:cashflowiq/features/statements/presentation/statement_import_screen.dart';
 import 'package:cashflowiq/features/voucher/presentation/voucher_scan_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cashflowiq/features/transactions/presentation/widgets/transaction_type_card.dart';
@@ -81,6 +82,13 @@ class TransactionTypeScreen extends StatelessWidget {
                       icon: Icons.document_scanner,
                       color: context.colorAccent,
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VoucherScanScreen())),
+                    ),
+                    TransactionTypeCard(
+                      title: "Estado de cuenta",
+                      description: "Importar y conciliar",
+                      icon: Icons.upload_file,
+                      color: context.colorPrimary,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StatementImportScreen())),
                     ),
                   ],
                 ),
